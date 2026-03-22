@@ -1,26 +1,33 @@
 <template>
-  <default-layout></default-layout>
+  <router-view v-slot="{ Component }">
+    <component :is="currentLayout">
+      <component :is="Component" />
+    </component>
+  </router-view>
 </template>
 
 <script>
+import DefaultLayout from './layout/wrapper/index.vue';
+import ClientLayout from './layout/client/ClientLayout.vue';
+import BlankLayout from './layout/blank/BlankLayout.vue';
+
 export default {
   name: 'App',
+  components: {
+    DefaultLayout,
+    ClientLayout,
+    BlankLayout,
+  },
+  computed: {
+    currentLayout() {
+      const layouts = {
+        default: DefaultLayout,
+        client: ClientLayout,
+        blank: BlankLayout,
+      };
+
+      return layouts[this.$route.meta.layout] || DefaultLayout;
+    },
+  },
 };
 </script>
-
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f7f8fa;
-}
-
-#app {
-  min-height: 100vh;
-}
-</style>

@@ -18,9 +18,9 @@
         <!-- Dashboard -->
         <li class="nav-item">
           <router-link 
-            to="/" 
+            to="/dashboard" 
             class="nav-link"
-            :class="{ active: isActive('/') }"
+            :class="{ active: isActive('/dashboard') }"
           >
             <i class="bi bi-house-door"></i>
             <span v-if="!isCollapsed" class="nav-label">Dashboard</span>

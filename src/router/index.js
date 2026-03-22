@@ -3,37 +3,47 @@ import { createRouter, createWebHistory } from "vue-router";
 const routes = [
     {
         path: '/',
-        component: () => import('../pages/Dashboard.vue'),
+        component: () => import('../pages/Client/Home.vue'),
+        meta: { layout: 'client' }
+    },
+    {
+        path: '/client-login',
+        component: () => import('../pages/Client/DangNhap.vue'),
+        meta: { layout: 'blank' }
+    },
+    {
+        path: '/dashboard',
+        component: () => import('../pages/Admin/Dashboard.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/users',
-        component: () => import('../pages/Users.vue'),
+        component: () => import('../pages/Admin/Users.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/products',
-        component: () => import('../pages/Products.vue'),
+        component: () => import('../pages/Admin/Products.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/reports',
-        component: () => import('../pages/Reports.vue'),
+        component: () => import('../pages/Admin/Reports.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/settings',
-        component: () => import('../pages/Settings.vue'),
+        component: () => import('../pages/Admin/Settings.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/orders/list',
-        component: () => import('../pages/OrdersList.vue'),
+        component: () => import('../pages/Admin/OrdersList.vue'),
         meta: { layout: 'default' }
     },
     {
         path: '/orders/create',
-        component: () => import('../pages/OrdersCreate.vue'),
+        component: () => import('../pages/Admin/OrdersCreate.vue'),
         meta: { layout: 'default' }
     },
 ]
