@@ -20,42 +20,40 @@
         <ul class="navbar-nav mx-auto">
 
           <li class="nav-item">
-            <router-link to="/" class="nav-link">Home</router-link>
-          </li>
-
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Explore</a>
-            <ul class="dropdown-menu">
-              <li><router-link class="dropdown-item" to="/dia-diem">Địa điểm</router-link></li>
-              <li><router-link class="dropdown-item" to="/am-thuc">Ẩm thực</router-link></li>
-              <li><router-link class="dropdown-item" to="/giai-tri">Giải trí</router-link></li>
-            </ul>
+            <router-link to="/" class="nav-link">Trang Chủ</router-link>
           </li>
 
           <li class="nav-item">
             <router-link to="/tao-lich-trinh" class="nav-link fw-bold text-warning">
-              AI Planner 
+              Tạo lịch trình
             </router-link>
           </li>
 
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">My Trips</a>
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Địa điểm</a>
             <ul class="dropdown-menu">
-              <li><router-link class="dropdown-item" to="/lich-trinh-cua-toi">Lịch trình</router-link></li>
-              <li><router-link class="dropdown-item" to="/lich-su">Lịch sử</router-link></li>
+              <li><router-link class="dropdown-item" to="/dia-diem">Giải trí</router-link></li>
+              <li><router-link class="dropdown-item" to="/am-thuc">Ẩm thực</router-link></li>
+              <li><router-link class="dropdown-item" to="/giai-tri">Tâm linh</router-link></li>
             </ul>
           </li>
 
-          <li class="nav-item">
-            <router-link to="/reviews" class="nav-link">Community</router-link>
-          </li>
 
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Nhóm du ịch</a>
+          </li>
         </ul>
 
-        <!-- LOGIN BUTTON -->
-        <div class="d-flex align-items-center">
+        <!-- AUTH BUTTONS -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Đăng nhập -->
           <router-link to="/client-login" class="btn btn-login px-4">
             Đăng nhập
+          </router-link>
+
+          <!-- Đăng ký -->
+          <router-link to="/client-register" class="btn btn-register-outline px-4 rounded-pill">
+            Đăng ký
           </router-link>
         </div>
 
@@ -173,5 +171,18 @@ export default {
   color: #fff;
   font-weight: 700;
   font-size: 18px;
+}
+
+.btn-register-outline {
+  background: transparent;
+  color: #00c6ff;
+  border: 1.5px solid #00c6ff;
+  transition: all 0.3s ease;
+}
+
+.btn-register-outline:hover {
+  background: #00c6ff;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 198, 255, 0.4);
 }
 </style>
