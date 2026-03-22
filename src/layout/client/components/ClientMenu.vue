@@ -52,7 +52,7 @@
           </router-link>
 
           <!-- Đăng ký -->
-          <router-link to="/client-register" class="btn btn-register-outline px-4 rounded-pill">
+          <router-link to="/client-dangky" class="btn btn-register-outline px-4 rounded-pill">
             Đăng ký
           </router-link>
         </div>
