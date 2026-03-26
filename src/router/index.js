@@ -12,6 +12,16 @@ const routes = [
         meta: { layout: 'blank' }
     },
     {
+        path: '/admin-login',
+        component: () => import('../pages/Admin/DangNhap.vue'),
+        meta: { layout: 'blank' }
+    },
+    {
+        path: '/client-dangky',
+        component: () => import('../pages/Client/DangKy.vue'),
+        meta: { layout: 'blank' }
+    },
+    {
         path: '/dashboard',
         component: () => import('../pages/Admin/Dashboard.vue'),
         meta: { layout: 'default' }

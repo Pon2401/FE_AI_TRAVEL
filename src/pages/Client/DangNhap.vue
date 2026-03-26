@@ -86,7 +86,7 @@
                                 <div class="text-center mt-4">
                                     <p class="text-muted small mb-0">
                                         Bạn chưa có tài khoản?
-                                        <router-link to="/client/dang-ky"
+                                        <router-link to="/client-dangky"
                                             class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
                                             Đăng ký ngay
                                         </router-link>
