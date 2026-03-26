@@ -7,17 +7,17 @@ const routes = [
         meta: { layout: 'client' }
     },
     {
-        path: '/client-login',
+        path: '/client/dang-nhap',
         component: () => import('../pages/Client/DangNhap.vue'),
         meta: { layout: 'blank' }
     },
     {
-        path: '/admin-login',
+        path: '/admin/dang-nhap',
         component: () => import('../pages/Admin/DangNhap.vue'),
         meta: { layout: 'blank' }
     },
     {
-        path: '/client-dangky',
+        path: '/client/dang-ky',
         component: () => import('../pages/Client/DangKy.vue'),
         meta: { layout: 'blank' }
     },
@@ -55,6 +55,26 @@ const routes = [
         path: '/orders/create',
         component: () => import('../pages/Admin/OrdersCreate.vue'),
         meta: { layout: 'default' }
+    },
+    {
+        path: '/tao-lich-trinh',
+        component: () => import('../pages/Client/TaoLichTrinh.vue'),
+        meta: { layout: 'client' }
+    },
+    {
+        path: '/lich-trinh-cua-toi',
+        component: () => import('../pages/Client/LichTrinhCuaToi.vue'),
+        meta: { layout: 'client' }
+    },
+    {
+        path: '/nhom-du-lich',
+        component: () => import('../pages/Client/NhomDuLich.vue'),
+        meta: { layout: 'client' }
+    },
+    {
+        path: '/profile',
+        component: () => import('../pages/Client/profile.vue'),
+        meta: { layout: 'client' }
     },
 ]
 
