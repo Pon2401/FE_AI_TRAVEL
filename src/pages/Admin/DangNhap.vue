@@ -75,7 +75,7 @@ export default {
                     if (res.data.status) {
                         this.$toast.success(res.data.message);
                         localStorage.setItem('key_admin', res.data.token)
-                        this.$router.push('/admin')
+                        this.$router.push('/dashboard')
                     } else {
                         this.$toast.error(res.data.message);
                     }

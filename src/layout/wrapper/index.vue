@@ -1,17 +1,24 @@
 <template>
-  <div class="layout-wrapper">
+  <div
+    class="layout-wrapper"
+    :class="{ 'layout-collapsed': isSidebarCollapsed }"
+    :style="{ '--sidebar-width': sidebarWidth }"
+  >
     <!-- Header -->
     <Header />
 
     <!-- Main Container -->
     <div class="layout-container">
       <!-- Sidebar -->
-      <Sidebar />
+      <Sidebar
+        :is-collapsed="isSidebarCollapsed"
+        @toggle-collapse="toggleSidebar"
+      />
 
       <!-- Main Content -->
       <main class="main-content">
         <div class="page-wrapper">
-          <router-view></router-view>
+          <slot />
         </div>
 
         <!-- Footer -->
@@ -33,11 +40,27 @@ export default {
     Sidebar,
     Footer,
   },
+  data() {
+    return {
+      isSidebarCollapsed: false,
+    };
+  },
+  computed: {
+    sidebarWidth() {
+      return this.isSidebarCollapsed ? '80px' : '260px';
+    },
+  },
+  methods: {
+    toggleSidebar() {
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    },
+  },
 };
 </script>
 
 <style scoped>
 .layout-wrapper {
+  --sidebar-width: 260px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -47,12 +70,11 @@ export default {
 .layout-container {
   display: flex;
   flex-grow: 1;
-  margin-top: 70px;
 }
 
 .main-content {
   flex-grow: 1;
-  margin-left: 260px;
+  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 70px);
@@ -61,7 +83,7 @@ export default {
 
 .page-wrapper {
   flex-grow: 1;
-  padding: 28px;
+  padding: 18px 28px 28px;
   overflow-y: auto;
 }
 
@@ -72,7 +94,7 @@ export default {
   }
 
   .page-wrapper {
-    padding: 16px;
+    padding: 12px 16px 16px;
   }
 }
 

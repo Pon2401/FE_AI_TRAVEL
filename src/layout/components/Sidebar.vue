@@ -1,8 +1,8 @@
 <template>
   <aside class="sidebar" :class="{ 'sidebar-collapsed': isCollapsed }">
     <!-- Sidebar Header -->
-    <div class="sidebar-header">
-      <span v-if="!isCollapsed" class="text-white fw-bold">Menu</span>
+    <div class="sidebar-header" :class="{ collapsed: isCollapsed }">
+      <span class="sidebar-title">Menu</span>
       <button 
         class="btn-collapse" 
         @click="toggleSidebar"
@@ -30,12 +30,12 @@
         <!-- Users -->
         <li class="nav-item">
           <router-link 
-            to="/users" 
+            to="/admin/users" 
             class="nav-link"
             :class="{ active: isActive('/users') }"
           >
             <i class="bi bi-people"></i>
-            <span v-if="!isCollapsed" class="nav-label">Users</span>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý người dùng</span>
           </router-link>
         </li>
 
@@ -46,8 +46,8 @@
             class="nav-link"
             :class="{ active: isActive('/products') }"
           >
-            <i class="bi bi-box"></i>
-            <span v-if="!isCollapsed" class="nav-label">Products</span>
+            <i class="bi bi-person-badge"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý nhân viên</span>
           </router-link>
         </li>
 
@@ -114,15 +114,20 @@
 <script>
 export default {
   name: 'Sidebar',
+  props: {
+    isCollapsed: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
-      isCollapsed: false,
       showSubmenu: false,
     };
   },
   methods: {
     toggleSidebar() {
-      this.isCollapsed = !this.isCollapsed;
+      this.$emit('toggle-collapse');
     },
     toggleSubmenu() {
       this.showSubmenu = !this.showSubmenu;
@@ -165,23 +170,54 @@ export default {
   font-size: 0.9375rem;
 }
 
+.sidebar-header.collapsed {
+  justify-content: center;
+  padding: 16px 8px;
+}
+
+.sidebar-title {
+  color: #495057;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  opacity: 1;
+  max-width: 120px;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-width 0.2s ease, margin 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed .sidebar-title {
+  opacity: 0;
+  max-width: 0;
+  margin: 0;
+}
+
 .btn-collapse {
-  background: none;
-  border: none;
+  background: #eef2ff;
+  border: 1px solid #dbe4ff;
   color: #6c757d;
-  font-size: 1.25rem;
+  font-size: 1rem;
   cursor: pointer;
-  border-radius: 6px;
-  padding: 4px;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-collapse:hover {
-  background: #e9ecef;
+  background: #e0e7ff;
   color: #5a67d8;
+  border-color: #c7d2fe;
+}
+
+.sidebar.sidebar-collapsed .btn-collapse {
+  width: 36px;
+  height: 36px;
 }
 
 .sidebar-nav {

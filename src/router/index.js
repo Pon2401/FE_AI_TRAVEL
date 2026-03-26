@@ -27,7 +27,7 @@ const routes = [
         meta: { layout: 'default' }
     },
     {
-        path: '/users',
+        path: '/admin/users',
         component: () => import('../pages/Admin/Users.vue'),
         meta: { layout: 'default' }
     },
