@@ -1,8 +1,8 @@
 <template>
-    <div class="split-register-layout">
-        <div class="row g-0 min-vh-100">
+    <div class="split-register-layout overflow-hidden vh-100">
+        <div class="row g-0 h-100">
             <!-- Left Side: Image -->
-            <div class="col-lg-6 d-none d-lg-block register-image-side position-relative overflow-hidden">
+            <div class="col-lg-6 d-none d-lg-block register-image-side position-relative h-100">
                 <div class="overlay">
                     <div class="brand-content position-relative z-index-1">
                         <div class="mb-4 slide-in-up">
@@ -25,16 +25,17 @@
             </div>
 
             <!-- Right Side: Form -->
-            <div
-                class="col-lg-6 d-flex align-items-center justify-content-center p-4 p-md-5 bg-white position-relative">
-                <!-- Nút Home ở góc -->
-                <router-link to="/"
-                    class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center">
-                    <div class="icon-box me-2"><i class="fa-solid fa-house"></i></div>
-                    Trang chủ
-                </router-link>
+            <div class="col-lg-6 bg-white position-relative h-100" style="overflow-y: auto;">
+                <!-- Inner scroll flex container -->
+                <div class="d-flex flex-column justify-content-center min-vh-100 p-4 p-md-5">
+                    <!-- Nút Home ở góc -->
+                    <router-link to="/"
+                        class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center" style="z-index: 10;">
+                        <div class="icon-box me-2"><i class="fa-solid fa-house"></i></div>
+                        Trang chủ
+                    </router-link>
 
-                <div class="form-container w-100 slide-in-left" style="max-width: 500px;">
+                    <div class="form-container w-100 slide-in-left mx-auto" style="max-width: 500px;">
                     <div class="text-center mb-4">
                         <div class="logo-box mx-auto mb-2 shadow-sm">
                             <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
@@ -144,6 +145,7 @@
                                 class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập
                                 ngay</router-link>
                         </p>
+                    </div>
                     </div>
                 </div>
             </div>
