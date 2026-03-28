@@ -51,7 +51,6 @@
                     </div>
                     <div>
                       <p class="user-name">{{ item.ten }}</p>
-                      <p class="user-id">ID: #{{ item.id }}</p>
                     </div>
                   </div>
                 </td>

@@ -3,11 +3,7 @@
     <!-- Sidebar Header -->
     <div class="sidebar-header" :class="{ collapsed: isCollapsed }">
       <span class="sidebar-title">Menu</span>
-      <button 
-        class="btn-collapse" 
-        @click="toggleSidebar"
-        :title="isCollapsed ? 'Expand' : 'Collapse'"
-      >
+      <button class="btn-collapse" @click="toggleSidebar" :title="isCollapsed ? 'Expand' : 'Collapse'">
         <i class="bi" :class="isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
       </button>
     </div>
@@ -17,11 +13,7 @@
       <ul class="nav-menu">
         <!-- Dashboard -->
         <li class="nav-item">
-          <router-link 
-            to="/dashboard" 
-            class="nav-link"
-            :class="{ active: isActive('/dashboard') }"
-          >
+          <router-link to="/admin/dashboard" class="nav-link" :class="{ active: isActive('/dashboard') }">
             <i class="bi bi-house-door"></i>
             <span v-if="!isCollapsed" class="nav-label">Dashboard</span>
           </router-link>
@@ -29,50 +21,92 @@
 
         <!-- Users -->
         <li class="nav-item">
-          <router-link 
-            to="/admin/users" 
-            class="nav-link"
-            :class="{ active: isActive('/users') }"
-          >
+          <router-link to="/admin/users" class="nav-link" :class="{ active: isActive('/users') }">
             <i class="bi bi-people"></i>
             <span v-if="!isCollapsed" class="nav-label">Quản lý người dùng</span>
           </router-link>
         </li>
 
-        <!-- Products -->
-        <li class="nav-item">
-          <router-link 
-            to="/products" 
-            class="nav-link"
-            :class="{ active: isActive('/products') }"
-          >
-            <i class="bi bi-person-badge"></i>
-            <span v-if="!isCollapsed" class="nav-label">Quản lý nhân viên</span>
-          </router-link>
-        </li>
-
         <!-- Orders with submenu -->
         <li class="nav-item">
-          <a 
-            class="nav-link" 
-            @click="toggleSubmenu"
-            :class="{ active: showSubmenu }"
-          >
-            <i class="bi bi-cart"></i>
-            <span v-if="!isCollapsed" class="nav-label">Orders</span>
+          <a class="nav-link" @click="toggleSubmenu" :class="{ active: showSubmenu }">
+            <i class="bi bi-person-badge"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý nhân viên</span>
             <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
           </a>
           <ul v-if="showSubmenu && !isCollapsed" class="submenu">
             <li>
-              <router-link to="/orders/list" class="submenu-link">
-                <i class="bi bi-list-check"></i>
-                <span>List Orders</span>
+              <router-link to="/admin/phan-quyen" class="submenu-link">
+                <i class="bi bi-shield-lock"></i>
+                <span>Phân quyền</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/orders/create" class="submenu-link">
-                <i class="bi bi-plus-circle"></i>
-                <span>Create Order</span>
+              <router-link to="/admin/danh-sach-nhan-vien" class="submenu-link">
+                <i class="bi bi-people"></i>
+                <span>Danh sách nhân viên</span>
+              </router-link>
+            </li>
+          </ul>
+        </li>
+        <!-- Products -->
+        <li class="nav-item">
+          <router-link to="/admin/quan-ly-dia-diem-du-lich" class="nav-link" :class="{ active: isActive('/products') }">
+            <i class="bi bi-geo-alt"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý địa điểm du lịch</span>
+          </router-link>
+        </li>
+
+        <!-- Categories with submenu -->
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            @click="toggleCategorySubmenu"
+            :class="{ active: showCategorySubmenu || isCategoryMenuActive() }"
+          >
+            <i class="bi bi-tags"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý danh mục</span>
+            <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
+          </a>
+          <ul v-if="showCategorySubmenu && !isCollapsed" class="submenu">
+            <li>
+              <router-link
+                :to="{ path: '/admin/am-thuc', query: { category: 'am-thuc' } }"
+                class="submenu-link"
+                :class="{ 'router-link-active': isCategoryActive('am-thuc') }"
+              >
+                <i class="bi bi-cup-hot"></i>
+                <span>Ẩm thực</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                :to="{ path: '/admin/tam-linh', query: { category: 'tam-linh' } }"
+                class="submenu-link"
+                :class="{ 'router-link-active': isCategoryActive('tam-linh') }"
+              >
+                <i class="bi bi-bank"></i>
+                <span>Tâm linh</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                :to="{ path: '/admin/giai-tri', query: { category: 'giai-tri' } }"
+                class="submenu-link"
+                :class="{ 'router-link-active': isCategoryActive('giai-tri') }"
+              >
+                <i class="bi bi-controller"></i>
+                <span>Giải trí</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                :to="{ path: '/admin/check-in', query: { category: 'check-in' } }"
+                class="submenu-link"
+                :class="{ 'router-link-active': isCategoryActive('check-in') }"
+              >
+                <i class="bi bi-camera"></i>
+                <span>Check-in</span>
               </router-link>
             </li>
           </ul>
@@ -80,25 +114,16 @@
 
         <!-- Reports -->
         <li class="nav-item">
-          <router-link 
-            to="/reports" 
-            class="nav-link"
-            :class="{ active: isActive('/reports') }"
-          >
-            <i class="bi bi-bar-chart"></i>
-            <span v-if="!isCollapsed" class="nav-label">Reports</span>
+          <router-link to="/admin/quan-ly-danh-gia-phan-hoi" class="nav-link" :class="{ active: isActive('/reports') }">
+            <i class="bi bi-chat-square-text"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý đánh giá & phản hổi </span>
           </router-link>
         </li>
-
         <!-- Settings -->
         <li class="nav-item">
-          <router-link 
-            to="/settings" 
-            class="nav-link"
-            :class="{ active: isActive('/settings') }"
-          >
-            <i class="bi bi-gear"></i>
-            <span v-if="!isCollapsed" class="nav-label">Settings</span>
+          <router-link to="/admin/reports" class="nav-link" :class="{ active: isActive('/settings') }">
+            <i class="bi bi-bar-chart-line"></i>
+            <span v-if="!isCollapsed" class="nav-label">Báo cáo thống kê</span>
           </router-link>
         </li>
       </ul>
@@ -123,6 +148,7 @@ export default {
   data() {
     return {
       showSubmenu: false,
+      showCategorySubmenu: false,
     };
   },
   methods: {
@@ -132,8 +158,17 @@ export default {
     toggleSubmenu() {
       this.showSubmenu = !this.showSubmenu;
     },
+    toggleCategorySubmenu() {
+      this.showCategorySubmenu = !this.showCategorySubmenu;
+    },
     isActive(path) {
       return this.$route.path === path;
+    },
+    isCategoryActive(category) {
+      return this.$route.path === '/products' && this.$route.query.category === category;
+    },
+    isCategoryMenuActive() {
+      return this.$route.path === '/products' && ['am-thuc', 'tam-linh', 'giai-tri', 'check-in'].includes(this.$route.query.category);
     },
   },
 };
