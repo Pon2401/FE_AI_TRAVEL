@@ -1,150 +1,121 @@
 <template>
-    <div class="register-wrapper d-flex align-items-center justify-content-center min-vh-100 py-5">
-        <div class="register-overlay"></div>
-        <div class="container z-index-1">
-            <div class="row justify-content-center">
-                <div class="col-12 col-lg-10 col-xl-8">
-                    <div class="card register-card shadow-lg border-0 rounded-4 overflow-hidden">
-                        <div class="row g-0">
-                            <!-- Left Side: Image/Branding -->
-                            <div class="col-md-5 d-none d-md-flex align-items-center justify-content-center bg-branding position-relative overflow-hidden p-5 text-center">
-                                <div class="position-absolute top-0 start-0 w-100 h-100 bg-overlay"></div>
-                                <div class="position-relative z-index-1 text-white">
-                                    <div class="logo-icon bg-gradient-brand text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
-                                        style="width: 60px; height: 60px;">
-                                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
+    <div class="split-register-layout">
+        <div class="row g-0 min-vh-100">
+            <!-- Left Side: Image -->
+            <div class="col-lg-6 d-none d-lg-block register-image-side position-relative overflow-hidden">
+                <div class="overlay">
+                    <div class="brand-content position-relative z-index-1">
+                        <div class="mb-4 slide-in-up">
+                            <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold text-uppercase shadow-sm">
+                                <i class="fa-solid fa-plane-departure me-1"></i> Đà Nẵng Travel
+                            </span>
+                        </div>
+                        <h1 class="display-4 fw-black text-white mb-4 slide-in-up delay-1 lh-sm">
+                            Bắt đầu<br>
+                            <span class="text-info">hành trình mới</span><br>
+                            của bạn.
+                        </h1>
+                        <p class="fs-5 text-white opacity-75 slide-in-up delay-2 fw-light" style="max-width: 450px;">
+                            Tham gia cộng đồng yêu du lịch, lên kế hoạch thông minh và khám phá thế giới dễ dàng hơn bao giờ hết.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Form -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center p-4 p-md-5 bg-white position-relative">
+                <!-- Nút Home ở góc -->
+                <router-link to="/" class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center">
+                    <div class="icon-box me-2"><i class="fa-solid fa-house"></i></div>
+                    Trang chủ
+                </router-link>
+
+                <div class="form-container w-100 slide-in-left" style="max-width: 500px;">
+                    <div class="text-center mb-5">
+                        <div class="logo-box mx-auto mb-3 shadow-sm">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
                                             alt="Logo" class="logo-img" />
-                                    </div>
-                                    <h2 class="fw-bold mb-3 text-uppercase" style="letter-spacing: 1px;">AI Travel</h2>
-                                    <p class="opacity-75 fs-6 mb-0">Hành trình ngàn dặm bắt đầu từ một bước chân. Đăng ký ngay để trải nghiệm!</p>
-                                </div>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-2 fs-3">Tạo tài khoản mới</h2>
+                        <p class="text-secondary">Điền thông tin bên dưới để đăng ký thẻ thành viên</p>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Email -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-dark small mb-2">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{'has-error': errors.email}">
+                                <div class="input-icon"><i class="fa-regular fa-envelope"></i></div>
+                                <input v-model="user.email" type="email" placeholder="example@email.com" @input="errors.email = ''" />
                             </div>
+                            <span class="error-msg" v-if="errors.email"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.email }}</span>
+                        </div>
 
-                            <!-- Right Side: Form -->
-                            <div class="col-md-7">
-                                <div class="card-body p-4 p-sm-5">
-                                    <div class="text-center mb-4 d-md-none">
-                                        <div class="logo-icon bg-gradient-brand text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 60px; height: 60px;">
-                                            <i class="fa-solid fa-earth-americas fs-2"></i>
-                                        </div>
-                                    </div>
-
-                                    <div class="text-center mb-4">
-                                        <h3 class="fw-bold text-uppercase mb-1" style="letter-spacing: 0.5px; color: #2c3e50;">Tạo Tài Khoản Mới</h3>
-                                        <p class="text-muted small">Hãy điền thông tin bên dưới để tham gia với CDIO 4</p>
-                                    </div>
-
-                                    <div class="form-body mt-4">
-                                        <div class="row g-3">
-                                            <!-- Row 1: Tên & Email -->
-                                            <div class="col-sm-6">
-                                                <label class="form-label fw-semibold text-secondary small">Họ và tên <span class="text-danger">*</span></label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.ten }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-3">
-                                                        <i class="fa-regular fa-user"></i>
-                                                    </span>
-                                                    <input v-model="user.ten" type="text" class="form-control border-0 bg-transparent fs-6" :class="{ 'is-invalid': errors.ten }" placeholder="Nguyễn Văn A">
-                                                </div>
-                                                <div v-if="errors.ten" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.ten }}</div>
-                                            </div>
-
-                                            <div class="col-sm-6">
-                                                <label class="form-label fw-semibold text-secondary small">Email <span class="text-danger">*</span></label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.email }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-3">
-                                                        <i class="fa-regular fa-envelope"></i>
-                                                    </span>
-                                                    <input v-model="user.email" type="email" class="form-control border-0 bg-transparent fs-6" :class="{ 'is-invalid': errors.email }" placeholder="email@example.com">
-                                                </div>
-                                                <div v-if="errors.email" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}</div>
-                                            </div>
-
-                                            <!-- Row 2: SĐT, CCCD, Ngày sinh -->
-                                            <div class="col-sm-4">
-                                                <label class="form-label fw-semibold text-secondary small">Số điện thoại</label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.so_dien_thoai }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-2">
-                                                        <i class="fa-solid fa-phone fs-7"></i>
-                                                    </span>
-                                                    <input v-model="user.so_dien_thoai" type="text" class="form-control border-0 bg-transparent px-1 fs-6" :class="{ 'is-invalid': errors.so_dien_thoai }" placeholder="09xx">
-                                                </div>
-                                                <div v-if="errors.so_dien_thoai" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.so_dien_thoai }}</div>
-                                            </div>
-
-                                            <div class="col-sm-4">
-                                                <label class="form-label fw-semibold text-secondary small">Số CCCD</label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.cccd }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-2">
-                                                        <i class="fa-regular fa-id-card fs-7"></i>
-                                                    </span>
-                                                    <input v-model="user.cccd" type="text" class="form-control border-0 bg-transparent px-1 fs-6" :class="{ 'is-invalid': errors.cccd }" placeholder="0012...">
-                                                </div>
-                                                <div v-if="errors.cccd" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.cccd }}</div>
-                                            </div>
-
-                                            <div class="col-sm-4">
-                                                <label class="form-label fw-semibold text-secondary small">Ngày Sinh</label>
-                                                <input v-model="user.ngay_sinh" type="date" class="form-control bg-light border-0 rounded-3 px-3 fs-6 transition-all" :class="{ 'is-invalid border-danger border': errors.ngay_sinh }" style="height: 38px;" min="1900-01-01" max="2025-12-31">
-                                                <div v-if="errors.ngay_sinh" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.ngay_sinh }}</div>
-                                            </div>
-
-                                            <!-- Row 3: Mật khẩu -->
-                                            <div class="col-sm-6 mt-4">
-                                                <label class="form-label fw-semibold text-secondary small">Mật khẩu <span class="text-danger">*</span></label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.mat_khau }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-3">
-                                                        <i class="fa-solid fa-lock"></i>
-                                                    </span>
-                                                    <input v-model="user.mat_khau" type="password" class="form-control border-0 bg-transparent fs-6" :class="{ 'is-invalid': errors.mat_khau }" placeholder="••••••••">
-                                                </div>
-                                                <div v-if="errors.mat_khau" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.mat_khau }}</div>
-                                            </div>
-
-                                            <div class="col-sm-6 mt-4">
-                                                <label class="form-label fw-semibold text-secondary small">Xác nhận MK <span class="text-danger">*</span></label>
-                                                <div class="input-group bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.re_password }">
-                                                    <span class="input-group-text border-0 bg-transparent text-primary px-3">
-                                                        <i class="fa-solid fa-check-double"></i>
-                                                    </span>
-                                                    <input v-model="user.re_password" type="password" class="form-control border-0 bg-transparent fs-6" :class="{ 'is-invalid': errors.re_password }" placeholder="••••••••">
-                                                </div>
-                                                <div v-if="errors.re_password" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.re_password }}</div>
-                                            </div>
-
-                                            <!-- Row 4: Điều khoản -->
-                                            <div class="col-12 mt-4">
-                                                <div class="form-check">
-                                                    <input v-model="agreeTerms" class="form-check-input border-secondary" type="checkbox" id="termsCheck">
-                                                    <label class="form-check-label text-muted small ms-1" for="termsCheck" style="line-height: 1.4;">
-                                                        Tôi đồng ý với <a href="#" class="text-primary text-decoration-none">Điều khoản dịch vụ</a> và <a href="#" class="text-primary text-decoration-none">Chính sách bảo mật</a> của AI Travel.
-                                                    </label>
-                                                </div>
-                                                <div v-if="errors.terms" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.terms }}</div>
-                                            </div>
-
-                                            <!-- Submit -->
-                                            <div class="col-12 mt-4">
-                                                <button @click="dangKyTaiKhoan()" class="btn btn-primary w-100 rounded-3 fw-bold btn-register shadow-sm py-2 fs-6 pb-2 pt-2 text-uppercase" style="letter-spacing: 1px;">
-                                                    <i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Ngay
-                                                </button>
-                                            </div>
-                                        </div> <!-- ends row g-3 -->
-
-                                        <div class="text-center mt-4">
-                                            <p class="text-muted small mb-0">Bạn đã có tài khoản?
-                                                <router-link to="/client/dang-nhap" class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
-                                                    Đăng nhập tại đây
-                                                </router-link>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                        <!-- Số điện thoại -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-dark small mb-2">Số điện thoại <span class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{'has-error': errors.so_dien_thoai}">
+                                <div class="input-icon"><i class="fa-solid fa-phone"></i></div>
+                                <input v-model="user.so_dien_thoai" type="text" placeholder="09xx xxx xxx" @input="errors.so_dien_thoai = ''" />
                             </div>
+                            <span class="error-msg" v-if="errors.so_dien_thoai"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.so_dien_thoai }}</span>
+                        </div>
+
+                        <!-- Mật khẩu -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-dark small mb-2">Mật khẩu <span class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{'has-error': errors.mat_khau}">
+                                <div class="input-icon"><i class="fa-solid fa-lock"></i></div>
+                                <input v-model="user.mat_khau" type="password" placeholder="••••••••" @input="errors.mat_khau = ''" />
+                            </div>
+                            <span class="error-msg" v-if="errors.mat_khau"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.mat_khau }}</span>
+                        </div>
+
+                        <!-- Xác nhận MK -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-dark small mb-2">Xác nhận MK <span class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{'has-error': errors.re_password}">
+                                <div class="input-icon"><i class="fa-solid fa-circle-check"></i></div>
+                                <input v-model="user.re_password" type="password" placeholder="••••••••" @input="errors.re_password = ''" />
+                            </div>
+                            <span class="error-msg" v-if="errors.re_password"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.re_password }}</span>
                         </div>
                     </div>
+
+                    <!-- Điều khoản -->
+                    <div class="mt-4 mb-4">
+                        <div class="form-check custom-check-modern d-flex align-items-center">
+                            <input v-model="agreeTerms" class="form-check-input mt-0 me-3" type="checkbox" id="terms" @change="errors.terms = ''">
+                            <label class="form-check-label text-muted small" for="terms" style="cursor: pointer;">
+                                Tôi đồng ý với <a href="#" class="text-primary fw-bold text-decoration-none">Điều khoản dịch vụ</a> và <a href="#" class="text-primary fw-bold text-decoration-none">Chính sách bảo mật</a>
+                            </label>
+                        </div>
+                        <span class="error-msg mt-2 block" v-if="errors.terms"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.terms }}</span>
+                    </div>
+
+                    <!-- Nút Đăng ký -->
+                    <button @click="dangKyTaiKhoan" :disabled="loading" class="btn btn-primary-gradient w-100 btn-lg mb-4 shadow-sm hover-lift d-flex align-items-center justify-content-center">
+                        <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...</span>
+                        <span v-else class="fw-bold fs-6"><i class="fa-solid fa-user-plus me-2"></i> Đăng ký tài khoản</span>
+                    </button>
+
+                    <!-- OR -->
+                    <div class="divider d-flex align-items-center my-4">
+                        <div class="line flex-grow-1"></div>
+                        <span class="px-3 text-muted small fw-medium text-uppercase tracking-wide">Hoặc tham gia bằng</span>
+                        <div class="line flex-grow-1"></div>
+                    </div>
                     
-                    <div class="text-center mt-4 text-white-50 small" style="position: relative; z-index: 1;">
-                        <p>&copy; 2026 CDIO 4 - AI Travel System.</p>
+                    <button class="btn btn-social w-100 btn-lg text-dark d-flex align-items-center justify-content-center hover-lift">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22" class="me-3"/>
+                        <span class="fw-semibold fs-6">Đăng ký bằng Google</span>
+                    </button>
+
+                    <!-- Trở về Đăng nhập -->
+                    <div class="text-center mt-5">
+                        <p class="text-secondary">Đã có tài khoản? 
+                            <router-link to="/client/dang-nhap" class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập ngay</router-link>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -157,9 +128,14 @@ import axios from 'axios'
 export default {
     data() {
         return {
-            user: {},
+            user: {
+                email: '',
+                so_dien_thoai: '',
+                mat_khau: '',
+                re_password: ''
+            },
             agreeTerms: false,
-            errors: {},       // { ten, email, mat_khau, re_password, so_dien_thoai, cccd, ngay_sinh, terms }
+            errors: {},
             loading: false,
         }
     },
@@ -168,17 +144,19 @@ export default {
             this.errors = {};
         },
 
-        /** Kiểm tra client-side trước khi gửi API */
         validateClient() {
             this.clearErrors();
             let valid = true;
 
-            if (!this.user.ten?.trim()) {
-                this.errors.ten = 'Vui lòng nhập họ tên.';
-                valid = false;
-            }
             if (!this.user.email?.trim()) {
                 this.errors.email = 'Vui lòng nhập địa chỉ email.';
+                valid = false;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.user.email)) {
+                this.errors.email = 'Email không hợp lệ.';
+                valid = false;
+            }
+            if (!this.user.so_dien_thoai?.trim()) {
+                this.errors.so_dien_thoai = 'Vui lòng nhập số điện thoại.';
                 valid = false;
             }
             if (!this.user.mat_khau) {
@@ -196,7 +174,7 @@ export default {
                 valid = false;
             }
             if (!this.agreeTerms) {
-                this.errors.terms = 'Bạn cần đồng ý với điều khoản dịch vụ.';
+                this.errors.terms = 'Bạn cần đồng ý với điều khoản.';
                 valid = false;
             }
             return valid;
@@ -206,22 +184,19 @@ export default {
             if (!this.validateClient()) return;
 
             this.loading = true;
-            // Không gửi re_password lên server
             const { re_password, ...payload } = this.user;
 
             axios.post('http://127.0.0.1:8000/api/client/dang-ky', payload)
                 .then((res) => {
                     if (res.data.status) {
                         this.$toast.success(res.data.message);
-                        this.$router.push('/client-login');
+                        this.$router.push('/client/dang-nhap');
                     } else {
-                        // HTTP 200 nhưng status=false (không thường xảy ra với Request mới)
                         this.$toast.error(res.data.message || 'Đăng ký thất bại!');
                     }
                 })
                 .catch((error) => {
                     if (error.response?.status === 422) {
-                        // Lỗi validation từ RegisterKhachHangRequest
                         const apiErrors = error.response.data.errors || {};
                         this.errors = { ...this.errors, ...apiErrors };
                         this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
@@ -240,117 +215,267 @@ export default {
 </script>
 
 <style scoped>
-.register-wrapper {
-    position: relative;
-    background: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
-    background-size: cover;
-    background-attachment: fixed;
-}
-
-.register-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Gradient chéo */
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(14, 165, 233, 0.6) 100%);
-    backdrop-filter: blur(5px);
-}
-
-.z-index-1 {
-    z-index: 1;
-}
-
-.register-card {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(20px);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.register-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.2) !important;
-}
-
-.bg-branding {
-    background: url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070&auto=format&fit=crop') center center;
-    background-size: cover;
-}
-
-.bg-overlay {
-    background: linear-gradient(to bottom, rgba(14, 165, 233, 0.6), rgba(15, 23, 42, 0.9));
-}
-
-.bg-gradient-brand {
-    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-}
-
-.input-group.transition-all {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.08);
-}
-
-.input-group.transition-all:focus-within {
-    background: #fff !important;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 0.25rem rgba(14, 165, 233, 0.15);
-}
-
-.form-control.transition-all {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.08) !important;
-}
-
-.form-control.transition-all:focus {
-    background: #fff !important;
-    border-color: #0ea5e9 !important;
-    box-shadow: 0 0 0 0.25rem rgba(14, 165, 233, 0.15);
-    outline: none;
-}
-
-.input-group .form-control:focus {
-    box-shadow: none;
-}
-
-.btn-register {
-    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-    border: none;
-    transition: all 0.3s ease;
-}
-
-.btn-register:hover {
-    background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(37, 99, 235, 0.3) !important;
-}
-
-.hover-underline:hover {
-    text-decoration: underline !important;
-}
-
-.logo-icon {
-    animation: pulse-glow 2s infinite;
-}
-.logo-wrapper {
-    animation: bounce-soft 3s ease-in-out infinite;
-}
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 .logo-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   border-radius: 50%;
 }
-
-@keyframes pulse-glow {
-    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+.split-register-layout {
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff;
+    overflow-x: hidden;
 }
 
-/* Tinh chỉnh size icon */
-.fs-7 {
+/* === LEFT SIDE === */
+.register-image-side {
+    background: url('https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
+    background-size: cover;
+}
+
+.register-image-side .overlay {
+    position: absolute;
+    inset: 0;
+    /* Soft dark gradient that blends into branding blue */
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(14, 165, 233, 0.9) 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: 5rem 4rem;
+}
+
+.fw-black {
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+/* === RIGHT SIDE (FORM) === */
+.form-container {
+    max-width: 440px;
+    margin: 0 auto;
+}
+
+.logo-box {
+    width: 100px;
+    height: 100px;
+    border-radius: 16px;
+    /* background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* transform: rotate(-10deg); */
+}
+
+/* Custom Input Modern */
+.custom-input-group {
+    display: flex;
+    align-items: center;
+    background-color: #f8fafc;
+    border: 1.5px solid #f1f5f9;
+    border-radius: 14px;
+    padding: 4px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-input-group:focus-within {
+    background-color: #ffffff;
+    border-color: #0ea5e9;
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.1);
+    transform: translateY(-1px);
+}
+
+.custom-input-group.has-error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+.input-icon {
+    width: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    transition: color 0.3s;
+}
+
+.custom-input-group:focus-within .input-icon {
+    color: #0ea5e9;
+}
+.custom-input-group.has-error .input-icon {
+    color: #ef4444;
+}
+
+.custom-input-group input {
+    border: none;
+    background: transparent;
+    padding: 12px 16px 12px 0;
+    width: 100%;
+    outline: none;
+    font-size: 1rem;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.custom-input-group input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.error-msg {
+    color: #ef4444;
     font-size: 0.85rem;
+    margin-top: 6px;
+    display: block;
+    font-weight: 500;
+}
+
+/* Checkbox */
+.custom-check-modern .form-check-input {
+    width: 1.4em;
+    height: 1.4em;
+    border: 2px solid #cbd5e1;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.custom-check-modern .form-check-input:checked {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+.custom-check-modern .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+}
+
+/* Buttons */
+.btn-primary-gradient {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary-gradient:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3) !important;
+}
+
+.btn-social {
+    background-color: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    padding: 14px 24px;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-social:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Home Button */
+.btn-home {
+    background: #ffffff;
+    color: #475569;
+    padding: 6px 16px 6px 6px;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-home .icon-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.btn-home:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0ea5e9;
+}
+.btn-home:hover .icon-box {
+    background: #e0f2fe;
+    color: #0ea5e9;
+}
+
+.hover-lift {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hover-lift:hover {
+    transform: translateY(-3px);
+}
+
+.hover-link {
+    position: relative;
+    padding-bottom: 2px;
+}
+.hover-link::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #0ea5e9;
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-out;
+}
+.hover-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}
+
+/* Miscellaneous */
+.divider .line {
+    height: 1px;
+    background-color: #e2e8f0;
+}
+
+.tracking-wide {
+    letter-spacing: 0.05em;
+}
+
+/* Animations */
+.slide-in-up {
+    animation: slideInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    opacity: 0;
+    transform: translateY(40px);
+}
+.slide-in-left {
+    animation: slideInLeft 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    opacity: 0;
+    transform: translateX(40px);
+}
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+
+@keyframes slideInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 991.98px) {
+    .form-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
 }
 </style>
