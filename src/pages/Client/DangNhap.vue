@@ -40,26 +40,32 @@
                             <div class="form-body">
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Email</label>
-                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all">
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.email }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-regular fa-envelope"></i>
                                         </span>
                                         <input v-model="thong_tin_dang_nhap.email" type="email"
                                             class="form-control border-0 bg-transparent fs-6"
-                                            placeholder="Nhập địa chỉ email của bạn">
+                                            :class="{ 'is-invalid': errors.email }"
+                                            placeholder="Nhập địa chỉ email của bạn"
+                                            @input="errors.email = ''">
                                     </div>
+                                    <div v-if="errors.email" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}</div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Mật khẩu</label>
-                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all">
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.mat_khau }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-solid fa-lock-open text-primary opacity-75"></i>
                                         </span>
                                         <input v-model="thong_tin_dang_nhap.mat_khau" @keydown.enter="dangNhap()"
                                             type="password" class="form-control border-0 bg-transparent fs-6"
-                                            placeholder="Nhập mật khẩu">
+                                            :class="{ 'is-invalid': errors.mat_khau }"
+                                            placeholder="Nhập mật khẩu"
+                                            @input="errors.mat_khau = ''">
                                     </div>
+                                    <div v-if="errors.mat_khau" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.mat_khau }}</div>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -77,9 +83,15 @@
                                 </div>
 
                                 <div class="d-grid mt-4">
-                                    <button v-on:click="dangNhap()"
+                                    <button @click="dangNhap()" :disabled="loading"
                                         class="btn btn-primary btn-lg rounded-3 fw-bold btn-login shadow-sm">
-                                        Đăng Nhập <i class="fa-solid fa-arrow-right ms-2 fs-6 align-middle"></i>
+                                        <span v-if="loading">
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Đang đăng nhập...
+                                        </span>
+                                        <span v-else>
+                                            Đăng Nhập <i class="fa-solid fa-arrow-right ms-2 fs-6 align-middle"></i>
+                                        </span>
                                     </button>
                                 </div>
 
@@ -111,23 +123,62 @@ import axios from 'axios';
 export default {
     data() {
         return {
-            thong_tin_dang_nhap: {}
+            thong_tin_dang_nhap: {},
+            errors: {}, // { email, mat_khau }
+            loading: false,
         }
     },
     methods: {
+        validateClient() {
+            this.errors = {};
+            let valid = true;
+            if (!this.thong_tin_dang_nhap.email?.trim()) {
+                this.errors.email = 'Vui lòng nhập địa chỉ email.';
+                valid = false;
+            }
+            if (!this.thong_tin_dang_nhap.mat_khau) {
+                this.errors.mat_khau = 'Vui lòng nhập mật khẩu.';
+                valid = false;
+            } else if (this.thong_tin_dang_nhap.mat_khau.length < 6) {
+                this.errors.mat_khau = 'Mật khẩu phải có ít nhất 6 ký tự.';
+                valid = false;
+            }
+            return valid;
+        },
+
         dangNhap() {
+            if (!this.validateClient()) return;
+
+            this.loading = true;
             axios.post('http://127.0.0.1:8000/api/client/dang-nhap', this.thong_tin_dang_nhap)
                 .then((res) => {
                     if (res.data.status) {
+                        localStorage.setItem('client_token', res.data.token);
+                        localStorage.setItem('client_ten', res.data.ten || '');
                         this.$toast.success(res.data.message);
-                        console.log(res.data.data);
-
-                        localStorage.setItem('key_client', res.data.token);
-
-                        this.$router.push('/');
+                        this.$router.replace('/').catch(err => {
+                            console.error('Router push error:', err);
+                            window.location.href = '/';
+                        });
                     } else {
+                        // Lỗi nghiệp vụ: tài khoản sai / bị khóa (HTTP 200)
                         this.$toast.error(res.data.message);
                     }
+                })
+                .catch((error) => {
+                    if (error.response?.status === 422) {
+                        // Lỗi format từ LoginKhachHangRequest
+                        const apiErrors = error.response.data.errors || {};
+                        this.errors = { ...this.errors, ...apiErrors };
+                        this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
+                    } else if (error.response?.status === 500) {
+                        this.$toast.error('Lỗi máy chủ, vui lòng thử lại sau.');
+                    } else {
+                        this.$toast.error('Không thể kết nối đến máy chủ!');
+                    }
+                })
+                .finally(() => {
+                    this.loading = false;
                 });
         }
     },
