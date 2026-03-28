@@ -6,8 +6,9 @@
                 <div class="overlay">
                     <div class="brand-content position-relative z-index-1">
                         <div class="mb-4 slide-in-up">
-                            <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold text-uppercase shadow-sm">
-                                <i class="fa-solid fa-plane-departure me-1"></i> Đà Nẵng Travel
+                            <span
+                                class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold text-uppercase shadow-sm">
+                                <i class="fa-solid fa-plane-departure me-1"></i> DaNang Travel
                             </span>
                         </div>
                         <h1 class="display-4 fw-black text-white mb-4 slide-in-up delay-1 lh-sm">
@@ -16,105 +17,132 @@
                             của bạn.
                         </h1>
                         <p class="fs-5 text-white opacity-75 slide-in-up delay-2 fw-light" style="max-width: 450px;">
-                            Tham gia cộng đồng yêu du lịch, lên kế hoạch thông minh và khám phá thế giới dễ dàng hơn bao giờ hết.
+                            Tham gia cộng đồng yêu du lịch, lên kế hoạch thông minh và khám phá thế giới dễ dàng hơn bao
+                            giờ hết.
                         </p>
                     </div>
                 </div>
             </div>
 
             <!-- Right Side: Form -->
-            <div class="col-lg-6 d-flex align-items-center justify-content-center p-4 p-md-5 bg-white position-relative">
+            <div
+                class="col-lg-6 d-flex align-items-center justify-content-center p-4 p-md-5 bg-white position-relative">
                 <!-- Nút Home ở góc -->
-                <router-link to="/" class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center">
+                <router-link to="/"
+                    class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center">
                     <div class="icon-box me-2"><i class="fa-solid fa-house"></i></div>
                     Trang chủ
                 </router-link>
 
                 <div class="form-container w-100 slide-in-left" style="max-width: 500px;">
-                    <div class="text-center mb-5">
-                        <div class="logo-box mx-auto mb-3 shadow-sm">
+                    <div class="text-center mb-4">
+                        <div class="logo-box mx-auto mb-2 shadow-sm">
                             <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
-                                            alt="Logo" class="logo-img" />
+                                alt="Logo" class="logo-img" />
                         </div>
-                        <h2 class="fw-bold text-dark mb-2 fs-3">Tạo tài khoản mới</h2>
-                        <p class="text-secondary">Điền thông tin bên dưới để đăng ký thẻ thành viên</p>
+                        <h2 class="fw-bold text-dark mb-1 fs-4">Tạo tài khoản mới</h2>
+                        <p class="text-secondary small mb-0">Điền thông tin bên dưới để đăng ký thẻ thành viên</p>
                     </div>
 
-                    <div class="row g-4">
+                    <div class="row g-3">
                         <!-- Email -->
                         <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Địa chỉ Email <span class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{'has-error': errors.email}">
+                            <label class="form-label fw-semibold text-dark small mb-2">Địa chỉ Email <span
+                                    class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{ 'has-error': errors.email }">
                                 <div class="input-icon"><i class="fa-regular fa-envelope"></i></div>
-                                <input v-model="user.email" type="email" placeholder="example@email.com" @input="errors.email = ''" />
+                                <input v-model="user.email" type="email" placeholder="example@email.com"
+                                    @input="errors.email = ''" />
                             </div>
-                            <span class="error-msg" v-if="errors.email"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.email }}</span>
+                            <span class="error-msg" v-if="errors.email"><i
+                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.email }}</span>
                         </div>
 
                         <!-- Số điện thoại -->
                         <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Số điện thoại <span class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{'has-error': errors.so_dien_thoai}">
+                            <label class="form-label fw-semibold text-dark small mb-2">Số điện thoại <span
+                                    class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{ 'has-error': errors.so_dien_thoai }">
                                 <div class="input-icon"><i class="fa-solid fa-phone"></i></div>
-                                <input v-model="user.so_dien_thoai" type="text" placeholder="09xx xxx xxx" @input="errors.so_dien_thoai = ''" />
+                                <input v-model="user.so_dien_thoai" type="text" placeholder="09xx xxx xxx"
+                                    @input="errors.so_dien_thoai = ''" />
                             </div>
-                            <span class="error-msg" v-if="errors.so_dien_thoai"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.so_dien_thoai }}</span>
+                            <span class="error-msg" v-if="errors.so_dien_thoai"><i
+                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.so_dien_thoai }}</span>
                         </div>
 
                         <!-- Mật khẩu -->
                         <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Mật khẩu <span class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{'has-error': errors.mat_khau}">
+                            <label class="form-label fw-semibold text-dark small mb-2">Mật khẩu <span
+                                    class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{ 'has-error': errors.mat_khau }">
                                 <div class="input-icon"><i class="fa-solid fa-lock"></i></div>
-                                <input v-model="user.mat_khau" type="password" placeholder="••••••••" @input="errors.mat_khau = ''" />
+                                <input v-model="user.mat_khau" type="password" placeholder="••••••••"
+                                    @input="errors.mat_khau = ''" />
                             </div>
-                            <span class="error-msg" v-if="errors.mat_khau"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.mat_khau }}</span>
+                            <span class="error-msg" v-if="errors.mat_khau"><i
+                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.mat_khau }}</span>
                         </div>
 
                         <!-- Xác nhận MK -->
                         <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Xác nhận MK <span class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{'has-error': errors.re_password}">
+                            <label class="form-label fw-semibold text-dark small mb-2">Xác nhận MK <span
+                                    class="text-danger">*</span></label>
+                            <div class="custom-input-group" :class="{ 'has-error': errors.re_password }">
                                 <div class="input-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                <input v-model="user.re_password" type="password" placeholder="••••••••" @input="errors.re_password = ''" />
+                                <input v-model="user.re_password" type="password" placeholder="••••••••"
+                                    @input="errors.re_password = ''" />
                             </div>
-                            <span class="error-msg" v-if="errors.re_password"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.re_password }}</span>
+                            <span class="error-msg" v-if="errors.re_password"><i
+                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.re_password }}</span>
                         </div>
                     </div>
 
                     <!-- Điều khoản -->
-                    <div class="mt-4 mb-4">
+                    <div class="mt-3 mb-3">
                         <div class="form-check custom-check-modern d-flex align-items-center">
-                            <input v-model="agreeTerms" class="form-check-input mt-0 me-3" type="checkbox" id="terms" @change="errors.terms = ''">
+                            <input v-model="agreeTerms" class="form-check-input mt-0 me-3" type="checkbox" id="terms"
+                                @change="errors.terms = ''">
                             <label class="form-check-label text-muted small" for="terms" style="cursor: pointer;">
-                                Tôi đồng ý với <a href="#" class="text-primary fw-bold text-decoration-none">Điều khoản dịch vụ</a> và <a href="#" class="text-primary fw-bold text-decoration-none">Chính sách bảo mật</a>
+                                Tôi đồng ý với <a href="#" class="text-primary fw-bold text-decoration-none">Điều khoản
+                                    dịch vụ</a> và <a href="#" class="text-primary fw-bold text-decoration-none">Chính
+                                    sách bảo mật</a>
                             </label>
                         </div>
-                        <span class="error-msg mt-2 block" v-if="errors.terms"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.terms }}</span>
+                        <span class="error-msg mt-2 block" v-if="errors.terms"><i
+                                class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.terms }}</span>
                     </div>
 
                     <!-- Nút Đăng ký -->
-                    <button @click="dangKyTaiKhoan" :disabled="loading" class="btn btn-primary-gradient w-100 btn-lg mb-4 shadow-sm hover-lift d-flex align-items-center justify-content-center">
-                        <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...</span>
-                        <span v-else class="fw-bold fs-6"><i class="fa-solid fa-user-plus me-2"></i> Đăng ký tài khoản</span>
+                    <button @click="dangKyTaiKhoan" :disabled="loading"
+                        class="btn btn-primary-gradient w-100 btn-lg mb-3 shadow-sm hover-lift d-flex align-items-center justify-content-center">
+                        <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử
+                            lý...</span>
+                        <span v-else class="fw-bold fs-6"><i class="fa-solid fa-user-plus me-2"></i> Đăng ký tài
+                            khoản</span>
                     </button>
 
                     <!-- OR -->
-                    <div class="divider d-flex align-items-center my-4">
+                    <div class="divider d-flex align-items-center my-3">
                         <div class="line flex-grow-1"></div>
-                        <span class="px-3 text-muted small fw-medium text-uppercase tracking-wide">Hoặc tham gia bằng</span>
+                        <span class="px-3 text-muted small fw-medium text-uppercase tracking-wide">Hoặc tham gia
+                            bằng</span>
                         <div class="line flex-grow-1"></div>
                     </div>
-                    
-                    <button class="btn btn-social w-100 btn-lg text-dark d-flex align-items-center justify-content-center hover-lift">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22" class="me-3"/>
+
+                    <button
+                        class="btn btn-social w-100 btn-lg text-dark d-flex align-items-center justify-content-center hover-lift">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22"
+                            class="me-3" />
                         <span class="fw-semibold fs-6">Đăng ký bằng Google</span>
                     </button>
 
                     <!-- Trở về Đăng nhập -->
-                    <div class="text-center mt-5">
-                        <p class="text-secondary">Đã có tài khoản? 
-                            <router-link to="/client/dang-nhap" class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập ngay</router-link>
+                    <div class="text-center mt-4">
+                        <p class="text-secondary small">Đã có tài khoản?
+                            <router-link to="/client/dang-nhap"
+                                class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập
+                                ngay</router-link>
                         </p>
                     </div>
                 </div>
@@ -198,7 +226,11 @@ export default {
                 .catch((error) => {
                     if (error.response?.status === 422) {
                         const apiErrors = error.response.data.errors || {};
-                        this.errors = { ...this.errors, ...apiErrors };
+                        const parsedErrors = {};
+                        for (const key in apiErrors) {
+                            parsedErrors[key] = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+                        }
+                        this.errors = { ...this.errors, ...parsedErrors };
                         this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
                     } else if (error.response?.status === 500) {
                         this.$toast.error('Lỗi máy chủ, vui lòng thử lại sau.');
@@ -216,12 +248,14 @@ export default {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 .logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
 }
+
 .split-register-layout {
     font-family: 'Inter', sans-serif;
     background-color: #ffffff;
@@ -256,8 +290,8 @@ export default {
 }
 
 .logo-box {
-    width: 100px;
-    height: 100px;
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
     /* background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); */
     display: flex;
@@ -272,8 +306,8 @@ export default {
     align-items: center;
     background-color: #f8fafc;
     border: 1.5px solid #f1f5f9;
-    border-radius: 14px;
-    padding: 4px;
+    border-radius: 12px;
+    padding: 2px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -290,7 +324,7 @@ export default {
 }
 
 .input-icon {
-    width: 48px;
+    width: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -302,6 +336,7 @@ export default {
 .custom-input-group:focus-within .input-icon {
     color: #0ea5e9;
 }
+
 .custom-input-group.has-error .input-icon {
     color: #ef4444;
 }
@@ -309,7 +344,7 @@ export default {
 .custom-input-group input {
     border: none;
     background: transparent;
-    padding: 12px 16px 12px 0;
+    padding: 8px 16px 8px 0;
     width: 100%;
     outline: none;
     font-size: 1rem;
@@ -353,8 +388,8 @@ export default {
     background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: white;
     border: none;
-    padding: 16px 24px;
-    border-radius: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -366,8 +401,8 @@ export default {
 .btn-social {
     background-color: #ffffff;
     border: 1.5px solid #e2e8f0;
-    padding: 14px 24px;
-    border-radius: 14px;
+    padding: 10px 24px;
+    border-radius: 12px;
     transition: all 0.3s ease;
 }
 
@@ -375,7 +410,7 @@ export default {
     background-color: #f8fafc;
     border-color: #cbd5e1;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* Home Button */
@@ -408,6 +443,7 @@ export default {
     border-color: #cbd5e1;
     color: #0ea5e9;
 }
+
 .btn-home:hover .icon-box {
     background: #e0f2fe;
     color: #0ea5e9;
@@ -416,6 +452,7 @@ export default {
 .hover-lift {
     transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 .hover-lift:hover {
     transform: translateY(-3px);
 }
@@ -424,6 +461,7 @@ export default {
     position: relative;
     padding-bottom: 2px;
 }
+
 .hover-link::after {
     content: '';
     position: absolute;
@@ -436,6 +474,7 @@ export default {
     transform-origin: bottom right;
     transition: transform 0.3s ease-out;
 }
+
 .hover-link:hover::after {
     transform: scaleX(1);
     transform-origin: bottom left;
@@ -457,19 +496,33 @@ export default {
     opacity: 0;
     transform: translateY(40px);
 }
+
 .slide-in-left {
     animation: slideInLeft 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     opacity: 0;
     transform: translateX(40px);
 }
-.delay-1 { animation-delay: 0.2s; }
-.delay-2 { animation-delay: 0.4s; }
+
+.delay-1 {
+    animation-delay: 0.2s;
+}
+
+.delay-2 {
+    animation-delay: 0.4s;
+}
 
 @keyframes slideInUp {
-    to { opacity: 1; transform: translateY(0); }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
+
 @keyframes slideInLeft {
-    to { opacity: 1; transform: translateX(0); }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @media (max-width: 991.98px) {
