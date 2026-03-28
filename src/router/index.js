@@ -6,6 +6,29 @@ const routes = [
         component: () => import('../pages/Client/Home.vue'),
         meta: { layout: 'client' }
     },
+    // Địa điểm 
+     {
+        path: '/check-in',
+        component: () => import('../pages/Client/DiaDiem/CheckIn.vue'),
+        meta: { layout: 'client' }
+    },
+     {
+        path: '/giai-tri',
+        component: () => import('../pages/Client/DiaDiem/GiaiTri.vue'),
+        meta: { layout: 'client' }
+    },
+    {
+        path: '/am-thuc',
+        component: () => import('../pages/Client/DiaDiem/AmThuc.vue'),
+        meta: { layout: 'client' }
+    },
+      {
+        path: '/tam-linh',
+        component: () => import('../pages/Client/DiaDiem/TamLinh.vue'),
+        meta: { layout: 'client' }
+    },
+    // Đăng nhập
+    
     {
         path: '/client-login',
         component: () => import('../pages/Client/DangNhap.vue'),

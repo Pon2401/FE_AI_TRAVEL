@@ -32,9 +32,10 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Địa điểm</a>
             <ul class="dropdown-menu">
-              <li><router-link class="dropdown-item" to="/dia-diem">Giải trí</router-link></li>
+              <li><router-link class="dropdown-item" to="/check-in">Check In</router-link></li>
+              <li><router-link class="dropdown-item" to="/giai-tri">Giải trí</router-link></li>
               <li><router-link class="dropdown-item" to="/am-thuc">Ẩm thực</router-link></li>
-              <li><router-link class="dropdown-item" to="/giai-tri">Tâm linh</router-link></li>
+              <li><router-link class="dropdown-item" to="/tam-linh">Tâm linh</router-link></li>
             </ul>
           </li>
 
