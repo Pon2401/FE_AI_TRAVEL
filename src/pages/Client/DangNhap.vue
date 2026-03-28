@@ -17,7 +17,7 @@
                                 <h3 class="fw-bold text-uppercase mb-1" style="letter-spacing: 0.5px; color: #2c3e50;">
                                     Chào Mừng Trở Lại
                                 </h3>
-                                <p class="text-muted small">Du Lịch Đà Nẵng cùng với AI Travel</p>
+                                <p class="text-muted small">Du Lịch Đà Nẵng cùng với Đà Nẵng Travel</p>
                             </div>
 
                             <div class="d-grid mb-4">
@@ -109,7 +109,7 @@
                     </div>
 
                     <div class="text-center mt-4 text-white-50 small" style="position: relative; z-index: 1;">
-                        <p>&copy; 2026 CDIO 4 - AI Travel System.</p>
+                        <p>&copy; 2026 KLTN - DaNang Travel.</p>
                     </div>
                 </div>
             </div>
@@ -167,9 +167,13 @@ export default {
                 })
                 .catch((error) => {
                     if (error.response?.status === 422) {
-                        // Lỗi format từ LoginKhachHangRequest
+                        // Lỗi format chuẩn từ Laravel FormRequest 422
                         const apiErrors = error.response.data.errors || {};
-                        this.errors = { ...this.errors, ...apiErrors };
+                        const parsedErrors = {};
+                        for (const key in apiErrors) {
+                            parsedErrors[key] = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+                        }
+                        this.errors = { ...this.errors, ...parsedErrors };
                         this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
                     } else if (error.response?.status === 500) {
                         this.$toast.error('Lỗi máy chủ, vui lòng thử lại sau.');

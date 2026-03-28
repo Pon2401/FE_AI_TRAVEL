@@ -2,6 +2,27 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import './style.css'
+import axios from 'axios'
+
+// Global Axios Interceptor for Laravel 422 Errors
+axios.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        if (error.response?.status === 422) {
+            const apiErrors = error.response.data.errors || {};
+            const parsedErrors = {};
+            for (const key in apiErrors) {
+                // Return first string of the array if it is an array formed by Laravel
+                parsedErrors[key] = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+            }
+            // Bind single string parsed errors back to the response
+            error.response.data.errors = parsedErrors;
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
