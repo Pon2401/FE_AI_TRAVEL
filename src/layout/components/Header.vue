@@ -59,13 +59,13 @@
             <div class="dropdown ms-3 ps-3 border-start">
               <button class="btn-profile d-flex align-items-center gap-2" data-bs-toggle="dropdown">
                 <img 
-                  src="https://ui-avatars.com/api/?name=Admin+User&background=5a67d8&color=fff" 
+                  :src="avatarUrl" 
                   alt="User" 
                   class="rounded-circle"
                   width="36"
                   height="36"
                 >
-                <span class="d-none d-md-inline small fw-500">Admin</span>
+                <span class="d-none d-md-inline small fw-500">{{ adminDisplayName }}</span>
                 <i class="bi bi-chevron-down"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
@@ -73,7 +73,7 @@
                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                <li><button class="dropdown-item text-danger" @click="dangXuat"><i class="bi bi-box-arrow-right me-2"></i>Logout</button></li>
               </ul>
             </div>
           </div>
@@ -86,6 +86,43 @@
 <script>
 export default {
   name: 'Header',
+  data() {
+    return {
+      admin: {},
+    };
+  },
+  computed: {
+    adminDisplayName() {
+      return this.admin.ho_ten || this.admin.ten || this.admin.email || 'Admin';
+    },
+    avatarUrl() {
+      const displayName = encodeURIComponent(this.adminDisplayName);
+      return `https://ui-avatars.com/api/?name=${displayName}&background=5a67d8&color=fff`;
+    },
+  },
+  mounted() {
+    this.loadAdminData();
+  },
+  methods: {
+    loadAdminData() {
+      const adminData = localStorage.getItem('admin_data');
+      if (!adminData) return;
+
+      try {
+        this.admin = JSON.parse(adminData) || {};
+      } catch (error) {
+        this.admin = {};
+      }
+    },
+    dangXuat() {
+      localStorage.removeItem('key_admin');
+      localStorage.removeItem('admin_data');
+      localStorage.removeItem('admin_id');
+      localStorage.removeItem('admin_ten');
+      localStorage.removeItem('admin_email');
+      this.$router.push('/admin/dang-nhap');
+    },
+  },
 };
 </script>
 

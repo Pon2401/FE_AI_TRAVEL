@@ -18,6 +18,11 @@ const routes = [
     meta: { layout: "blank" },
   },
   {
+    path: "/client/kich-hoat/:hash_active",
+    component: () => import("../pages/Client/kichHoat.vue"),
+    meta: { layout: "blank" },
+  },
+  {
     path: "/tao-lich-trinh",
     component: () => import("../pages/Client/TaoLichTrinh.vue"),
     meta: { layout: "client" },

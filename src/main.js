@@ -43,7 +43,10 @@ const app = createApp(App)
 app.use(router)
 app.use(ToastPlugin, {
     position: 'top-right',
-    duration: 3000,
+    duration: 3200,
+    dismissible: true,
+    pauseOnHover: true,
+    queue: true,
 })
 
 app.mount("#app")

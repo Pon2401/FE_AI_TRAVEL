@@ -62,7 +62,10 @@
           <div v-else class="dropdown">
             <button class="btn btn-profile d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
               data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="avatar-circle">
+              <div v-if="hasAvatar" class="avatar-circle avatar-image-wrapper">
+                <img :src="avatarSrc" :alt="userName" class="avatar-image" @error="handleAvatarError">
+              </div>
+              <div v-else class="avatar-circle">
                 {{ avatarLetter }}
               </div>
               <span class="user-name d-none d-sm-inline">{{ userName }}</span>
@@ -73,7 +76,10 @@
               <!-- Header -->
               <li class="dropdown-header px-4 pt-3 pb-2">
                 <div class="d-flex align-items-center gap-3">
-                  <div class="avatar-circle avatar-lg">{{ avatarLetter }}</div>
+                  <div v-if="hasAvatar" class="avatar-circle avatar-lg avatar-image-wrapper">
+                    <img :src="avatarSrc" :alt="userName" class="avatar-image" @error="handleAvatarError">
+                  </div>
+                  <div v-else class="avatar-circle avatar-lg">{{ avatarLetter }}</div>
                   <div>
                     <div class="fw-bold text-dark" style="font-size:0.95rem;">{{ userName }}</div>
                     <div class="text-muted" style="font-size:0.78rem;">Thành viên</div>
@@ -121,11 +127,23 @@ export default {
     return {
       isLoggedIn: false,
       userName: '',
+      userAvatar: '',
     }
   },
   computed: {
     avatarLetter() {
       return this.userName ? this.userName.trim().charAt(0).toUpperCase() : '?'
+    },
+    hasAvatar() {
+      return !!this.userAvatar
+    },
+    avatarSrc() {
+      if (!this.userAvatar) return ''
+      if (/^(https?:)?\/\//i.test(this.userAvatar) || this.userAvatar.startsWith('data:')) {
+        return this.userAvatar
+      }
+      const cleanPath = this.userAvatar.startsWith('/') ? this.userAvatar : `/${this.userAvatar}`
+      return `http://127.0.0.1:8000${cleanPath}`
     }
   },
   mounted() {
@@ -147,13 +165,21 @@ export default {
       const token = localStorage.getItem('client_token')
       this.isLoggedIn = !!token
       this.userName = localStorage.getItem('client_ten') || 'Tôi'
+      this.userAvatar = localStorage.getItem('client_avatar') || ''
     },
     dangXuat() {
       localStorage.removeItem('client_token')
+      localStorage.removeItem('client_id')
       localStorage.removeItem('client_ten')
+      localStorage.removeItem('client_avatar')
       this.isLoggedIn = false
       this.userName = ''
+      this.userAvatar = ''
       this.$router.replace('/client/dang-nhap')
+    },
+    handleAvatarError() {
+      this.userAvatar = ''
+      localStorage.removeItem('client_avatar')
     },
     isActive(path) {
       return this.$route.path === path
@@ -303,6 +329,20 @@ export default {
   justify-content: center;
   flex-shrink: 0;
 }
+
+.avatar-image-wrapper {
+  padding: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .avatar-circle.avatar-lg {
   width: 46px;
   height: 46px;

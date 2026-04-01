@@ -15,7 +15,10 @@
           <div class="hero-content d-flex align-items-end gap-4 flex-wrap">
             <!-- Avatar -->
             <div class="avatar-wrap">
-              <div class="profile-avatar">{{ avatarLetter }}</div>
+              <div v-if="hasAvatar" class="profile-avatar avatar-image-frame">
+                <img :src="avatarSrc" :alt="user.ten || 'Avatar'" class="profile-avatar-image" @error="handleAvatarError">
+              </div>
+              <div v-else class="profile-avatar">{{ avatarLetter }}</div>
               <div class="avatar-badge"><i class="bi bi-patch-check-fill text-primary"></i></div>
             </div>
             <!-- Info -->
@@ -82,18 +85,6 @@
             </div>
             <div class="col-sm-6">
               <div class="info-field">
-                <span class="info-label"><i class="bi bi-calendar3 me-1"></i>Ngày sinh</span>
-                <span class="info-value">{{ formatDate(user.ngay_sinh) }}</span>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="info-field">
-                <span class="info-label"><i class="bi bi-card-text me-1"></i>CCCD/CMND</span>
-                <span class="info-value">{{ user.cccd || '—' }}</span>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="info-field">
                 <span class="info-label"><i class="bi bi-toggle-on me-1"></i>Trạng thái</span>
                 <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fs-7">
                   <i class="bi bi-check-circle me-1"></i>Hoạt động
@@ -140,20 +131,6 @@
                   <input v-model="editForm.so_dien_thoai" type="text" class="form-control border-0 bg-transparent" placeholder="09xx...">
                 </div>
                 <div v-if="editErrors.so_dien_thoai" class="text-danger small mt-1">{{ editErrors.so_dien_thoai }}</div>
-              </div>
-
-              <div class="col-sm-6">
-                <label class="form-label fw-semibold small text-secondary">Ngày sinh</label>
-                <input v-model="editForm.ngay_sinh" type="date" class="form-control bg-light border-0 rounded-3"
-                  style="height:42px;" min="1900-01-01" max="2025-12-31">
-              </div>
-
-              <div class="col-sm-6">
-                <label class="form-label fw-semibold small text-secondary">Số CCCD/CMND</label>
-                <div class="input-group rounded-3 bg-light">
-                  <span class="input-group-text border-0 bg-transparent text-primary"><i class="bi bi-card-text"></i></span>
-                  <input v-model="editForm.cccd" type="text" class="form-control border-0 bg-transparent" placeholder="0012...">
-                </div>
               </div>
 
               <div class="col-12 mt-3 d-flex gap-2">
@@ -253,12 +230,29 @@ export default {
   computed: {
     avatarLetter() {
       return this.user.ten ? this.user.ten.trim().charAt(0).toUpperCase() : '?'
+    },
+    hasAvatar() {
+      return !!this.user.anh_dai_dien
+    },
+    avatarSrc() {
+      if (!this.user.anh_dai_dien) return ''
+      if (/^(https?:)?\/\//i.test(this.user.anh_dai_dien) || this.user.anh_dai_dien.startsWith('data:')) {
+        return this.user.anh_dai_dien
+      }
+      const cleanPath = this.user.anh_dai_dien.startsWith('/') ? this.user.anh_dai_dien : `/${this.user.anh_dai_dien}`
+      return `http://127.0.0.1:8000${cleanPath}`
     }
   },
 
   mounted() {
     const token = localStorage.getItem('client_token')
     if (!token) {
+      this.$router.replace('/client/dang-nhap')
+      return
+    }
+    const userId = localStorage.getItem('client_id')
+    if (!userId) {
+      this.$toast.error('Không tìm thấy mã người dùng, vui lòng đăng nhập lại!')
       this.$router.replace('/client/dang-nhap')
       return
     }
@@ -273,9 +267,12 @@ export default {
     async fetchProfile() {
       this.loading = true
       try {
-        const res = await axios.get(`${API}/thong-tin`, this.authHeader())
-        if (res.data.status) {
+        const userId = localStorage.getItem('client_id')
+        const res = await axios.get(`${API}/profile/${userId}`, this.authHeader())
+        if (res.data.status === 'success' || res.data.status === true) {
           this.user = res.data.data
+          localStorage.setItem('client_ten', res.data.data?.ten || '')
+          localStorage.setItem('client_avatar', res.data.data?.anh_dai_dien || '')
           this.resetEditForm()
         }
       } catch {
@@ -289,8 +286,6 @@ export default {
       this.editForm = {
         ten: this.user.ten || '',
         so_dien_thoai: this.user.so_dien_thoai || '',
-        ngay_sinh: this.user.ngay_sinh || '',
-        cccd: this.user.cccd || '',
       }
       this.editErrors = {}
     },
@@ -357,6 +352,11 @@ export default {
       }
     },
 
+    handleAvatarError() {
+      this.user = { ...this.user, anh_dai_dien: '' }
+      localStorage.removeItem('client_avatar')
+    },
+
     formatDate(val) {
       if (!val) return '—'
       return new Date(val).toLocaleDateString('vi-VN')
@@ -406,6 +406,17 @@ export default {
   justify-content: center;
   border: 4px solid #fff;
   box-shadow: 0 4px 16px rgba(255,123,84,0.3);
+}
+.avatar-image-frame {
+  padding: 0;
+  overflow: hidden;
+  background: #eef4ff;
+}
+.profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .avatar-badge {
   position: absolute;

@@ -17,7 +17,8 @@
                             của bạn.
                         </h1>
                         <p class="fs-5 text-white opacity-75 slide-in-up delay-2 fw-light" style="max-width: 450px;">
-                            Tham gia cộng đồng yêu du lịch, lên kế hoạch thông minh và khám phá thế giới dễ dàng hơn bao
+                            Du lịch cùng Travel Planner AI lên kế hoạch thông minh và trải nghiệm du lịch dễ dàng hơn
+                            bao
                             giờ hết.
                         </p>
                     </div>
@@ -25,127 +26,143 @@
             </div>
 
             <!-- Right Side: Form -->
-            <div class="col-lg-6 bg-white position-relative h-100" style="overflow-y: auto;">
+            <div class="col-lg-6 bg-white position-relative h-100 form-side">
                 <!-- Inner scroll flex container -->
-                <div class="d-flex flex-column justify-content-center min-vh-100 p-4 p-md-5">
+                <div class="form-shell d-flex flex-column justify-content-center h-100">
                     <!-- Nút Home ở góc -->
                     <router-link to="/"
-                        class="btn-home position-absolute top-0 end-0 mt-4 me-4 d-none d-sm-flex align-items-center" style="z-index: 10;">
+                        class="btn-home position-absolute top-0 end-0 mt-3 me-3 d-none d-sm-flex align-items-center"
+                        style="z-index: 10;">
                         <div class="icon-box me-2"><i class="fa-solid fa-house"></i></div>
                         Trang chủ
                     </router-link>
 
                     <div class="form-container w-100 slide-in-left mx-auto" style="max-width: 500px;">
-                    <div class="text-center mb-4">
-                        <div class="logo-box mx-auto mb-2 shadow-sm">
-                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
-                                alt="Logo" class="logo-img" />
-                        </div>
-                        <h2 class="fw-bold text-dark mb-1 fs-4">Tạo tài khoản mới</h2>
-                        <p class="text-secondary small mb-0">Điền thông tin bên dưới để đăng ký thẻ thành viên</p>
-                    </div>
-
-                    <div class="row g-3">
-                        <!-- Email -->
-                        <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Địa chỉ Email <span
-                                    class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{ 'has-error': errors.email }">
-                                <div class="input-icon"><i class="fa-regular fa-envelope"></i></div>
-                                <input v-model="user.email" type="email" placeholder="example@email.com"
-                                    @input="errors.email = ''" />
+                        <div class="text-center form-header">
+                            <div class="logo-box mx-auto mb-2 shadow-sm">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
+                                    alt="Logo" class="logo-img" />
                             </div>
-                            <span class="error-msg" v-if="errors.email"><i
-                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.email }}</span>
+                            <h2 class="fw-bold text-dark mb-1 fs-4">Tạo tài khoản mới</h2>
                         </div>
 
-                        <!-- Số điện thoại -->
-                        <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Số điện thoại <span
-                                    class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{ 'has-error': errors.so_dien_thoai }">
-                                <div class="input-icon"><i class="fa-solid fa-phone"></i></div>
-                                <input v-model="user.so_dien_thoai" type="text" placeholder="09xx xxx xxx"
-                                    @input="errors.so_dien_thoai = ''" />
+                        <div class="row g-3">
+                            <!-- Họ và tên -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small mb-2">Họ và tên <span
+                                        class="text-danger">*</span></label>
+                                <div class="custom-input-group" :class="{ 'has-error': errors.ten }">
+                                    <div class="input-icon"><i class="fa-regular fa-user"></i></div>
+                                    <input v-model="user.ten" type="text" placeholder="Nguyễn Văn A"
+                                        @input="errors.ten = ''" />
+                                </div>
+                                <span class="error-msg" v-if="errors.ten"><i
+                                        class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.ten }}</span>
                             </div>
-                            <span class="error-msg" v-if="errors.so_dien_thoai"><i
-                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.so_dien_thoai }}</span>
-                        </div>
 
-                        <!-- Mật khẩu -->
-                        <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Mật khẩu <span
-                                    class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{ 'has-error': errors.mat_khau }">
-                                <div class="input-icon"><i class="fa-solid fa-lock"></i></div>
-                                <input v-model="user.mat_khau" type="password" placeholder="••••••••"
-                                    @input="errors.mat_khau = ''" />
+                            <!-- Email -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small mb-2">Địa chỉ Email <span
+                                        class="text-danger">*</span></label>
+                                <div class="custom-input-group" :class="{ 'has-error': errors.email }">
+                                    <div class="input-icon"><i class="fa-regular fa-envelope"></i></div>
+                                    <input v-model="user.email" type="email" placeholder="example@email.com"
+                                        @input="errors.email = ''" />
+                                </div>
+                                <span class="error-msg" v-if="errors.email"><i
+                                        class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.email }}</span>
                             </div>
-                            <span class="error-msg" v-if="errors.mat_khau"><i
-                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.mat_khau }}</span>
-                        </div>
 
-                        <!-- Xác nhận MK -->
-                        <div class="col-12">
-                            <label class="form-label fw-semibold text-dark small mb-2">Xác nhận MK <span
-                                    class="text-danger">*</span></label>
-                            <div class="custom-input-group" :class="{ 'has-error': errors.re_password }">
-                                <div class="input-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                <input v-model="user.re_password" type="password" placeholder="••••••••"
-                                    @input="errors.re_password = ''" />
+                            <!-- Số điện thoại -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small mb-2">Số điện thoại <span
+                                        class="text-danger">*</span></label>
+                                <div class="custom-input-group" :class="{ 'has-error': errors.so_dien_thoai }">
+                                    <div class="input-icon"><i class="fa-solid fa-phone"></i></div>
+                                    <input v-model="user.so_dien_thoai" type="text" placeholder="09xx xxx xxx"
+                                        @input="errors.so_dien_thoai = ''" />
+                                </div>
+                                <span class="error-msg" v-if="errors.so_dien_thoai"><i
+                                        class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.so_dien_thoai
+                                    }}</span>
                             </div>
-                            <span class="error-msg" v-if="errors.re_password"><i
-                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.re_password }}</span>
+
+                            <!-- Mật khẩu -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small mb-2">Mật khẩu <span
+                                        class="text-danger">*</span></label>
+                                <div class="custom-input-group" :class="{ 'has-error': errors.mat_khau }">
+                                    <div class="input-icon"><i class="fa-solid fa-lock"></i></div>
+                                    <input v-model="user.mat_khau" type="password" placeholder="••••••••"
+                                        @input="errors.mat_khau = ''" />
+                                </div>
+                                <span class="error-msg" v-if="errors.mat_khau"><i
+                                        class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.mat_khau }}</span>
+                            </div>
+
+                            <!-- Xác nhận MK -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small mb-2">Xác nhận MK <span
+                                        class="text-danger">*</span></label>
+                                <div class="custom-input-group" :class="{ 'has-error': errors.re_password }">
+                                    <div class="input-icon"><i class="fa-solid fa-circle-check"></i></div>
+                                    <input v-model="user.re_password" type="password" placeholder="••••••••"
+                                        @input="errors.re_password = ''" />
+                                </div>
+                                <span class="error-msg" v-if="errors.re_password"><i
+                                        class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.re_password }}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Điều khoản -->
-                    <div class="mt-3 mb-3">
-                        <div class="form-check custom-check-modern d-flex align-items-center">
-                            <input v-model="agreeTerms" class="form-check-input mt-0 me-3" type="checkbox" id="terms"
-                                @change="errors.terms = ''">
-                            <label class="form-check-label text-muted small" for="terms" style="cursor: pointer;">
-                                Tôi đồng ý với <a href="#" class="text-primary fw-bold text-decoration-none">Điều khoản
-                                    dịch vụ</a> và <a href="#" class="text-primary fw-bold text-decoration-none">Chính
-                                    sách bảo mật</a>
-                            </label>
+                        <!-- Điều khoản -->
+                        <div class="terms-block">
+                            <div class="form-check custom-check-modern d-flex align-items-center">
+                                <input v-model="agreeTerms" class="form-check-input mt-0 me-3" type="checkbox"
+                                    id="terms" @change="errors.terms = ''">
+                                <label class="form-check-label text-muted small" for="terms" style="cursor: pointer;">
+                                    Tôi đồng ý với <a href="#" class="text-primary fw-bold text-decoration-none">Điều
+                                        khoản
+                                        dịch vụ</a> và <a href="#"
+                                        class="text-primary fw-bold text-decoration-none">Chính
+                                        sách bảo mật</a>
+                                </label>
+                            </div>
+                            <span class="error-msg mt-2 block" v-if="errors.terms"><i
+                                    class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.terms }}</span>
                         </div>
-                        <span class="error-msg mt-2 block" v-if="errors.terms"><i
-                                class="fa-solid fa-circle-exclamation me-1"></i>{{ errors.terms }}</span>
-                    </div>
 
-                    <!-- Nút Đăng ký -->
-                    <button @click="dangKyTaiKhoan" :disabled="loading"
-                        class="btn btn-primary-gradient w-100 btn-lg mb-3 shadow-sm hover-lift d-flex align-items-center justify-content-center">
-                        <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử
-                            lý...</span>
-                        <span v-else class="fw-bold fs-6"><i class="fa-solid fa-user-plus me-2"></i> Đăng ký tài
-                            khoản</span>
-                    </button>
+                        <!-- Nút Đăng ký -->
+                        <button @click="dangKyTaiKhoan" :disabled="loading"
+                            class="btn btn-primary-gradient w-100 btn-lg action-btn mb-3 shadow-sm hover-lift d-flex align-items-center justify-content-center">
+                            <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử
+                                lý...</span>
+                            <span v-else class="fw-bold fs-6"><i class="fa-solid fa-user-plus me-2"></i> Đăng ký tài
+                                khoản</span>
+                        </button>
 
-                    <!-- OR -->
-                    <div class="divider d-flex align-items-center my-3">
-                        <div class="line flex-grow-1"></div>
-                        <span class="px-3 text-muted small fw-medium text-uppercase tracking-wide">Hoặc tham gia
-                            bằng</span>
-                        <div class="line flex-grow-1"></div>
-                    </div>
+                        <!-- OR -->
+                        <div class="divider d-flex align-items-center divider-compact">
+                            <div class="line flex-grow-1"></div>
+                            <span class="px-3 text-muted small fw-medium text-uppercase tracking-wide">Hoặc tham gia
+                                bằng</span>
+                            <div class="line flex-grow-1"></div>
+                        </div>
 
-                    <button
-                        class="btn btn-social w-100 btn-lg text-dark d-flex align-items-center justify-content-center hover-lift">
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22"
-                            class="me-3" />
-                        <span class="fw-semibold fs-6">Đăng ký bằng Google</span>
-                    </button>
+                        <button
+                            class="btn btn-social w-100 btn-lg action-btn text-dark d-flex align-items-center justify-content-center hover-lift">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22"
+                                class="me-3" />
+                            <span class="fw-semibold fs-6">Đăng ký bằng Google</span>
+                        </button>
 
-                    <!-- Trở về Đăng nhập -->
-                    <div class="text-center mt-4">
-                        <p class="text-secondary small">Đã có tài khoản?
-                            <router-link to="/client/dang-nhap"
-                                class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập
-                                ngay</router-link>
-                        </p>
-                    </div>
+                        <!-- Trở về Đăng nhập -->
+                        <div class="text-center switch-auth">
+                            <p class="text-secondary small">Đã có tài khoản?
+                                <router-link to="/client/dang-nhap"
+                                    class="text-primary fw-bold text-decoration-none hover-link ms-1">Đăng nhập
+                                    ngay</router-link>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -159,6 +176,7 @@ export default {
     data() {
         return {
             user: {
+                ten: '',
                 email: '',
                 so_dien_thoai: '',
                 mat_khau: '',
@@ -178,6 +196,10 @@ export default {
             this.clearErrors();
             let valid = true;
 
+            if (!this.user.ten?.trim()) {
+                this.errors.ten = 'Vui lòng nhập họ và tên.';
+                valid = false;
+            }
             if (!this.user.email?.trim()) {
                 this.errors.email = 'Vui lòng nhập địa chỉ email.';
                 valid = false;
@@ -266,7 +288,7 @@ export default {
 
 /* === LEFT SIDE === */
 .register-image-side {
-    background: url('https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
+    background: url('https://kyluc.vn/Userfiles/Upload/images/Download/2024/6/4/fa2cdf9ae95e410397fbe7e4fa428bee.png') no-repeat center center;
     background-size: cover;
 }
 
@@ -291,9 +313,21 @@ export default {
     margin: 0 auto;
 }
 
+.form-side {
+    overflow-y: auto;
+}
+
+.form-shell {
+    padding: 1.25rem 1.5rem;
+}
+
+.form-header {
+    margin-bottom: 1rem;
+}
+
 .logo-box {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
     border-radius: 16px;
     /* background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%); */
     display: flex;
@@ -346,10 +380,10 @@ export default {
 .custom-input-group input {
     border: none;
     background: transparent;
-    padding: 8px 16px 8px 0;
+    padding: 7px 14px 7px 0;
     width: 100%;
     outline: none;
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: #1e293b;
     font-weight: 500;
 }
@@ -390,7 +424,7 @@ export default {
     background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 8px 20px;
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -403,7 +437,7 @@ export default {
 .btn-social {
     background-color: #ffffff;
     border: 1.5px solid #e2e8f0;
-    padding: 10px 24px;
+    padding: 8px 20px;
     border-radius: 12px;
     transition: all 0.3s ease;
 }
@@ -492,6 +526,23 @@ export default {
     letter-spacing: 0.05em;
 }
 
+.terms-block {
+    margin-top: 0.85rem;
+    margin-bottom: 0.85rem;
+}
+
+.divider-compact {
+    margin: 0.85rem 0;
+}
+
+.switch-auth {
+    margin-top: 1rem;
+}
+
+.action-btn {
+    min-height: 40px;
+}
+
 /* Animations */
 .slide-in-up {
     animation: slideInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
@@ -528,9 +579,89 @@ export default {
 }
 
 @media (max-width: 991.98px) {
+    .form-shell {
+        height: auto;
+        min-height: 100vh;
+        padding: 1.5rem 1.25rem 2rem;
+    }
+
     .form-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+}
+
+@media (min-width: 992px) and (max-height: 900px) {
+    .register-image-side .overlay {
+        padding: 3rem;
+    }
+
+    .brand-content .badge {
+        font-size: 0.75rem;
+    }
+
+    .brand-content h1 {
+        font-size: 2.6rem;
+        margin-bottom: 1rem !important;
+    }
+
+    .brand-content p {
+        font-size: 1rem !important;
+    }
+
+    .form-shell {
+        padding: 1rem 1.5rem;
+    }
+
+    .form-container {
+        max-width: 460px;
+    }
+
+    .logo-box {
+        width: 72px;
+        height: 72px;
+    }
+
+    .form-header {
+        margin-bottom: 0.75rem;
+    }
+
+    .row.g-3 {
+        --bs-gutter-y: 0.85rem;
+    }
+
+    .form-label {
+        margin-bottom: 0.35rem !important;
+        font-size: 0.82rem;
+    }
+
+    .custom-input-group {
+        border-radius: 10px;
+    }
+
+    .input-icon {
+        width: 36px;
+        font-size: 1rem;
+    }
+
+    .custom-input-group input {
+        padding: 6px 12px 6px 0;
+        font-size: 0.92rem;
+    }
+
+    .error-msg {
+        margin-top: 4px;
+        font-size: 0.78rem;
+    }
+
+    .custom-check-modern .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+    }
+
+    .custom-check-modern .form-check-label {
+        font-size: 0.8rem !important;
+        line-height: 1.4;
     }
 }
 </style>

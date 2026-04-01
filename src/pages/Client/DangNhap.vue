@@ -40,32 +40,34 @@
                             <div class="form-body">
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Email</label>
-                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.email }">
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all"
+                                        :class="{ 'border-danger': errors.email }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-regular fa-envelope"></i>
                                         </span>
                                         <input v-model="thong_tin_dang_nhap.email" type="email"
                                             class="form-control border-0 bg-transparent fs-6"
                                             :class="{ 'is-invalid': errors.email }"
-                                            placeholder="Nhập địa chỉ email của bạn"
-                                            @input="errors.email = ''">
+                                            placeholder="Nhập địa chỉ email của bạn" @input="errors.email = ''">
                                     </div>
-                                    <div v-if="errors.email" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}</div>
+                                    <div v-if="errors.email" class="text-danger small mt-1 ms-1"><i
+                                            class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}</div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Mật khẩu</label>
-                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all" :class="{ 'border-danger': errors.mat_khau }">
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all"
+                                        :class="{ 'border-danger': errors.mat_khau }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-solid fa-lock-open text-primary opacity-75"></i>
                                         </span>
                                         <input v-model="thong_tin_dang_nhap.mat_khau" @keydown.enter="dangNhap()"
                                             type="password" class="form-control border-0 bg-transparent fs-6"
-                                            :class="{ 'is-invalid': errors.mat_khau }"
-                                            placeholder="Nhập mật khẩu"
+                                            :class="{ 'is-invalid': errors.mat_khau }" placeholder="Nhập mật khẩu"
                                             @input="errors.mat_khau = ''">
                                     </div>
-                                    <div v-if="errors.mat_khau" class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.mat_khau }}</div>
+                                    <div v-if="errors.mat_khau" class="text-danger small mt-1 ms-1"><i
+                                            class="bi bi-exclamation-circle me-1"></i>{{ errors.mat_khau }}</div>
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -153,8 +155,12 @@ export default {
             axios.post('http://127.0.0.1:8000/api/client/dang-nhap', this.thong_tin_dang_nhap)
                 .then((res) => {
                     if (res.data.status) {
+                        const avatar = res.data.data?.anh_dai_dien || '';
+                        const userId = res.data.data?.id || '';
                         localStorage.setItem('client_token', res.data.token);
-                        localStorage.setItem('client_ten', res.data.ten || '');
+                        localStorage.setItem('client_id', userId);
+                        localStorage.setItem('client_ten', res.data.data.ten || '');
+                        localStorage.setItem('client_avatar', avatar);
                         this.$toast.success(res.data.message);
                         this.$router.replace('/').catch(err => {
                             console.error('Router push error:', err);
@@ -166,8 +172,10 @@ export default {
                     }
                 })
                 .catch((error) => {
-                    if (error.response?.status === 422) {
-                        // Lỗi format chuẩn từ Laravel FormRequest 422
+                    if (error.response?.status === 401) {
+                        this.$toast.error(error.response.data.message);
+                    }
+                    else if (error.response?.status === 422) {
                         const apiErrors = error.response.data.errors || {};
                         const parsedErrors = {};
                         for (const key in apiErrors) {
@@ -175,9 +183,11 @@ export default {
                         }
                         this.errors = { ...this.errors, ...parsedErrors };
                         this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
-                    } else if (error.response?.status === 500) {
+                    }
+                    else if (error.response?.status === 500) {
                         this.$toast.error('Lỗi máy chủ, vui lòng thử lại sau.');
-                    } else {
+                    }
+                    else {
                         this.$toast.error('Không thể kết nối đến máy chủ!');
                     }
                 })
@@ -276,11 +286,12 @@ export default {
 }
 
 .logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
 }
+
 @keyframes bounce-soft {
 
     0%,
