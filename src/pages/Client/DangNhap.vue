@@ -161,7 +161,9 @@ export default {
                         localStorage.setItem('client_id', userId);
                         localStorage.setItem('client_ten', res.data.data.ten || '');
                         localStorage.setItem('client_avatar', avatar);
-                        this.$toast.success(res.data.message);
+                        if (res.data.message) {
+                            this.$toast.success(res.data.message);
+                        }
                         this.$router.replace('/').catch(err => {
                             console.error('Router push error:', err);
                             window.location.href = '/';
@@ -172,8 +174,17 @@ export default {
                     }
                 })
                 .catch((error) => {
+                    const responseMessage = error.response?.data?.message;
+
+                    if (error.response?.status !== 422 && responseMessage) {
+                        this.$toast.error(responseMessage);
+                        return;
+                    }
+
                     if (error.response?.status === 401) {
-                        this.$toast.error(error.response.data.message);
+                        if (responseMessage) {
+                            this.$toast.error(responseMessage);
+                        }
                     }
                     else if (error.response?.status === 422) {
                         const apiErrors = error.response.data.errors || {};

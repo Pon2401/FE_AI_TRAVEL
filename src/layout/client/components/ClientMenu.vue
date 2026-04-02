@@ -1,24 +1,18 @@
 <template>
   <nav class="navbar navbar-expand-lg client-navbar fixed-top">
     <div class="container">
-
-      <!-- LOGO -->
       <router-link to="/" class="navbar-brand d-flex align-items-center">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
           alt="Logo" class="logo-img" />
         <span class="ms-2 brand-text">DaNang Travel</span>
       </router-link>
 
-      <!-- TOGGLE -->
       <button class="navbar-toggler border-0 shadow-none" data-bs-toggle="collapse" data-bs-target="#clientNavbar">
         <i class="bi bi-list fs-2 text-white"></i>
       </button>
 
       <div id="clientNavbar" class="collapse navbar-collapse">
-
-        <!-- MENU -->
         <ul class="navbar-nav mx-auto">
-
           <li class="nav-item">
             <router-link to="/" class="nav-link">Trang Chủ</router-link>
           </li>
@@ -39,26 +33,21 @@
             </ul>
           </li>
 
-
           <li class="nav-item">
             <router-link to="/nhom-du-lich" class="nav-link">Nhóm du lịch</router-link>
           </li>
         </ul>
 
-        <!-- AUTH BUTTONS / PROFILE -->
         <div class="d-flex align-items-center gap-2">
-
-          <!-- === Chưa đăng nhập === -->
           <template v-if="!isLoggedIn">
             <router-link to="/client/dang-nhap" class="btn btn-login px-4">
-              Đăng nhập
+              Dang nhap
             </router-link>
             <router-link to="/client/dang-ky" class="btn btn-register-outline px-4 rounded-pill">
-              Đăng ký
+              Dang ky
             </router-link>
           </template>
 
-          <!-- === Đã đăng nhập: Profile dropdown === -->
           <div v-else class="dropdown">
             <button class="btn btn-profile d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
               data-bs-toggle="dropdown" aria-expanded="false">
@@ -73,7 +62,6 @@
             </button>
 
             <ul class="dropdown-menu dropdown-menu-end profile-dropdown shadow">
-              <!-- Header -->
               <li class="dropdown-header px-4 pt-3 pb-2">
                 <div class="d-flex align-items-center gap-3">
                   <div v-if="hasAvatar" class="avatar-circle avatar-lg avatar-image-wrapper">
@@ -88,7 +76,6 @@
               </li>
               <li><hr class="dropdown-divider"></li>
 
-              <!-- Menu items -->
               <li>
                 <router-link to="/profile" class="dropdown-item d-flex align-items-center gap-2">
                   <i class="bi bi-person-circle text-primary"></i> Thông tin cá nhân
@@ -99,12 +86,6 @@
                   <i class="bi bi-map text-success"></i> Lịch trình của tôi
                 </router-link>
               </li>
-              <li>
-                <router-link to="/nhom-du-lich" class="dropdown-item d-flex align-items-center gap-2">
-                  <i class="bi bi-people text-warning"></i> Nhóm du lịch
-                </router-link>
-              </li>
-
               <li><hr class="dropdown-divider"></li>
               <li>
                 <button @click="dangXuat" class="dropdown-item d-flex align-items-center gap-2 text-danger">
@@ -113,15 +94,15 @@
               </li>
             </ul>
           </div>
-
         </div>
-
       </div>
     </div>
   </nav>
 </template>
 
 <script>
+const PROFILE_UPDATED_EVENT = 'client-profile-updated'
+
 export default {
   data() {
     return {
@@ -148,23 +129,25 @@ export default {
   },
   mounted() {
     this.checkAuth()
-    // Cập nhật khi localStorage thay đổi (đăng nhập từ tab khác)
+    this.updateLocationMenuState()
     window.addEventListener('storage', this.checkAuth)
+    window.addEventListener(PROFILE_UPDATED_EVENT, this.checkAuth)
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.checkAuth)
+    window.removeEventListener(PROFILE_UPDATED_EVENT, this.checkAuth)
   },
   watch: {
-    // Cập nhật mỗi khi route thay đổi (đăng nhập/đăng xuất trong cùng tab)
     $route() {
       this.checkAuth()
+      this.updateLocationMenuState()
     }
   },
   methods: {
     checkAuth() {
       const token = localStorage.getItem('client_token')
       this.isLoggedIn = !!token
-      this.userName = localStorage.getItem('client_ten') || 'Tôi'
+      this.userName = localStorage.getItem('client_ten') || 'Toi'
       this.userAvatar = localStorage.getItem('client_avatar') || ''
     },
     dangXuat() {
@@ -172,6 +155,7 @@ export default {
       localStorage.removeItem('client_id')
       localStorage.removeItem('client_ten')
       localStorage.removeItem('client_avatar')
+      window.dispatchEvent(new CustomEvent(PROFILE_UPDATED_EVENT))
       this.isLoggedIn = false
       this.userName = ''
       this.userAvatar = ''
@@ -180,6 +164,16 @@ export default {
     handleAvatarError() {
       this.userAvatar = ''
       localStorage.removeItem('client_avatar')
+      window.dispatchEvent(new CustomEvent(PROFILE_UPDATED_EVENT))
+    },
+    updateLocationMenuState() {
+      this.$nextTick(() => {
+        const locationMenu = this.$el?.querySelector('.dropdown-toggle')
+        if (!locationMenu) return
+
+        const isActive = ['/check-in', '/giai-tri', '/am-thuc', '/tam-linh'].includes(this.$route.path)
+        locationMenu.classList.toggle('menu-active', isActive)
+      })
     },
     isActive(path) {
       return this.$route.path === path
@@ -189,14 +183,12 @@ export default {
 </script>
 
 <style scoped>
-/* NAVBAR */
 .client-navbar {
   background: rgba(10, 25, 47, 0.85);
   backdrop-filter: blur(12px);
   transition: 0.3s;
 }
 
-/* LOGO */
 .brand-mark {
   display: flex;
   align-items: center;
@@ -215,16 +207,23 @@ export default {
   justify-content: center;
 }
 
-/* MENU */
 .nav-link {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 500;
   margin: 0 10px;
   position: relative;
+  text-decoration: none !important;
+  transition: color 0.25s ease;
 }
 
-/* underline */
-.nav-link::after {
+.dropdown-toggle,
+.dropdown-toggle:focus,
+.dropdown-toggle:active {
+  color: rgba(255, 255, 255, 0.75) !important;
+  text-decoration: none !important;
+}
+
+.nav-link::before {
   content: '';
   width: 0;
   height: 2px;
@@ -232,27 +231,45 @@ export default {
   position: absolute;
   bottom: -5px;
   left: 0;
-  transition: 0.3s;
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
-.nav-link:hover::after,
-.nav-link.active::after {
+.nav-link:hover::before,
+.nav-link.menu-active::before,
+.nav-link.active::before,
+.nav-link.router-link-active::before,
+.nav-link.router-link-exact-active::before {
   width: 100%;
 }
 
 .nav-link:hover,
-.nav-link.active {
-  color: #fff;
+.nav-link.menu-active,
+.nav-link.active,
+.nav-link.router-link-active,
+.nav-link.router-link-exact-active {
+  color: #fff !important;
+  text-decoration: none !important;
 }
 
-/* DROPDOWN */
+.dropdown-toggle:hover,
+.dropdown-toggle.menu-active,
+.dropdown-toggle.show,
+.dropdown-toggle.show:focus {
+  color: #fff !important;
+}
+
+.dropdown-toggle::after {
+  margin-left: 0.45rem;
+  vertical-align: 0.12em;
+}
+
 .dropdown-menu {
   border: none;
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* LOGIN BUTTON */
 .btn-login {
   background: linear-gradient(135deg, #ff7b54, #ffb26b);
   color: #fff;
@@ -266,7 +283,6 @@ export default {
   color: #fff;
 }
 
-/* MOBILE */
 @media (max-width: 991px) {
   #clientNavbar {
     background: rgba(10, 25, 47, 0.95);
@@ -302,20 +318,20 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 198, 255, 0.4);
 }
 
-/* ===== PROFILE BUTTON & DROPDOWN ===== */
 .btn-profile {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
   transition: all 0.3s ease;
 }
-.btn-profile:hover, .btn-profile:focus {
+
+.btn-profile:hover,
+.btn-profile:focus {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
   box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.1);
 }
 
-/* Avatar circle */
 .avatar-circle {
   width: 32px;
   height: 32px;
@@ -358,7 +374,6 @@ export default {
   white-space: nowrap;
 }
 
-/* Dropdown panel */
 .profile-dropdown {
   min-width: 240px;
   border: none;
@@ -368,20 +383,25 @@ export default {
   margin-top: 8px;
   background: #fff;
 }
+
 .profile-dropdown .dropdown-header {
   background: linear-gradient(135deg, #f0f4ff, #fff8ef);
 }
+
 .profile-dropdown .dropdown-item {
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
   transition: background 0.2s;
 }
+
 .profile-dropdown .dropdown-item:hover {
   background: #f5f7ff;
 }
+
 .profile-dropdown .dropdown-item.text-danger:hover {
   background: #fff0f0;
 }
+
 .profile-dropdown .dropdown-divider {
   margin: 0;
 }
