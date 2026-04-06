@@ -480,22 +480,41 @@ export default {
     };
   },
   mounted() {
-    const elements = this.$el.querySelectorAll('[data-reveal]');
+    this.$nextTick(() => {
+      const elements = this.$el?.querySelectorAll('[data-reveal]') || [];
 
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            this.observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
+      if (!elements.length) {
+        return;
+      }
 
-    elements.forEach((element) => {
-      this.observer.observe(element);
+      if (typeof IntersectionObserver === 'undefined') {
+        elements.forEach((element) => element.classList.add('is-visible'));
+        return;
+      }
+
+      this.observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              this.observer?.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.15 }
+      );
+
+      elements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+
+        if (isInViewport) {
+          element.classList.add('is-visible');
+          return;
+        }
+
+        this.observer.observe(element);
+      });
     });
   },
   beforeUnmount() {

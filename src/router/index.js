@@ -13,8 +13,30 @@ const routes = [
     meta: { layout: "blank" },
   },
   {
+    path: "/auth/callback",
+    alias: "/client/auth/callback",
+    component: () => import("../pages/Client/GoogleAuthCallback.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/auth/error",
+    alias: "/client/auth/error",
+    component: () => import("../pages/Client/AuthError.vue"),
+    meta: { layout: "blank" },
+  },
+  {
     path: "/client/dang-ky",
     component: () => import("../pages/Client/DangKy.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/client/quen-mat-khau",
+    component: () => import("../pages/Client/QuenMatKhau.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/client/dat-lai-mat-khau/:key",
+    component: () => import("../pages/Client/DatLaiMatKhau.vue"),
     meta: { layout: "blank" },
   },
   {
