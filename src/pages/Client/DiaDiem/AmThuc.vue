@@ -201,7 +201,18 @@ export default {
         const res = await fetch(`${BASE}/dia-diems/am-thuc`);
         if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
         const json = await res.json();
-        this.places = json.data || [];
+        
+        const fallbacksByType = {
+          'Quán ăn':    'https://images.unsplash.com/photo-1547592180-85f173990554?w=800&h=600&fit=crop',
+          'Street food':'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&h=600&fit=crop',
+          'Hải sản':    'https://images.unsplash.com/photo-1559737022-8a20f87e61a6?w=800&h=600&fit=crop',
+          'Quán nhậu':  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop',
+          'Ăn vặt':     'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          image: p.image || fallbacksByType[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop'
+        }));
       } catch (e) {
         this.error = e.message || 'Không thể tải dữ liệu. Vui lòng thử lại.';
         this.places = [];

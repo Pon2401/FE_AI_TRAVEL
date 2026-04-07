@@ -127,7 +127,18 @@ export default {
         const res = await fetch(`${BASE}/dia-diems/check-in`);
         if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
         const json = await res.json();
-        this.places = json.data || [];
+        const fallbacks = {
+          'Cầu nổi tiếng': 'https://images.unsplash.com/photo-1552751753-0fc84ae5b05e?w=800&h=600&fit=crop',
+          'Bãi biển':      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=600&fit=crop',
+          'Ngắm cảnh':     'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=600&fit=crop',
+          'Lịch sử':       'https://images.unsplash.com/photo-1548013146-72479768bbaa?w=800&h=600&fit=crop',
+          'Phố cổ':        'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800&h=600&fit=crop',
+          'Tự nhiên':      'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          image: p.image || fallbacks[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1559592481-74488ece15f1?w=800&h=600&fit=crop'
+        }));
       } catch (e) { this.error = e.message; this.places = []; }
       finally { this.loading = false; }
     },

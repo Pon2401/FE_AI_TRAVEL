@@ -49,14 +49,6 @@
             </li>
           </ul>
         </li>
-        <!-- Products -->
-        <li class="nav-item">
-          <router-link to="/admin/quan-ly-dia-diem-du-lich" class="nav-link" :class="{ active: isActive('/products') }">
-            <i class="bi bi-geo-alt"></i>
-            <span v-if="!isCollapsed" class="nav-label">Quản lý địa điểm du lịch</span>
-          </router-link>
-        </li>
-
         <!-- Categories with submenu -->
         <li class="nav-item">
           <a
@@ -111,6 +103,8 @@
             </li>
           </ul>
         </li>
+
+
 
         <!-- Reports -->
         <li class="nav-item">

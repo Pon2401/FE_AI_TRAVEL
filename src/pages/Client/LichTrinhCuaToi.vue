@@ -37,11 +37,7 @@
 
       <!-- Trip list -->
       <div v-else class="trips-grid">
-        <div
-          v-for="trip in chuyenDis"
-          :key="trip.id"
-          class="trip-card"
-        >
+        <div v-for="trip in chuyenDis" :key="trip.id" class="trip-card">
           <div class="trip-card-header">
             <div class="trip-icon-wrap">
               <i class="bi bi-airplane-fill"></i>
@@ -129,13 +125,8 @@
             </div>
 
             <div v-else class="map-place-list">
-              <div
-                v-for="(place, idx) in mapPlaces"
-                :key="idx"
-                class="map-place-item"
-                :class="{ active: activeMarkerIdx === idx }"
-                @click="focusMarker(idx)"
-              >
+              <div v-for="(place, idx) in mapPlaces" :key="idx" class="map-place-item"
+                :class="{ active: activeMarkerIdx === idx }" @click="focusMarker(idx)">
                 <div class="place-num">{{ idx + 1 }}</div>
                 <div class="place-info">
                   <div class="place-name">{{ place.ten_dia_diem }}</div>
@@ -178,7 +169,8 @@
           <i class="bi bi-exclamation-triangle-fill"></i>
         </div>
         <h4>Xóa chuyến đi?</h4>
-        <p>Bạn có chắc muốn xóa <strong>"{{ deleteTarget.ten_chuyen_di }}"</strong>? Hành động này không thể hoàn tác.</p>
+        <p>Bạn có chắc muốn xóa <strong>"{{ deleteTarget.ten_chuyen_di }}"</strong>? Hành động này không thể hoàn tác.
+        </p>
         <div class="modal-actions">
           <button class="btn-ghost" @click="deleteTarget = null">Hủy</button>
           <button class="btn-danger" @click="doDelete" :disabled="deleting">
@@ -192,36 +184,10 @@
 </template>
 
 <script>
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
 const BASE = 'http://localhost:8000/api';
-// 🔑 Thay YOUR_GOOGLE_MAPS_API_KEY bằng API key thật của bạn
-const MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
-
-let googleMapsLoaded = false;
-let googleMapsLoading = false;
-const mapsCallbacks = [];
-
-function loadGoogleMaps() {
-  return new Promise((resolve) => {
-    if (window.google && window.google.maps) {
-      resolve();
-      return;
-    }
-    mapsCallbacks.push(resolve);
-    if (!googleMapsLoading) {
-      googleMapsLoading = true;
-      window.__googleMapsInitCallback = () => {
-        googleMapsLoaded = true;
-        mapsCallbacks.forEach(cb => cb());
-        mapsCallbacks.length = 0;
-      };
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&callback=__googleMapsInitCallback&language=vi`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  });
-}
 
 export default {
   name: 'LichTrinhCuaToi',
@@ -239,7 +205,7 @@ export default {
       mapPlaces: [],
       mapLoading: false,
       activeMarkerIdx: null,
-      googleMap: null,
+      leafletMap: null,
       mapMarkers: [],
       mapPolyline: null,
     };
@@ -283,7 +249,6 @@ export default {
 
       // Đợi Vue render DOM xong rồi mới init map
       await this.$nextTick();
-      await loadGoogleMaps();
       this.initMap();
       this.mapLoading = false;
     },
@@ -296,34 +261,39 @@ export default {
     },
 
     clearMapObjects() {
-      this.mapMarkers.forEach(m => m.setMap(null));
-      this.mapMarkers = [];
-      if (this.mapPolyline) {
-        this.mapPolyline.setMap(null);
-        this.mapPolyline = null;
+      if (this.leafletMap) {
+        this.leafletMap.remove();
+        this.leafletMap = null;
       }
-      this.googleMap = null;
+      this.mapMarkers = [];
+      this.mapPolyline = null;
     },
 
     initMap() {
       const el = document.getElementById('google-map-canvas');
-      if (!el || !window.google) return;
+      if (!el) return;
+
+      this.clearMapObjects();
 
       // Trung tâm mặc định: Đà Nẵng
-      const defaultCenter = { lat: 16.0544, lng: 108.2022 };
+      const defaultCenter = [16.0544, 108.2022];
       const hasCoords = this.mapPlaces.some(p => p.vi_do && p.kinh_do);
       const center = hasCoords
-        ? { lat: this.mapPlaces[0].vi_do, lng: this.mapPlaces[0].kinh_do }
+        ? [this.mapPlaces[0].vi_do, this.mapPlaces[0].kinh_do]
         : defaultCenter;
 
-      this.googleMap = new window.google.maps.Map(el, {
+      this.leafletMap = L.map(el, {
         center,
         zoom: 13,
-        mapTypeControl: true,
-        fullscreenControl: true,
-        streetViewControl: false,
-        styles: this.getMapStyles(),
+        zoomControl: true,
       });
+
+      // Geoapify Maps – Premium style với API key
+      const GEOAPIFY_KEY = '68caa9575e20b9cff4b8584036033662965e7eafe884f807025788d5cb1ceea3';
+      L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_KEY}`, {
+        attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+        maxZoom: 20
+      }).addTo(this.leafletMap);
 
       if (hasCoords) {
         this.placeMarkers();
@@ -333,51 +303,39 @@ export default {
     },
 
     placeMarkers() {
-      const infoWindow = new window.google.maps.InfoWindow();
-
       this.mapPlaces.forEach((place, idx) => {
         if (!place.vi_do || !place.kinh_do) return;
 
-        const position = { lat: place.vi_do, lng: place.kinh_do };
-
-        // Custom marker label với số thứ tự
-        const marker = new window.google.maps.Marker({
-          position,
-          map: this.googleMap,
-          title: place.ten_dia_diem,
-          label: {
-            text: String(idx + 1),
-            color: '#ffffff',
-            fontWeight: 'bold',
-            fontSize: '13px',
-          },
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 18,
-            fillColor: idx === 0 ? '#10b981' : idx === this.mapPlaces.length - 1 ? '#f97316' : '#0ea5e9',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2.5,
-          },
-          animation: window.google.maps.Animation.DROP,
+        const color = idx === 0 ? '#10b981' : (idx === this.mapPlaces.length - 1 ? '#f97316' : '#0ea5e9');
+        
+        // Sử dụng DivIcon để tránh lỗi load ảnh marker.png trong môi trường build/Vite
+        const customIcon = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="background-color:${color}; width:30px; height:30px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-size:14px; position:relative; top:-15px; left:-15px;">${idx + 1}</div>`,
+          iconSize: [0, 0],
+          iconAnchor: [15, 15]
         });
 
-        marker.addListener('click', () => {
+        const marker = L.marker([place.vi_do, place.kinh_do], { icon: customIcon })
+          .addTo(this.leafletMap);
+
+        const content = `
+          <div style="font-family:'Inter',sans-serif; min-width:200px; padding:5px;">
+            <div style="font-weight:700; font-size:14px; color:#1e2d44; margin-bottom:4px;">
+              ${idx + 1}. ${place.ten_dia_diem}
+            </div>
+            ${place.dia_chi ? `<div style="font-size:12px; color:#6b7a90; margin-bottom:8px;"><i>📍 ${place.dia_chi}</i></div>` : ''}
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              ${place.thoi_gian_du_kien ? `<span style="background:#dcfce7; color:#15803d; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">⏱ ${place.thoi_gian_du_kien}</span>` : ''}
+              ${place.danh_gia ? `<span style="background:#fef9c3; color:#854d0e; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">⭐ ${place.danh_gia}</span>` : ''}
+              ${place.chi_phi_du_kien ? `<span style="background:#e0f2fe; color:#0369a1; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">💰 ${this.formatCurrency(place.chi_phi_du_kien)}</span>` : ''}
+            </div>
+          </div>`;
+        
+        marker.bindPopup(content);
+
+        marker.on('click', () => {
           this.activeMarkerIdx = idx;
-          const content = `
-            <div style="font-family:'Inter',sans-serif;max-width:220px;padding:4px 0;">
-              <div style="font-weight:700;font-size:14px;color:#1e2d44;margin-bottom:4px;">
-                ${idx + 1}. ${place.ten_dia_diem}
-              </div>
-              ${place.dia_chi ? `<div style="font-size:12px;color:#6b7a90;margin-bottom:6px;"><i>📍 ${place.dia_chi}</i></div>` : ''}
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                ${place.thoi_gian_du_kien ? `<span style="background:#dcfce7;color:#15803d;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:600;">⏱ ${place.thoi_gian_du_kien}</span>` : ''}
-                ${place.danh_gia ? `<span style="background:#fef9c3;color:#854d0e;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:600;">⭐ ${place.danh_gia}</span>` : ''}
-                ${place.chi_phi_du_kien ? `<span style="background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:600;">💰 ${this.formatCurrency(place.chi_phi_du_kien)}</span>` : ''}
-              </div>
-            </div>`;
-          infoWindow.setContent(content);
-          infoWindow.open(this.googleMap, marker);
         });
 
         this.mapMarkers.push(marker);
@@ -385,64 +343,41 @@ export default {
     },
 
     drawRoute() {
-      const path = this.mapPlaces
+      const latlngs = this.mapPlaces
         .filter(p => p.vi_do && p.kinh_do)
-        .map(p => ({ lat: p.vi_do, lng: p.kinh_do }));
+        .map(p => [p.vi_do, p.kinh_do]);
 
-      if (path.length < 2) return;
+      if (latlngs.length < 2) return;
 
-      this.mapPolyline = new window.google.maps.Polyline({
-        path,
-        geodesic: true,
-        strokeColor: '#0ea5e9',
-        strokeOpacity: 0.85,
-        strokeWeight: 3.5,
-        icons: [{
-          icon: {
-            path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 3,
-            fillColor: '#0ea5e9',
-            fillOpacity: 1,
-            strokeWeight: 1,
-          },
-          offset: '50%',
-          repeat: '100px',
-        }],
-      });
-      this.mapPolyline.setMap(this.googleMap);
+      this.mapPolyline = L.polyline(latlngs, {
+        color: '#0ea5e9',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '8, 12',
+        lineJoin: 'round'
+      }).addTo(this.leafletMap);
     },
 
     fitBounds() {
-      const bounds = new window.google.maps.LatLngBounds();
-      this.mapPlaces.forEach(p => {
-        if (p.vi_do && p.kinh_do) bounds.extend({ lat: p.vi_do, lng: p.kinh_do });
-      });
-      if (!bounds.isEmpty()) {
-        this.googleMap.fitBounds(bounds, { top: 60, right: 40, bottom: 40, left: 40 });
+      const latlngs = this.mapPlaces
+        .filter(p => p.vi_do && p.kinh_do)
+        .map(p => [p.vi_do, p.kinh_do]);
+        
+      if (latlngs.length > 0) {
+        this.leafletMap.fitBounds(latlngs, { padding: [50, 50] });
       }
     },
 
     focusMarker(idx) {
       this.activeMarkerIdx = idx;
       const place = this.mapPlaces[idx];
-      if (!place || !place.vi_do || !this.googleMap) return;
-      this.googleMap.panTo({ lat: place.vi_do, lng: place.kinh_do });
-      this.googleMap.setZoom(15);
-      // Kích hoạt click trên marker
+      if (!place || !place.vi_do || !this.leafletMap) return;
+      
+      this.leafletMap.flyTo([place.vi_do, place.kinh_do], 16);
+      
       if (this.mapMarkers[idx]) {
-        window.google.maps.event.trigger(this.mapMarkers[idx], 'click');
+        this.mapMarkers[idx].openPopup();
       }
-    },
-
-    getMapStyles() {
-      return [
-        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a0d8ef' }] },
-        { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f0' }] },
-        { featureType: 'road.highway', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }] },
-        { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#dbe0e8' }] },
-        { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#c5e8b0' }] },
-        { featureType: 'administrative', elementType: 'labels.text.fill', stylers: [{ color: '#444444' }] },
-      ];
     },
 
     // ── UTILITIES ────────────────────────────────
@@ -486,7 +421,7 @@ export default {
           this.chuyenDis = this.chuyenDis.filter(t => t.id !== this.deleteTarget.id);
           this.deleteTarget = null;
         }
-      } catch {}
+      } catch { }
       this.deleting = false;
     },
   },
@@ -527,7 +462,9 @@ export default {
   margin: 0;
 }
 
-.text-brand { color: #10b981; }
+.text-brand {
+  color: #10b981;
+}
 
 .btn-brand-lg {
   background: linear-gradient(135deg, #10b981, #0ea5e9);
@@ -544,7 +481,11 @@ export default {
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
   transition: all 0.2s;
 }
-.btn-brand-lg:hover { transform: translateY(-2px); color: #fff; }
+
+.btn-brand-lg:hover {
+  transform: translateY(-2px);
+  color: #fff;
+}
 
 /* Empty state */
 .ltct-empty {
@@ -557,9 +498,23 @@ export default {
   text-align: center;
   color: #7a8ea0;
 }
-.ltct-empty i { font-size: 3.5rem; color: #c0cedf; }
-.ltct-empty h4 { font-size: 1.25rem; font-weight: 700; color: #3d5166; margin: 0; }
-.ltct-empty p { font-size: 0.93rem; margin: 0; }
+
+.ltct-empty i {
+  font-size: 3.5rem;
+  color: #c0cedf;
+}
+
+.ltct-empty h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3d5166;
+  margin: 0;
+}
+
+.ltct-empty p {
+  font-size: 0.93rem;
+  margin: 0;
+}
 
 /* Loading */
 .ltct-loading {
@@ -570,6 +525,7 @@ export default {
   padding: 4rem;
   color: #7a8ea0;
 }
+
 .spinner {
   width: 36px;
   height: 36px;
@@ -578,6 +534,7 @@ export default {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+
 .mini-spinner {
   width: 22px;
   height: 22px;
@@ -586,7 +543,12 @@ export default {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Grid */
 .trips-grid {
@@ -606,6 +568,7 @@ export default {
   gap: 0.8rem;
   transition: all 0.22s;
 }
+
 .trip-card:hover {
   box-shadow: 0 14px 35px rgba(30, 45, 68, 0.12);
   transform: translateY(-3px);
@@ -616,6 +579,7 @@ export default {
   justify-content: space-between;
   align-items: center;
 }
+
 .trip-icon-wrap {
   width: 44px;
   height: 44px;
@@ -627,14 +591,23 @@ export default {
   font-size: 1.1rem;
   color: #10b981;
 }
+
 .trip-card-status {
   font-size: 0.76rem;
   font-weight: 700;
   padding: 0.22rem 0.75rem;
   border-radius: 999px;
 }
-.trip-card-status.active { background: #dcfce7; color: #15803d; }
-.trip-card-status.done { background: #e0f2fe; color: #0369a1; }
+
+.trip-card-status.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.trip-card-status.done {
+  background: #e0f2fe;
+  color: #0369a1;
+}
 
 .trip-title {
   font-size: 1.05rem;
@@ -644,14 +617,23 @@ export default {
   line-height: 1.35;
 }
 
-.trip-info-rows { display: flex; flex-direction: column; gap: 0.38rem; }
+.trip-info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
 .trip-info-row {
   display: flex;
   align-items: center;
   font-size: 0.85rem;
   color: #5a6d80;
 }
-.trip-info-row i { color: #10b981; font-size: 0.9rem; }
+
+.trip-info-row i {
+  color: #10b981;
+  font-size: 0.9rem;
+}
 
 .trip-card-footer {
   display: flex;
@@ -661,7 +643,11 @@ export default {
   padding-top: 0.75rem;
   border-top: 1px solid #f0f4fb;
 }
-.trip-date-created { font-size: 0.78rem; color: #a0adbf; }
+
+.trip-date-created {
+  font-size: 0.78rem;
+  color: #a0adbf;
+}
 
 .trip-footer-actions {
   display: flex;
@@ -685,7 +671,11 @@ export default {
   transition: all 0.18s;
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
 }
-.btn-map:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(14, 165, 233, 0.35); }
+
+.btn-map:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.35);
+}
 
 .btn-delete {
   width: 32px;
@@ -701,7 +691,12 @@ export default {
   font-size: 0.9rem;
   transition: all 0.18s;
 }
-.btn-delete:hover { background: #e11d48; color: #fff; border-color: #e11d48; }
+
+.btn-delete:hover {
+  background: #e11d48;
+  color: #fff;
+  border-color: #e11d48;
+}
 
 /* ── MAP MODAL ──────────────────────────────── */
 .map-overlay {
@@ -731,8 +726,15 @@ export default {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(40px) scale(0.96); opacity: 0; }
-  to   { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(40px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .map-modal-header {
@@ -767,7 +769,11 @@ export default {
   color: #64748b;
   transition: all 0.18s;
 }
-.map-close-btn:hover { background: #e11d48; color: #fff; }
+
+.map-close-btn:hover {
+  background: #e11d48;
+  color: #fff;
+}
 
 .map-modal-body {
   display: flex;
@@ -822,7 +828,11 @@ export default {
   color: #8a9aac;
   font-size: 0.85rem;
 }
-.map-sidebar-empty i { font-size: 2.2rem; color: #c8d5e2; }
+
+.map-sidebar-empty i {
+  font-size: 2.2rem;
+  color: #c8d5e2;
+}
 
 .map-place-list {
   flex: 1;
@@ -840,8 +850,16 @@ export default {
   margin-bottom: 0.4rem;
   border: 1.5px solid transparent;
 }
-.map-place-item:hover { background: #f0f7ff; border-color: #bfdbfe; }
-.map-place-item.active { background: #eff6ff; border-color: #93c5fd; }
+
+.map-place-item:hover {
+  background: #f0f7ff;
+  border-color: #bfdbfe;
+}
+
+.map-place-item.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
 
 .place-num {
   width: 28px;
@@ -857,9 +875,15 @@ export default {
   flex-shrink: 0;
   margin-top: 1px;
 }
-.map-place-item.active .place-num { background: linear-gradient(135deg, #f97316, #ef4444); }
 
-.place-info { flex: 1; min-width: 0; }
+.map-place-item.active .place-num {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+}
+
+.place-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .place-name {
   font-size: 0.87rem;
@@ -894,7 +918,11 @@ export default {
   background: #e0f2fe;
   color: #0369a1;
 }
-.place-tag.rating { background: #fef9c3; color: #854d0e; }
+
+.place-tag.rating {
+  background: #fef9c3;
+  color: #854d0e;
+}
 
 /* Map canvas */
 .map-canvas-wrap {
@@ -932,6 +960,7 @@ export default {
   z-index: 700;
   backdrop-filter: blur(4px);
 }
+
 .modal-box {
   background: #fff;
   border-radius: 1.4rem;
@@ -942,10 +971,19 @@ export default {
   animation: popIn 0.28s ease both;
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.18);
 }
+
 @keyframes popIn {
-  from { transform: scale(0.88); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.88);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
+
 .modal-icon {
   width: 56px;
   height: 56px;
@@ -958,9 +996,24 @@ export default {
   color: #e11d48;
   margin: 0 auto 1rem;
 }
-.modal-box h4 { font-weight: 800; color: #1e2d44; margin-bottom: 0.5rem; }
-.modal-box p { font-size: 0.92rem; color: #5a6d80; margin-bottom: 1.5rem; }
-.modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
+
+.modal-box h4 {
+  font-weight: 800;
+  color: #1e2d44;
+  margin-bottom: 0.5rem;
+}
+
+.modal-box p {
+  font-size: 0.92rem;
+  color: #5a6d80;
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
 
 .btn-ghost {
   background: transparent;
@@ -973,7 +1026,10 @@ export default {
   cursor: pointer;
   transition: all 0.18s;
 }
-.btn-ghost:hover { background: #f0f4fb; }
+
+.btn-ghost:hover {
+  background: #f0f4fb;
+}
 
 .btn-danger {
   background: linear-gradient(135deg, #e11d48, #f97316);
@@ -987,15 +1043,47 @@ export default {
   box-shadow: 0 6px 16px rgba(225, 29, 72, 0.28);
   transition: all 0.18s;
 }
-.btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
-.btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* Responsive */
 @media (max-width: 640px) {
-  .map-modal { height: 95vh; max-height: none; border-radius: 1rem; }
-  .map-modal-body { flex-direction: column; }
-  .map-sidebar { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid #e8edf5; }
-  .map-place-list { display: flex; flex-direction: row; gap: 0.4rem; overflow-x: auto; overflow-y: hidden; padding: 0.5rem; }
-  .map-place-item { min-width: 200px; margin-bottom: 0; }
+  .map-modal {
+    height: 95vh;
+    max-height: none;
+    border-radius: 1rem;
+  }
+
+  .map-modal-body {
+    flex-direction: column;
+  }
+
+  .map-sidebar {
+    width: 100%;
+    height: 220px;
+    border-right: none;
+    border-bottom: 1px solid #e8edf5;
+  }
+
+  .map-place-list {
+    display: flex;
+    flex-direction: row;
+    gap: 0.4rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem;
+  }
+
+  .map-place-item {
+    min-width: 200px;
+    margin-bottom: 0;
+  }
 }
 </style>
