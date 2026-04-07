@@ -11,12 +11,14 @@
           <i class="fas fa-map-marker-alt me-3"></i>Địa điểm giải trí Đà Nẵng
         </h1>
         <p class="page-subtitle mb-4 text-center">
-          <i class="fas fa-robot me-2 "></i>Khám phá địa điểm  giải trí:ngoài trời, cafe, mua sắm, xem phim, công viên ... và trải nghiệm AI đề xuất hợp ngân sách.
+          <i class="fas fa-robot me-2 "></i>Khám phá địa điểm giải trí:ngoài trời, cafe, mua sắm, xem phim, công viên
+          ... và trải nghiệm AI đề xuất hợp ngân sách.
         </p>
 
         <!-- SEARCH -->
         <div class="search-bar d-flex justify-content-center mb-3">
-          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..." style="max-width: 400px;" @keyup.enter="performSearch">
+          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..."
+            style="max-width: 400px;" @keyup.enter="performSearch">
           <button @click="performSearch" class="btn btn-primary me-2">Tìm kiếm</button>
           <button @click="clearSearch" class="btn btn-outline-secondary" v-if="searchQuery">Xóa</button>
         </div>
@@ -35,7 +37,15 @@
     <!-- LIST -->
     <section class="places-section py-4">
       <div class="container">
-        <div class="row g-4">
+        <div v-if="loading" class="text-center py-5">
+           <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+           <p class="mt-3 text-muted">Đang tải dữ liệu từ OpenStreetMap Đà Nẵng...</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger text-center">
+           {{ error }}
+           <button class="btn btn-sm btn-outline-danger ms-2" @click="fetchData">Thử lại</button>
+        </div>
+        <div v-else class="row g-4">
 
           <div v-for="place in filteredPlaces" :key="place.id" class="col-12 col-md-6 col-xl-4">
             <div class="card place-card h-100 shadow-sm">
@@ -115,13 +125,15 @@
           <ul>
             <li><strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</li>
             <li><strong>Giờ mở / đóng:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</li>
-            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</li>
+            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve)
+              }}</li>
             <li><strong>Category:</strong> {{ selectedPlace.category }}</li>
           </ul>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary" @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary"
+            @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
@@ -130,6 +142,8 @@
 </template>
 
 <script>
+const BASE = 'http://localhost:8000/api';
+
 export default {
   data() {
     return {
@@ -139,142 +153,62 @@ export default {
       selectedPlace: null,
       searchQuery: '',
       tempSearchQuery: '',
-
-      places: [
-        {
-          id: 1,
-          ten_dia_diem: 'Cầu Rồng',
-          mo_ta: 'Biểu tượng Đà Nẵng, phun lửa cuối tuần',
-          dia_chi: 'Đường Nguyễn Văn Linh, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.227,
-          vi_do: 16.061,
-          gia_ve: 0,
-          gio_mo_cua: '00:00',
-          gio_dong_cua: '23:59',
-          danh_gia_trung_binh: 4.8,
-          category: 'Ngoài trời',
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop'
-        },
-        {
-          id: 6,
-          ten_dia_diem: 'The Espresso Station',
-          mo_ta: 'Quán cà phê hiện đại, không gian làm việc mở, đồ uống thơm ngon.',
-          dia_chi: '48 Trần Phú, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.218,
-          vi_do: 16.061,
-          gia_ve: 50000,
-          gio_mo_cua: '06:30',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.7,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?w=800&h=600&fit=crop'
-        },
-        {
-          id: 7,
-          ten_dia_diem: 'Cong Caphe - Trần Phú',
-          mo_ta: 'Cafe phong cách Việt, vibe vintage đặc trưng, phù hợp check-in.',
-          dia_chi: '56 Trần Phú, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.223,
-          vi_do: 16.067,
-          gia_ve: 40000,
-          gio_mo_cua: '07:30',
-          gio_dong_cua: '23:00',
-          danh_gia_trung_binh: 4.5,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&h=600&fit=crop'
-        },
-        {
-          id: 8,
-          ten_dia_diem: 'Rainforest Coffee',
-          mo_ta: 'Cafe xanh giữa đô thị, hoà mình với cây cối, nước ép healthy.',
-          dia_chi: '12 Lê Duẩn, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.215,
-          vi_do: 16.056,
-          gia_ve: 45000,
-          gio_mo_cua: '07:00',
-          gio_dong_cua: '22:30',
-          danh_gia_trung_binh: 4.6,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1517685352821-92cf88aee5a5?w=800&h=600&fit=crop'
-        },
-    
-        {
-          id: 2,
-          ten_dia_diem: 'Vincom Plaza',
-          mo_ta: 'Trung tâm mua sắm lớn',
-          dia_chi: '109 Nguyễn Văn Linh, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.223,
-          vi_do: 16.067,
-          gia_ve: 0,
-          gio_mo_cua: '09:00',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.6,
-          category: 'Mua sắm',
-          image: 'https://images.unsplash.com/photo-1519567770579-c2fc3b6d5d9b?w=800&h=600&fit=crop'
-        },
-        {
-          id: 3,
-          ten_dia_diem: 'CGV Cinema',
-          mo_ta: 'Rạp chiếu phim hiện đại',
-          dia_chi: '31 Thái Phiên, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.22,
-          vi_do: 16.06,
-          gia_ve: 90000,
-          gio_mo_cua: '09:00',
-          gio_dong_cua: '23:00',
-          danh_gia_trung_binh: 4.5,
-          category: 'Xem phim',
-          image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&h=600&fit=crop'
-        },
-        {
-          id: 4,
-          ten_dia_diem: 'Công viên Biển Đông',
-          mo_ta: 'Công viên rộng, gần biển',
-          dia_chi: 'TP. Đà Nẵng',
-          kinh_do: 108.24,
-          vi_do: 16.07,
-          gia_ve: 0,
-          gio_mo_cua: '05:00',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.7,
-          category: 'Công viên',
-          image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop'
-        },
-        {
-          id: 5,
-          ten_dia_diem: 'Sky36',
-          mo_ta: 'Bar nhạc sống, view đẹp',
-          dia_chi: '36 Lê Duẩn, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.21,
-          vi_do: 16.05,
-          gia_ve: 150000,
-          gio_mo_cua: '17:00',
-          gio_dong_cua: '01:00',
-          danh_gia_trung_binh: 4.4,
-          category: 'Âm nhạc',
-          image: 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=800&h=600&fit=crop'
-        }
-      ]
+      places: [],
+      loading: false,
+      error: null,
     }
+  },
+
+  mounted() {
+    this.fetchData();
   },
 
   computed: {
     filteredPlaces() {
-      let filtered = this.places;
+      let f = this.places;
       if (this.activeFilter !== 'Tất cả') {
-        filtered = filtered.filter(p => p.category === this.activeFilter);
+        f = f.filter(p => (p.category || '').includes(this.activeFilter) || (p.loai_dia_diem || '').includes(this.activeFilter));
       }
       if (this.searchQuery) {
-        filtered = filtered.filter(p =>
-          p.ten_dia_diem.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.mo_ta.toLowerCase().includes(this.searchQuery.toLowerCase())
+        const q = this.searchQuery.toLowerCase();
+        f = f.filter(p => 
+          p.ten_dia_diem.toLowerCase().includes(q) || 
+          (p.mo_ta && p.mo_ta.toLowerCase().includes(q))
         );
       }
-      return filtered;
+      return f;
     }
   },
 
   methods: {
+    async fetchData() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await fetch(`${BASE}/dia-diems/giai-tri`);
+        if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
+        const json = await res.json();
+        const fallbacks = {
+          'Ngoài trời': 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop',
+          'Mua sắm':    'https://images.unsplash.com/photo-1481437156560-3205f6a55735?w=800&h=600&fit=crop',
+          'Xem phim':   'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&h=600&fit=crop',
+          'Công viên':  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&h=600&fit=crop',
+          'Âm nhạc':    'https://images.unsplash.com/photo-1551524559-8af4e6624178?w=800&h=600&fit=crop',
+          'Cafe':       'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          category: p.loai_dia_diem,
+          image: p.image || fallbacks[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1517685352821-92cf88aee5a5?w=800&h=600&fit=crop'
+        }));
+      } catch (e) {
+        this.error = e.message;
+        this.places = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
     setFilter(filter) {
       this.activeFilter = filter
     },
@@ -292,7 +226,7 @@ export default {
     },
 
     formatPrice(price) {
-      return price.toLocaleString() + 'đ'
+      return Number(price).toLocaleString('vi-VN') + 'đ'
     },
 
     viewDetail(place) {
@@ -565,12 +499,30 @@ export default {
   letter-spacing: 0.5px;
   z-index: 5;
 }
-.place-badge.outdoor { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.place-badge.shopping { background: linear-gradient(135deg, #34d399 0%, #059669 100%); }
-.place-badge.cinema { background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); }
-.place-badge.park { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
-.place-badge.music { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
-.place-badge.cafe { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
+
+.place-badge.outdoor {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.place-badge.shopping {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+}
+
+.place-badge.cinema {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+.place-badge.park {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+.place-badge.music {
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+}
+
+.place-badge.cafe {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}
 
 .price-text {
   color: #059669;
@@ -735,6 +687,7 @@ export default {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -746,6 +699,7 @@ export default {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -756,6 +710,7 @@ export default {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -766,6 +721,7 @@ export default {
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);

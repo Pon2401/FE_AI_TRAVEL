@@ -1,103 +1,68 @@
 <template>
   <div class="giai-tri-page">
-
-    <!-- HERO -->
     <section class="hero-section py-5 position-relative">
       <button class="btn btn-success create-itinerary-btn" @click="createItinerary">
         <i class="fas fa-calendar-plus me-2"></i>Tạo lịch trình
       </button>
       <div class="container text-center">
-        <h1 class="page-title mb-3">
-          <i class="fas fa-camera me-3"></i>Địa điểm tâm linh tại Đà Nẵng
-        </h1>
+        <h1 class="page-title mb-3"><i class="fas fa-camera me-3"></i>Địa điểm tâm linh tại Đà Nẵng</h1>
         <p class="page-subtitle mb-4 text-center">
-          <i class="fas fa-star me-2"></i>Khám phá những địa điểm tâm linh nổi tiếng nhất: Chùa, Đền, Nhà thờ, Thánh địa, Tu viện... và nhận đề xuất từ AI sao cho phù hợp ngân sách của bạn.
+          <i class="fas fa-star me-2"></i>Khám phá những địa điểm tâm linh nổi tiếng nhất: Chùa, Đền, Nhà thờ, Thánh
+          địa, Tu viện... và nhận đề xuất từ AI sao cho phù hợp ngân sách của bạn.
         </p>
-
-        <!-- SEARCH -->
         <div class="search-bar d-flex justify-content-center mb-3">
-          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..." style="max-width: 400px;" @keyup.enter="performSearch">
+          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..."
+            style="max-width: 400px;" @keyup.enter="performSearch">
           <button @click="performSearch" class="btn btn-primary me-2">Tìm kiếm</button>
           <button @click="clearSearch" class="btn btn-outline-secondary" v-if="searchQuery">Xóa</button>
         </div>
-
-        <!-- FILTER -->
         <div class="filter-bar d-flex justify-content-center flex-wrap gap-2">
           <button v-for="filter in filters" :key="filter"
             :class="['btn btn-sm', activeFilter === filter ? 'btn-primary' : 'btn-outline-primary']"
-            @click="setFilter(filter)">
-            {{ filter }}
-          </button>
+            @click="setFilter(filter)">{{ filter }}</button>
         </div>
       </div>
     </section>
 
-    <!-- LIST -->
     <section class="places-section py-4">
       <div class="container">
-        <div class="row g-4">
-
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+          <p class="mt-3 text-muted">Đang tải dữ liệu...</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger text-center">
+          <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+          <button class="btn btn-sm btn-outline-danger ms-3" @click="fetchData">Thử lại</button>
+        </div>
+        <div v-else class="row g-4">
           <div v-for="place in filteredPlaces" :key="place.id" class="col-12 col-md-6 col-xl-4">
             <div class="card place-card h-100 shadow-sm">
-
-              <!-- IMAGE -->
               <div class="place-image" :style="{ backgroundImage: `url(${place.image})` }">
-                <div :class="['place-badge', categoryClass(place.category)]">{{ place.category }}</div>
+                <div :class="['place-badge', categoryClass(place.loai_dia_diem)]">{{ place.loai_dia_diem }}</div>
               </div>
-
-              <!-- BODY -->
               <div class="card-body d-flex flex-column">
-
-                <!-- TITLE -->
                 <div class="mb-2">
                   <h5 class="card-title">{{ place.ten_dia_diem }}</h5>
-                  <small class="text-muted">
-                    📍 {{ place.dia_chi }}
-                  </small>
+                  <small class="text-muted">📍 {{ place.dia_chi }}</small>
                 </div>
-
-                <!-- TIME -->
                 <div class="mb-2">
-                  <span class="badge bg-success me-2">
-                    Mở: {{ place.gio_mo_cua }}
-                  </span>
-                  <span class="badge bg-danger">
-                    Đóng: {{ place.gio_dong_cua }}
-                  </span>
+                  <span class="badge bg-success me-2">Mở: {{ place.gio_mo_cua }}</span>
+                  <span class="badge bg-danger">Đóng: {{ place.gio_dong_cua }}</span>
                 </div>
-
-                <!-- DESC -->
-                <p class="text-secondary small">
-                  {{ place.mo_ta }}
-                </p>
-
-                <!-- RATING -->
-                <div class="mb-2">
-                  ⭐ {{ place.danh_gia_trung_binh }}
-                </div>
-
-                <!-- PRICE -->
+                <p class="text-secondary small">{{ place.mo_ta }}</p>
+                <div class="mb-2">⭐ {{ place.danh_gia_trung_binh }}</div>
                 <div class="mb-3">
-                  <strong class="price-text">
-                    {{ place.gia_ve == 0 ? 'Miễn phí' : formatPrice(place.gia_ve) }}
-                  </strong>
+                  <strong class="price-text">{{ place.gia_ve == 0 ? 'Miễn phí' : formatPrice(place.gia_ve) }}</strong>
                 </div>
-
-                <!-- ACTION -->
                 <div class="mt-auto">
-                  <button class="btn btn-primary w-100" @click="viewDetail(place)">
-                    Xem chi tiết
-                  </button>
+                  <button class="btn btn-primary w-100" @click="viewDetail(place)">Xem chi tiết</button>
                 </div>
-
               </div>
             </div>
           </div>
-
-          <div v-if="filteredPlaces.length === 0" class="text-center">
-            Không có dữ liệu
+          <div v-if="filteredPlaces.length === 0 && !loading" class="text-center py-4 text-muted">
+            <i class="fas fa-search fa-2x mb-2 d-block"></i>Không tìm thấy địa điểm phù hợp
           </div>
-
         </div>
       </div>
     </section>
@@ -107,7 +72,8 @@
         <button class="btn-close" @click="closeModal">×</button>
         <div class="modal-header">
           <h4>{{ selectedPlace.ten_dia_diem }}</h4>
-          <small class="text-muted">{{ selectedPlace.category }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
+          <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh
+            }}</small>
         </div>
         <div class="modal-body">
           <div class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
@@ -115,266 +81,86 @@
           <ul>
             <li><strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</li>
             <li><strong>Giờ mở / đóng:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</li>
-            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</li>
-            <li><strong>Category:</strong> {{ selectedPlace.category }}</li>
+            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve)
+              }}</li>
+            <li><strong>Loại:</strong> {{ selectedPlace.loai_dia_diem }}</li>
           </ul>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary" @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary"
+            @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script>
+const BASE = 'http://localhost:8000/api';
 export default {
+  name: 'TamLinh',
   data() {
     return {
       activeFilter: 'Tất cả',
       filters: ['Tất cả', 'Chùa', 'Đền', 'Nhà thờ', 'Thánh địa', 'Tu viện'],
-      showModal: false,
-      selectedPlace: null,
-      searchQuery: '',
-      tempSearchQuery: '',
-
-places: [
-{
-  id: 1,
-  ten_dia_diem: 'Chùa Linh Ứng Bãi Bụt',
-  mo_ta: 'Ngôi chùa nổi tiếng với tượng Phật Quan Âm cao 67m, view biển cực đẹp.',
-  dia_chi: 'Bãi Bụt, Sơn Trà, Đà Nẵng',
-  kinh_do: 108.247,
-  vi_do: 16.100,
-  gia_ve: 0,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.9,
-  category: 'Chùa',
-  image: 'https://images.unsplash.com/photo-1580974928064-f0aeef70895a?w=800'
-},
-{
-  id: 2,
-  ten_dia_diem: 'Chùa Linh Ứng Ngũ Hành Sơn',
-  mo_ta: 'Ngôi chùa cổ linh thiêng nằm trong danh thắng Ngũ Hành Sơn.',
-  dia_chi: 'Ngũ Hành Sơn, Đà Nẵng',
-  kinh_do: 108.264,
-  vi_do: 16.004,
-  gia_ve: 20000,
-  gio_mo_cua: '07:00',
-  gio_dong_cua: '17:30',
-  danh_gia_trung_binh: 4.7,
-  category: 'Chùa',
-  image: 'https://images.unsplash.com/photo-1558980664-10e7170c9b4f?w=800'
-},
-{
-  id: 3,
-  ten_dia_diem: 'Chùa Linh Ứng Bà Nà',
-  mo_ta: 'Ngôi chùa trên núi cao, không gian mát mẻ, linh thiêng.',
-  dia_chi: 'Bà Nà Hills, Đà Nẵng',
-  kinh_do: 107.995,
-  vi_do: 15.995,
-  gia_ve: 700000,
-  gio_mo_cua: '08:00',
-  gio_dong_cua: '17:30',
-  danh_gia_trung_binh: 4.8,
-  category: 'Chùa', // ✅ đã sửa
-  image: 'https://images.unsplash.com/photo-1606813902917-0c3bb1f5c2e5?w=800'
-},
-{
-  id: 4,
-  ten_dia_diem: 'Chùa Quán Thế Âm',
-  mo_ta: 'Chùa nổi tiếng với động Quan Âm và lễ hội tâm linh lớn.',
-  dia_chi: 'Ngũ Hành Sơn, Đà Nẵng',
-  kinh_do: 108.262,
-  vi_do: 16.003,
-  gia_ve: 0,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '18:00',
-  danh_gia_trung_binh: 4.7,
-  category: 'Chùa',
-  image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800'
-},
-{
-  id: 5,
-  ten_dia_diem: 'Chùa Nam Sơn',
-  mo_ta: 'Chùa rộng lớn, kiến trúc đẹp, không gian yên bình.',
-  dia_chi: 'Liên Chiểu, Đà Nẵng',
-  kinh_do: 108.165,
-  vi_do: 16.070,
-  gia_ve: 0,
-  gio_mo_cua: '05:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.8,
-  category: 'Chùa',
-  image: 'https://images.unsplash.com/photo-1578469645742-46cae010e5d4?w=800'
-},
-{
-  id: 6,
-  ten_dia_diem: 'Chùa Pháp Lâm',
-  mo_ta: 'Chùa ngay trung tâm, thuận tiện tham quan và lễ Phật.',
-  dia_chi: 'Hải Châu, Đà Nẵng',
-  kinh_do: 108.210,
-  vi_do: 16.060,
-  gia_ve: 0,
-  gio_mo_cua: '05:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Chùa',
-  image: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=800'
-},
-{
-  id: 7,
-  ten_dia_diem: 'Nhà thờ Chính tòa Đà Nẵng',
-  mo_ta: 'Nhà thờ Con Gà với kiến trúc Gothic màu hồng nổi bật.',
-  dia_chi: '156 Trần Phú, Hải Châu, Đà Nẵng',
-  kinh_do: 108.223,
-  vi_do: 16.067,
-  gia_ve: 0,
-  gio_mo_cua: '05:00',
-  gio_dong_cua: '20:00',
-  danh_gia_trung_binh: 4.7,
-  category: 'Nhà thờ',
-  image: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=800'
-},
-{
-  id: 8,
-  ten_dia_diem: 'Thánh địa Mỹ Sơn',
-  mo_ta: 'Di sản văn hóa thế giới, trung tâm tôn giáo Chăm Pa cổ.',
-  dia_chi: 'Duy Xuyên, Quảng Nam',
-  kinh_do: 108.122,
-  vi_do: 15.773,
-  gia_ve: 150000,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '17:00',
-  danh_gia_trung_binh: 4.8,
-  category: 'Thánh địa',
-  image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800'
-},
-{
-  id: 9,
-  ten_dia_diem: 'Chùa Cầu Hội An',
-  mo_ta: 'Biểu tượng Hội An, vừa là cầu vừa là nơi thờ tự.',
-  dia_chi: 'Hội An, Quảng Nam',
-  kinh_do: 108.327,
-  vi_do: 15.880,
-  gia_ve: 80000,
-  gio_mo_cua: '07:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.7,
-  category: 'Đền',
-  image: 'https://images.unsplash.com/photo-1597149950306-1c7cfe2c6c60?w=800'
-},
-{
-  id: 10,
-  ten_dia_diem: 'Tu viện Nguyên Thiều',
-  mo_ta: 'Không gian thiền định yên tĩnh, phù hợp nghỉ dưỡng tâm linh.',
-  dia_chi: 'Quảng Nam',
-  kinh_do: 108.200,
-  vi_do: 15.900,
-  gia_ve: 0,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '18:00',
-  danh_gia_trung_binh: 4.5,
-  category: 'Tu viện',
-  image: 'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?w=800'
-},
-{
-  id: 11,
-  ten_dia_diem: 'Đền thờ Cá Ông',
-  mo_ta: 'Nơi thờ cá Ông linh thiêng của ngư dân miền biển.',
-  dia_chi: 'Sơn Trà, Đà Nẵng',
-  kinh_do: 108.245,
-  vi_do: 16.075,
-  gia_ve: 0,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '18:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Đền',
-  image: 'https://images.unsplash.com/photo-1549887534-3db6d5b9b1c6?w=800'
-}
-]
-
-
-    }
+      showModal: false, selectedPlace: null,
+      searchQuery: '', tempSearchQuery: '',
+      places: [], loading: false, error: null,
+    };
   },
-
+  mounted() { this.fetchData(); },
   computed: {
     filteredPlaces() {
-      let filtered = this.places;
-      if (this.activeFilter !== 'Tất cả') {
-        filtered = filtered.filter(p => p.category === this.activeFilter);
-      }
+      let f = this.places;
+      if (this.activeFilter !== 'Tất cả') f = f.filter(p => p.loai_dia_diem === this.activeFilter);
       if (this.searchQuery) {
-        filtered = filtered.filter(p =>
-          p.ten_dia_diem.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.mo_ta.toLowerCase().includes(this.searchQuery.toLowerCase())
-        );
+        const q = this.searchQuery.toLowerCase();
+        f = f.filter(p => p.ten_dia_diem.toLowerCase().includes(q) || (p.mo_ta && p.mo_ta.toLowerCase().includes(q)));
       }
-      return filtered;
+      return f;
     }
   },
-
   methods: {
-    setFilter(filter) {
-      this.activeFilter = filter
+    async fetchData() {
+      this.loading = true; this.error = null;
+      try {
+        const res = await fetch(`${BASE}/dia-diems/tam-linh`);
+        if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
+        const json = await res.json();
+        const fallbacks = {
+          'Chùa':      'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&h=600&fit=crop',
+          'Đền':       'https://images.unsplash.com/photo-1560185127-6a7f4e9e1e88?w=800&h=600&fit=crop',
+          'Nhà thờ':   'https://images.unsplash.com/photo-1550340499-a6c60fc8287c?w=800&h=600&fit=crop',
+          'Thánh địa': 'https://images.unsplash.com/photo-1548013146-72479768bbaa?w=800&h=600&fit=crop',
+          'Tu viện':   'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          image: p.image || fallbacks[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1548013146-72479768bbaa?w=800&h=600&fit=crop'
+        }));
+      } catch (e) { this.error = e.message; this.places = []; }
+      finally { this.loading = false; }
     },
-
-    categoryClass(category) {
-      const mapping = {
-        'Chùa': 'temple',
-        'Đền': 'shrine',
-        'Nhà thờ': 'church',
-        'Thánh địa': 'holy',
-        'Tu viện': 'monastery'
-      }
-      return mapping[category] || 'temple'
+    setFilter(f) { this.activeFilter = f; },
+    categoryClass(c) {
+      const m = { 'Chùa': 'temple', 'Đền': 'shrine', 'Nhà thờ': 'church', 'Thánh địa': 'holy', 'Tu viện': 'monastery' };
+      return m[c] || 'temple';
     },
-
-    formatPrice(price) {
-      return price.toLocaleString() + 'đ'
-    },
-
-    viewDetail(place) {
-      this.selectedPlace = place
-      this.showModal = true
-    },
-
-    closeModal() {
-      this.showModal = false
-      this.selectedPlace = null
-    },
-
-    createItinerary() {
-      alert('Chức năng tạo lịch trình đang phát triển')
-    },
-
-    performSearch() {
-      this.searchQuery = this.tempSearchQuery;
-    },
-
-    clearSearch() {
-      this.searchQuery = '';
-      this.tempSearchQuery = '';
-    }
-  }
-}
+    formatPrice(p) { return Number(p).toLocaleString('vi-VN') + 'đ'; },
+    viewDetail(p) { this.selectedPlace = p; this.showModal = true; },
+    closeModal() { this.showModal = false; this.selectedPlace = null; },
+    createItinerary() { alert('Chức năng tạo lịch trình đang phát triển'); },
+    performSearch() { this.searchQuery = this.tempSearchQuery; },
+    clearSearch() { this.searchQuery = ''; this.tempSearchQuery = ''; },
+  },
+};
 </script>
 
 <style scoped>
-.check-in-page {
-  background: linear-gradient(135deg, #f0f9ff 0%, #f1f5f9 100%);
-  min-height: 100vh;
-}
-
 .hero-section {
   position: relative;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(58, 134, 255, 0.14), transparent 28%),
-    radial-gradient(circle at 90% 15%, rgba(0, 200, 150, 0.16), transparent 20%),
-    linear-gradient(180deg, #f6fbff 0%, #ffffff 48%, #f8fbff 100%);
+  background: radial-gradient(circle at 10% 20%, rgba(58, 134, 255, 0.14), transparent 28%), radial-gradient(circle at 90% 15%, rgba(0, 200, 150, 0.16), transparent 20%), linear-gradient(180deg, #f6fbff 0%, #ffffff 48%, #f8fbff 100%);
 }
 
 .create-itinerary-btn {
@@ -399,7 +185,6 @@ places: [
   font-size: 2.8rem;
   font-weight: 800;
   color: #1f2937;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   letter-spacing: -0.5px;
   animation: fadeInDown 0.8s ease-out;
 }
@@ -448,26 +233,10 @@ places: [
   padding: 0.8rem 1.5rem;
 }
 
-.search-bar .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-}
-
 .search-bar .btn-outline-secondary {
   border: 2px solid #cbd5e1;
   color: #64748b;
   padding: 0.6rem 1.2rem;
-  transition: all 0.3s ease;
-}
-
-.search-bar .btn-outline-secondary:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #334155;
-}
-
-.places-section {
-  padding: 2rem 0;
 }
 
 .filter-bar {
@@ -487,7 +256,6 @@ places: [
   transition: all 0.3s ease;
   border: 2px solid transparent;
   font-size: 0.9rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .filter-bar .btn-outline-primary {
@@ -496,33 +264,23 @@ places: [
   background: #f0f4ff;
 }
 
-.filter-bar .btn-outline-primary:hover {
-  background: #e0e7ff;
-  border-color: #c7d2fe;
-  color: #3730a3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-}
-
 .filter-bar .btn-primary {
   background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   border-color: transparent;
-  color: #ffffff;
+  color: #fff;
   box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
   font-weight: 700;
 }
 
-.filter-bar .btn-primary:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.4);
-  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+.places-section {
+  padding: 2rem 0;
 }
 
 .place-card {
   border-radius: 18px;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: none;
-  background: #ffffff;
+  background: #fff;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
   animation: fadeInUp 0.6s ease-out;
@@ -583,12 +341,10 @@ places: [
 
 .badge.bg-success {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
 
 .badge.bg-danger {
   background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
 .place-badge {
@@ -602,16 +358,30 @@ places: [
   font-weight: 700;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   z-index: 5;
 }
-.place-badge.temple { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.place-badge.shrine { background: linear-gradient(135deg, #34d399 0%, #059669 100%); }
-.place-badge.church { background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); }
-.place-badge.hholy { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
-.place-badge.monastery { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
+
+.place-badge.temple {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.place-badge.shrine {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+}
+
+.place-badge.church {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+.place-badge.holy {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+.place-badge.monastery {
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+}
 
 .price-text {
   color: #059669;
@@ -663,13 +433,11 @@ places: [
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .btn-close:hover {
   background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%);
   transform: rotate(90deg) scale(1.1);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header h4 {
@@ -692,18 +460,9 @@ places: [
   background-size: cover;
   background-position: center;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   margin-bottom: 1.5rem;
   position: relative;
   overflow: hidden;
-}
-
-.modal-image::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.2) 100%);
-  border-radius: 16px;
 }
 
 .modal-body p {
@@ -751,29 +510,18 @@ places: [
   border: none;
 }
 
-.modal-actions .btn-secondary:hover {
-  background: #e2e8f0;
-  transform: translateY(-2px);
-}
-
 .modal-actions .btn-primary {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border: none;
   color: white;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
 }
 
-.modal-actions .btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
-}
-
-/* Animation keyframes */
 @keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -785,6 +533,7 @@ places: [
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -795,6 +544,7 @@ places: [
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -805,6 +555,7 @@ places: [
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);

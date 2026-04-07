@@ -1,13 +1,17 @@
 <template>
-    <div>
-        Đây là mục quản lý tâm linh, nội dung sẽ được cập nhật sau.
-    </div>
+  <LocationManager
+    pageTitle="Quản lý Tâm linh"
+    fetchUrl="http://127.0.0.1:8000/api/dia-diems/tam-linh"
+  />
 </template>
+
 <script>
+import LocationManager from './components/LocationManager.vue';
+
 export default {
-    
+  name: 'TamLinhAdmin',
+  components: {
+    LocationManager
+  }
 }
 </script>
-<style>
-    
-</style>

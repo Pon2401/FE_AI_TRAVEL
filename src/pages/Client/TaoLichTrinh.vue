@@ -529,14 +529,21 @@ export default {
     async fetchDiaDiem() {
       this.loadingDiaDiem = true;
       try {
-        const res = await fetch(`${BASE}/client/dia-diem/get-data`);
+        const res = await fetch(`${BASE}/dia-diems/`);
         const json = await res.json();
-        this.allDiaDiem = json.data || [];
-        // Collect unique categories
+        
+        this.allDiaDiem = (json.data || []).map(d => ({
+          ...d,
+          // Đảm bảo có id_danh_muc để lọc
+          id_danh_muc: d.id_danh_muc || d.danh_muc || 'other',
+          ten_danh_muc: d.loai_dia_diem || 'Khác'
+        }));
+
+        // Thu thập các danh mục duy nhất
         const catMap = {};
         this.allDiaDiem.forEach(d => {
           if (d.id_danh_muc && !catMap[d.id_danh_muc]) {
-            catMap[d.id_danh_muc] = { id: d.id_danh_muc, ten_danh_muc: d.ten_danh_muc || `Loại ${d.id_danh_muc}` };
+            catMap[d.id_danh_muc] = { id: d.id_danh_muc, ten_danh_muc: d.ten_danh_muc };
           }
         });
         this.categories = Object.values(catMap);

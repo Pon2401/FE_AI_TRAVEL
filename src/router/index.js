@@ -113,11 +113,6 @@ const routes = [
     meta: { layout: "default" },
   },
   {
-    path: "/admin/quan-ly-dia-diem-du-lich",
-    component: () => import("../pages/Admin/QuanLyDiaDiemDuLich.vue"),
-    meta: { layout: "default" },
-  },
-  {
     path: "/admin/am-thuc",
     component: () => import("../pages/Admin/Amthuc.vue"),
     meta: { layout: "default" },
@@ -137,6 +132,7 @@ const routes = [
     component: () => import("../pages/Admin/Checkin.vue"),
     meta: { layout: "default" },
   },
+
   {
     path: "/admin/quan-ly-danh-gia-phan-hoi",
     component: () => import("../pages/Admin/QuanLyDanhGia.vue"),
