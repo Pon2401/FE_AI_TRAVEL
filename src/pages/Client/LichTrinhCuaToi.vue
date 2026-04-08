@@ -207,7 +207,6 @@ export default {
       activeMarkerIdx: null,
       leafletMap: null,
       mapMarkers: [],
-      mapPolyline: null,
     };
   },
 
@@ -266,7 +265,6 @@ export default {
         this.leafletMap = null;
       }
       this.mapMarkers = [];
-      this.mapPolyline = null;
     },
 
     initMap() {
@@ -288,16 +286,14 @@ export default {
         zoomControl: true,
       });
 
-      // Geoapify Maps – Premium style với API key
-      const GEOAPIFY_KEY = '68caa9575e20b9cff4b8584036033662965e7eafe884f807025788d5cb1ceea3';
-      L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright-smooth/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_KEY}`, {
-        attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+      // Google Maps – Premium style
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps',
         maxZoom: 20
       }).addTo(this.leafletMap);
 
       if (hasCoords) {
         this.placeMarkers();
-        this.drawRoute();
         this.fitBounds();
       }
     },
@@ -340,22 +336,6 @@ export default {
 
         this.mapMarkers.push(marker);
       });
-    },
-
-    drawRoute() {
-      const latlngs = this.mapPlaces
-        .filter(p => p.vi_do && p.kinh_do)
-        .map(p => [p.vi_do, p.kinh_do]);
-
-      if (latlngs.length < 2) return;
-
-      this.mapPolyline = L.polyline(latlngs, {
-        color: '#0ea5e9',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '8, 12',
-        lineJoin: 'round'
-      }).addTo(this.leafletMap);
     },
 
     fitBounds() {

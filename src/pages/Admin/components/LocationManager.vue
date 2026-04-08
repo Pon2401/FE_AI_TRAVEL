@@ -200,12 +200,22 @@
               </div>
 
               <div class="col-md-6">
-                <label class="form-label">Vĩ độ (Latitude)</label>
-                <input v-model="form.vi_do" type="number" step="0.000001" class="form-control modal-input" placeholder="Ví dụ: 16.0613">
+                <label class="form-label">Tọa độ trên bản đồ</label>
+                <div id="admin-map" style="height: 200px; width: 100%; border-radius: 14px; border: 1px solid #dbe4f0; background: #f8fafc;"></div>
+                <small class="text-muted mt-1 d-block"><i class="bi bi-info-circle me-1"></i>Thay đổi số bên dưới hoặc click lên bản đồ để chọn vị trí.</small>
               </div>
+
               <div class="col-md-6">
-                <label class="form-label">Kinh độ (Longitude)</label>
-                <input v-model="form.kinh_do" type="number" step="0.000001" class="form-control modal-input" placeholder="Ví dụ: 108.2271">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Vĩ độ (Latitude) <span class="text-danger">*</span></label>
+                    <input v-model="form.vi_do" type="number" step="0.000001" class="form-control modal-input" placeholder="Ví dụ: 16.0613" @input="updateAdminMarker">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Kinh độ (Longitude) <span class="text-danger">*</span></label>
+                    <input v-model="form.kinh_do" type="number" step="0.000001" class="form-control modal-input" placeholder="Ví dụ: 108.2271" @input="updateAdminMarker">
+                  </div>
+                </div>
               </div>
 
               <div class="col-md-4">
@@ -332,6 +342,8 @@ export default {
         image: '',
         mo_ta: '',
       },
+      adminMapInstance: null,
+      adminMarker: null,
       modalInstance: null,
       deleteModalInstance: null,
     }
@@ -385,12 +397,14 @@ export default {
       };
       if (!this.modalInstance) this.modalInstance = new window.bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
       this.modalInstance.show();
+      this.$nextTick(() => { this.initAdminMap(); });
     },
     openEditModal(place) {
       this.isEditing = true;
       this.form = { ...place };
       if (!this.modalInstance) this.modalInstance = new window.bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
       this.modalInstance.show();
+      this.$nextTick(() => { this.initAdminMap(); });
     },
     openDeleteModal(place) {
       this.selectedPlace = place;
@@ -417,6 +431,59 @@ export default {
         this.saving = false;
       }
     },
+
+    initAdminMap() {
+      const L = window.L;
+      if (!L) return;
+
+      if (this.adminMapInstance) {
+        this.adminMapInstance.remove();
+        this.adminMapInstance = null;
+      }
+
+      const defaultLat = parseFloat(this.form.vi_do) || 16.0544;
+      const defaultLng = parseFloat(this.form.kinh_do) || 108.2022;
+
+      this.adminMapInstance = L.map('admin-map').setView([defaultLat, defaultLng], 14);
+
+      L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      }).addTo(this.adminMapInstance);
+
+      this.adminMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(this.adminMapInstance);
+
+      // Map click to pick location
+      this.adminMapInstance.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        this.form.vi_do = lat.toFixed(7);
+        this.form.kinh_do = lng.toFixed(7);
+        this.updateAdminMarker();
+      });
+
+      // Marker drag to update form
+      this.adminMarker.on('dragend', () => {
+        const pos = this.adminMarker.getLatLng();
+        this.form.vi_do = pos.lat.toFixed(7);
+        this.form.kinh_do = pos.lng.toFixed(7);
+      });
+
+      setTimeout(() => {
+        if (this.adminMapInstance) this.adminMapInstance.invalidateSize();
+      }, 400);
+    },
+
+    updateAdminMarker() {
+      if (!this.adminMapInstance || !this.adminMarker) return;
+      const lat = parseFloat(this.form.vi_do);
+      const lng = parseFloat(this.form.kinh_do);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        this.adminMarker.setLatLng([lat, lng]);
+        this.adminMapInstance.panTo([lat, lng]);
+      }
+    },
+
     async confirmDelete() {
       if (!this.selectedPlace) return;
       try {

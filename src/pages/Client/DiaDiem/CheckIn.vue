@@ -15,6 +15,7 @@
           <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..." style="max-width: 400px;" @keyup.enter="performSearch">
           <button @click="performSearch" class="btn btn-primary me-2">Tìm kiếm</button>
           <button @click="clearSearch" class="btn btn-outline-secondary" v-if="searchQuery">Xóa</button>
+          <button class="btn btn-outline-success ms-2" v-if="tempSearchQuery.length >= 2" @click="searchGoogle" :disabled="loadingSerp"><span v-if="loadingSerp" class="spinner-border spinner-border-sm"></span><i v-else class="bi bi-google"></i> Tìm GG Maps</button>
         </div>
         <div class="filter-bar d-flex justify-content-center flex-wrap gap-2">
           <button v-for="filter in filters" :key="filter"
@@ -22,6 +23,42 @@
             @click="setFilter(filter)">
             {{ filter }}
           </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="serp-results-section py-4" v-if="serpResults.length > 0">
+      <div class="container">
+        <div class="glass-panel p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="results-title mb-0">
+              <i class="bi bi-google me-2 text-primary"></i>Kết quả từ Google Maps
+            </h3>
+            <button class="btn btn-sm btn-outline-danger" @click="serpResults = []">Đóng kết quả</button>
+          </div>
+          <div class="row g-3">
+            <div v-for="(res, index) in serpResults" :key="index" class="col-12 col-lg-6">
+              <div class="serp-item d-flex align-items-start gap-3 p-3 rounded-4 transition-all">
+                <div class="serp-item-img flex-shrink-0" :style="{ backgroundImage: `url(${res.image})` }"></div>
+                <div class="serp-item-content flex-grow-1">
+                  <h6 class="mb-1 text-truncate">{{ res.ten_dia_diem }}</h6>
+                  <p class="text-muted small mb-2 text-truncate-2">{{ res.dia_chi }}</p>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ res.vi_do }}, {{ res.kinh_do }}</span>
+                    <span class="badge bg-warning text-dark" v-if="res.danh_gia_trung_binh"><i class="bi bi-star-fill me-1"></i>{{ res.danh_gia_trung_binh }}</span>
+                  </div>
+                  <button 
+                    class="btn btn-sm btn-primary w-100 rounded-3" 
+                    @click="importAndShow(res, index)"
+                    :disabled="importingId === index"
+                  >
+                    <span v-if="importingId === index" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-plus-circle me-1"></i>Lưu vào hệ thống
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -77,6 +114,8 @@
           <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
         </div>
         <div class="modal-body">
+          <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
+          <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
           <div class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
           <p>{{ selectedPlace.mo_ta }}</p>
           <ul>
@@ -104,7 +143,11 @@ export default {
       activeFilter: 'Tất cả',
       filters: ['Tất cả', 'Cầu nổi tiếng', 'Bãi biển', 'Ngắm cảnh', 'Lịch sử', 'Phố cổ', 'Tự nhiên'],
       showModal: false, selectedPlace: null,
+      modalMapInstance: null,
       searchQuery: '', tempSearchQuery: '',
+      loadingSerp: false,
+      serpResults: [],
+      importingId: null,
       places: [], loading: false, error: null,
     };
   },
@@ -121,6 +164,73 @@ export default {
     }
   },
   methods: {
+    async searchGoogle() {
+      if (!this.tempSearchQuery.trim()) return;
+      this.loadingSerp = true;
+      this.serpResults = [];
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
+        const json = await res.json();
+        if (json.status) {
+          this.serpResults = json.data || [];
+          if (this.serpResults.length === 0) alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+        }
+      } catch (e) {
+        alert('Lỗi Google Maps: ' + e.message);
+      } finally {
+        this.loadingSerp = false;
+      }
+    },
+
+    async importAndShow(googlePlace, index) {
+      this.importingId = index;
+      const typeMap = {
+        'AmThuc': ['Quán ăn', 1],
+        'CheckIn': ['Điểm check-in', 2],
+        'GiaiTri': ['Khu vui chơi', 3],
+        'TamLinh': ['Chùa', 4],
+      };
+      let compName = this.$options.name || 'CheckIn';
+      let loai = typeMap[compName] ? typeMap[compName][0] : 'Điểm check-in';
+      let dm = typeMap[compName] ? typeMap[compName][1] : 2;
+
+      const payload = {
+        ten_dia_diem: googlePlace.ten_dia_diem,
+        dia_chi: googlePlace.dia_chi,
+        vi_do: googlePlace.vi_do,
+        kinh_do: googlePlace.kinh_do,
+        danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
+        image: googlePlace.image,
+        mo_ta: googlePlace.mo_ta || 'Được thêm chi tiết từ Google Maps.',
+        loai_dia_diem: loai, 
+        id_danh_muc: dm, 
+      };
+
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
+          alert('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
+          return;
+        }
+
+        if (json.status && json.data) {
+          this.places.unshift(json.data);
+          this.serpResults.splice(index, 1);
+          this.viewDetail(json.data);
+        }
+      } catch (e) {
+        alert('Lỗi khi tải địa điểm: ' + e.message);
+      } finally {
+        this.importingId = null;
+      }
+    },
+
     async fetchData() {
       this.loading = true; this.error = null;
       try {
@@ -148,7 +258,55 @@ export default {
       return m[c] || 'bridge';
     },
     formatPrice(p) { return Number(p).toLocaleString('vi-VN') + 'đ'; },
-    viewDetail(p) { this.selectedPlace = p; this.showModal = true; },
+    viewDetail(p) { this.selectedPlace = p; this.showModal = true; this.$nextTick(() => { this.initModalMap(p); }); },
+
+    initModalMap(place) {
+      if (!place.vi_do || !place.kinh_do) return;
+      const L = window.L;
+      if (!L) return;
+      
+      const lat = parseFloat(place.vi_do);
+      const lng = parseFloat(place.kinh_do);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      if (this.modalMapInstance) {
+        this.modalMapInstance.off();
+        this.modalMapInstance.remove();
+        this.modalMapInstance = null;
+      }
+
+      // Initialize map
+      this.modalMapInstance = L.map('detail-map', {
+        zoomControl: true,
+        scrollWheelZoom: false
+      }).setView([lat, lng], 16);
+
+      // Google Maps Tile Layer
+      L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      }).addTo(this.modalMapInstance);
+
+      // Add a nice marker
+      const marker = L.marker([lat, lng]).addTo(this.modalMapInstance)
+        .bindPopup(`<div style="font-weight:700;">${place.ten_dia_diem}</div><div style="font-size:12px;">${place.dia_chi}</div>`)
+        .openPopup();
+      
+      // Fix rendering issues in modals
+      setTimeout(() => {
+        if (this.modalMapInstance) {
+          this.modalMapInstance.invalidateSize();
+          this.modalMapInstance.setView([lat, lng], 16);
+        }
+      }, 400);
+      
+      // Extra check at 800ms for slow transitions
+      setTimeout(() => {
+        if (this.modalMapInstance) this.modalMapInstance.invalidateSize();
+      }, 800);
+    },
+
     closeModal() { this.showModal = false; this.selectedPlace = null; },
     createItinerary() { alert('Chức năng tạo lịch trình đang phát triển'); },
     performSearch() { this.searchQuery = this.tempSearchQuery; },
@@ -220,6 +378,13 @@ export default {
 .modal-actions .btn { border-radius: 12px; font-weight: 600; padding: 0.8rem 1.8rem; transition: all 0.3s ease; }
 .modal-actions .btn-secondary { background: #f1f5f9; color: #475569; border: none; }
 .modal-actions .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; }
+.text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); }
+.results-title { font-weight: 800; color: #1e293b; font-size: 1.4rem; }
+.serp-item { background: #fff; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
+.serp-item:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-color: #3b82f6; }
+.serp-item-img { width: 90px; height: 90px; border-radius: 12px; background-size: cover; background-position: center; border: 1px solid #eee; }
+.serp-item-content h6 { font-weight: 700; color: #1e293b; }
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
