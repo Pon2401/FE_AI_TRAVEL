@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="giai-tri-page">
 
     <!-- HERO -->
@@ -11,15 +11,17 @@
           <i class="fas fa-utensils me-3"></i>Ẩm thực Đà Nẵng
         </h1>
         <p class="page-subtitle mb-4 text-center">
-          <i class="fas fa-robot me-2 "></i>Khám phá ẩm thực Đà Nẵng: món ngon, quán ăn, street food, hải sản tươi sống.... và trải nghiệm AI đề xuất hợp ngân sách.
+          <i class="fas fa-robot me-2 "></i>Khám phá ẩm thực Đà Nẵng: món ngon, quán ăn, street food, hải sản tươi
+          sống.... và trải nghiệm AI đề xuất hợp ngân sách.
         </p>
-
 
         <!-- SEARCH -->
         <div class="search-bar d-flex justify-content-center mb-3">
-          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..." style="max-width: 400px;" @keyup.enter="performSearch">
+          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..."
+            style="max-width: 400px;" @keyup.enter="performSearch">
           <button @click="performSearch" class="btn btn-primary me-2">Tìm kiếm</button>
           <button @click="clearSearch" class="btn btn-outline-secondary" v-if="searchQuery">Xóa</button>
+          <button class="btn btn-outline-success ms-2" v-if="tempSearchQuery.length >= 2" @click="searchGoogle" :disabled="loadingSerp"><span v-if="loadingSerp" class="spinner-border spinner-border-sm"></span><i v-else class="bi bi-google"></i> Tìm GG Maps</button>
         </div>
 
         <!-- FILTER -->
@@ -33,17 +35,69 @@
       </div>
     </section>
 
+    
+    <!-- Googles Maps Serp API Results -->
+    <section class="serp-results-section py-4" v-if="serpResults.length > 0">
+      <div class="container">
+        <div class="glass-panel p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="results-title mb-0">
+              <i class="bi bi-google me-2 text-primary"></i>Kết quả từ Google Maps
+            </h3>
+            <button class="btn btn-sm btn-outline-danger" @click="serpResults = []">Đóng kết quả</button>
+          </div>
+          <div class="row g-3">
+            <div v-for="(res, index) in serpResults" :key="index" class="col-12 col-lg-6">
+              <div class="serp-item d-flex align-items-start gap-3 p-3 rounded-4 transition-all">
+                <div class="serp-item-img flex-shrink-0" :style="{ backgroundImage: `url(${res.image})` }"></div>
+                <div class="serp-item-content flex-grow-1">
+                  <h6 class="mb-1 text-truncate">{{ res.ten_dia_diem }}</h6>
+                  <p class="text-muted small mb-2 text-truncate-2">{{ res.dia_chi }}</p>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ res.vi_do }}, {{ res.kinh_do }}</span>
+                    <span class="badge bg-warning text-dark" v-if="res.danh_gia_trung_binh"><i class="bi bi-star-fill me-1"></i>{{ res.danh_gia_trung_binh }}</span>
+                  </div>
+                  <button 
+                    class="btn btn-sm btn-primary w-100 rounded-3" 
+                    @click="importAndShow(res, index)"
+                    :disabled="importingId === index"
+                  >
+                    <span v-if="importingId === index" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-plus-circle me-1"></i>Lưu vào hệ thống
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- LIST -->
     <section class="places-section py-4">
       <div class="container">
-        <div class="row g-4">
+
+        <!-- Loading -->
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+          <p class="mt-3 text-muted">Đang tải dữ liệu...</p>
+        </div>
+
+        <!-- Error -->
+        <div v-else-if="error" class="alert alert-danger text-center" role="alert">
+          <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+          <button class="btn btn-sm btn-outline-danger ms-3" @click="fetchAmThuc">Thử lại</button>
+        </div>
+
+        <!-- Data -->
+        <div v-else class="row g-4">
 
           <div v-for="place in filteredPlaces" :key="place.id" class="col-12 col-md-6 col-xl-4">
             <div class="card place-card h-100 shadow-sm">
 
               <!-- IMAGE -->
               <div class="place-image" :style="{ backgroundImage: `url(${place.image})` }">
-                <div :class="['place-badge', categoryClass(place.category)]">{{ place.category }}</div>
+                <div :class="['place-badge', categoryClass(place.loai_dia_diem)]">{{ place.loai_dia_diem }}</div>
               </div>
 
               <!-- BODY -->
@@ -95,34 +149,41 @@
             </div>
           </div>
 
-          <div v-if="filteredPlaces.length === 0" class="text-center">
-            Không có dữ liệu
+          <div v-if="filteredPlaces.length === 0 && !loading" class="text-center py-4 text-muted">
+            <i class="fas fa-search fa-2x mb-2 d-block"></i>
+            Không tìm thấy địa điểm phù hợp
           </div>
 
         </div>
       </div>
     </section>
 
+    <!-- MODAL CHI TIẾT -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <button class="btn-close" @click="closeModal">×</button>
         <div class="modal-header">
           <h4>{{ selectedPlace.ten_dia_diem }}</h4>
-          <small class="text-muted">{{ selectedPlace.category }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
+          <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh
+            }}</small>
         </div>
         <div class="modal-body">
+          <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
+          <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
           <div class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
           <p>{{ selectedPlace.mo_ta }}</p>
           <ul>
             <li><strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</li>
             <li><strong>Giờ mở / đóng:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</li>
-            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</li>
-            <li><strong>Category:</strong> {{ selectedPlace.category }}</li>
+            <li><strong>Giá:</strong> {{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}
+            </li>
+            <li><strong>Loại:</strong> {{ selectedPlace.loai_dia_diem }}</li>
           </ul>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary" @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary"
+            @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
@@ -131,271 +192,46 @@
 </template>
 
 <script>
+const BASE = 'http://localhost:8000/api';
+
 export default {
+  name: 'AmThuc',
+
   data() {
     return {
       activeFilter: 'Tất cả',
       filters: ['Tất cả', 'Quán ăn', 'Street food', 'Hải sản', 'Quán nhậu', 'Ăn vặt'],
       showModal: false,
       selectedPlace: null,
+      modalMapInstance: null,
       searchQuery: '',
       tempSearchQuery: '',
+      loadingSerp: false,
+      serpResults: [],
+      importingId: null,
 
-      places: [
-       {
-  id: 1,
-  ten_dia_diem: 'Bún chả cá Bà Lữ',
-  mo_ta: 'Quán bún chả cá nổi tiếng, nước dùng đậm đà chuẩn vị Đà Nẵng.',
-  dia_chi: '319 Hùng Vương, Quận Hải Châu, Đà Nẵng',
-  kinh_do: 108.213,
-  vi_do: 16.065,
-  gia_ve: 35000,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.7,
-  category: 'Quán ăn',
-  image: 'https://buulong.com.vn/wp-content/uploads/2025/12/bun-cha-ca-ba-lu-hung-vuong-da-nang-8b70bc-1200x675.webp'
-},
-{
-  id: 2,
-  ten_dia_diem: 'Mì Quảng Bà Mua',
-  mo_ta: 'Mì Quảng chuẩn vị Quảng Nam, topping đầy đặn, nước dùng đậm.',
-  dia_chi: '95A Nguyễn Tri Phương, Đà Nẵng',
-  kinh_do: 108.202,
-  vi_do: 16.055,
-  gia_ve: 40000,
-  gio_mo_cua: '06:30',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Quán ăn',
-  image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRTz4tLHpk50RCeYugQE7kK6JNn2ybbXJaMfw&s'
-},
-{
-  id: 3,
-  ten_dia_diem: 'Bánh xèo Bà Dưỡng',
-  mo_ta: 'Bánh xèo giòn rụm, nước chấm đặc trưng, rất đông khách.',
-  dia_chi: 'K280/23 Hoàng Diệu, Đà Nẵng',
-  kinh_do: 108.215,
-  vi_do: 16.054,
-  gia_ve: 30000,
-  gio_mo_cua: '10:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.7,
-  category: 'Street food',
-  image: 'https://down-vn.img.susercontent.com/vn-11134259-7r98o-lwgi5rsf80d533@resize_w800'
-},
-{
-  id: 4,
-  ten_dia_diem: 'Hải sản Bé Mặn',
-  mo_ta: 'Quán hải sản tươi sống, giá hợp lý, nổi tiếng du khách.',
-  dia_chi: 'Lô 14 Hoàng Sa, Sơn Trà, Đà Nẵng',
-  kinh_do: 108.245,
-  vi_do: 16.072,
-  gia_ve: 150000,
-  gio_mo_cua: '10:00',
-  gio_dong_cua: '23:00',
-  danh_gia_trung_binh: 4.5,
-  category: 'Hải sản',
-  image: 'https://www.wikidanang.com/tin-tuc/images/Wiki/nha-hang/be-man/nha-hang-be-man-vng-1.jpg'
-},
-{
-  id: 5,
-  ten_dia_diem: 'Bánh tráng cuốn thịt heo Trần',
-  mo_ta: 'Đặc sản Đà Nẵng, thịt heo luộc mềm, rau sống phong phú.',
-  dia_chi: '4 Lê Duẩn, Hải Châu, Đà Nẵng',
-  kinh_do: 108.221,
-  vi_do: 16.066,
-  gia_ve: 80000,
-  gio_mo_cua: '09:00',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Street food',
-  image: 'https://ticotravel.com.vn/wp-content/uploads/2022/05/Banh-trang-cuon-thit-heo-Da-Nang-4.jpg'
-},
-{
-  id: 6,
-  ten_dia_diem: 'Ốc hút Hạnh',
-  mo_ta: 'Quán ốc bình dân, nổi tiếng với món ốc hút cay.',
-  dia_chi: '277 Đống Đa, Hải Châu, Đà Nẵng',
-  kinh_do: 108.214,
-  vi_do: 16.069,
-  gia_ve: 25000,
-  gio_mo_cua: '15:00',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.5,
-  category: 'Street food',
-  image: 'https://mms.img.susercontent.com/vn-11134513-7r98o-lsvhcsgdf7h5bc@resize_ss1242x600!@crop_w1242_h600_cT'
-},
-{
-  id: 7,
-  ten_dia_diem: 'Bún mắm nêm Bà Thuyên',
-  mo_ta: 'Bún mắm nêm đậm vị, topping đầy đủ, rất được người địa phương yêu thích.',
-  dia_chi: 'K424/03 Lê Duẩn, Hải Châu, Đà Nẵng',
-  kinh_do: 108.210,
-  vi_do: 16.060,
-  gia_ve: 30000,
-  gio_mo_cua: '07:00',
-  gio_dong_cua: '20:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Quán ăn',
-  image: 'https://cdn.eva.vn/upload/2-2022/images/2022-05-10/quan-bun-mam-hon-30-nam-o-da-nang-khach-un-un-keo-den-chi-nho-1-bi-quyet-b--n-m---m-b---v--n------n---ng-1652184693-107-width780height760.jpg'
-},
-{
-  id: 8,
-  ten_dia_diem: 'Chè Liên',
-  mo_ta: 'Quán chè nổi tiếng Đà Nẵng, đặc biệt là chè Thái sầu riêng.',
-  dia_chi: '175 Hải Phòng, Hải Châu, Đà Nẵng',
-  kinh_do: 108.208,
-  vi_do: 16.068,
-  gia_ve: 25000,
-  gio_mo_cua: '09:00',
-  gio_dong_cua: '22:30',
-  danh_gia_trung_binh: 4.7,
-  category: 'Ăn vặt',
-  image: 'https://interstellas.com.vn/wp-content/uploads/2025/10/khong-gian-quan-che-sau-lien-hai-phong.jpg'
-},
-{
-  id: 9,
-  ten_dia_diem: 'Nem lụi Bà Hường',
-  mo_ta: 'Nem lụi nướng thơm, ăn kèm bánh tráng và rau sống cực ngon.',
-  dia_chi: 'K35/2 Hàm Nghi, Thanh Khê, Đà Nẵng',
-  kinh_do: 108.200,
-  vi_do: 16.065,
-  gia_ve: 50000,
-  gio_mo_cua: '10:00',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Street food',
-  image: 'https://images.unsplash.com/photo-1604908177269-1b7c4f5d6e89?w=800&h=600&fit=crop'
-},
-{
-  id: 10,
-  ten_dia_diem: 'Bánh mì Ông Tý',
-  mo_ta: 'Bánh mì giòn nóng, nhân đầy đặn, giá rẻ phù hợp ăn nhanh.',
-  dia_chi: '272 Hùng Vương, Hải Châu, Đà Nẵng',
-  kinh_do: 108.212,
-  vi_do: 16.066,
-  gia_ve: 20000,
-  gio_mo_cua: '05:30',
-  gio_dong_cua: '21:00',
-  danh_gia_trung_binh: 4.5,
-  category: 'Street food',
-  image: 'https://images.unsplash.com/photo-1606756790138-261d2b21cd3b?w=800&h=600&fit=crop'
-},
-{
-  id: 11,
-  ten_dia_diem: 'Bún bò Huế Bà Đào',
-  mo_ta: 'Bún bò chuẩn vị Huế, nước dùng cay nhẹ, thịt mềm ngon.',
-  dia_chi: '37 Nguyễn Chí Thanh, Hải Châu, Đà Nẵng',
-  kinh_do: 108.220,
-  vi_do: 16.062,
-  gia_ve: 45000,
-  gio_mo_cua: '06:00',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Quán ăn',
-  image: 'https://images.unsplash.com/photo-1604908177032-85f4c4b8b9d6?w=800&h=600&fit=crop'
-},
-{
-  id: 12,
-  ten_dia_diem: 'Lẩu nướng Seoul Garden',
-  mo_ta: 'Nhà hàng buffet lẩu nướng hiện đại, phù hợp nhóm bạn.',
-  dia_chi: 'Vincom Plaza, Đà Nẵng',
-  kinh_do: 108.223,
-  vi_do: 16.067,
-  gia_ve: 250000,
-  gio_mo_cua: '10:00',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.4,
-  category: 'Quán ăn',
-  image: 'https://images.unsplash.com/photo-1604908177113-9b2e6f7c2f92?w=800&h=600&fit=crop'
-},
-{
-  id: 13,
-  ten_dia_diem: 'Nhậu Tới Bến',
-  mo_ta: 'Quán nhậu bình dân, menu đa dạng, không khí sôi động, rất đông khách buổi tối.',
-  dia_chi: '01 Nguyễn Tri Phương, Thanh Khê, Đà Nẵng',
-  kinh_do: 108.205,
-  vi_do: 16.055,
-  gia_ve: 100000,
-  gio_mo_cua: '16:00',
-  gio_dong_cua: '00:00',
-  danh_gia_trung_binh: 4.4,
-  category: 'Quán nhậu',
-  image: 'https://images.unsplash.com/photo-1555992336-03a23c5b7a5b?w=800&h=600&fit=crop'
-},
-{
-  id: 14,
-  ten_dia_diem: 'Quán Bé Ni 2',
-  mo_ta: 'Quán nhậu hải sản nổi tiếng, giá rẻ, đông dân local.',
-  dia_chi: 'Hoàng Sa, Sơn Trà, Đà Nẵng',
-  kinh_do: 108.245,
-  vi_do: 16.075,
-  gia_ve: 120000,
-  gio_mo_cua: '15:00',
-  gio_dong_cua: '23:30',
-  danh_gia_trung_binh: 4.5,
-  category: 'Quán nhậu',
-  image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop'
-},
-{
-  id: 15,
-  ten_dia_diem: 'Quán Nhậu 3 Cá Bống',
-  mo_ta: 'Không gian rộng, đồ ăn ngon, thích hợp tụ tập bạn bè.',
-  dia_chi: '112 Nguyễn Văn Thoại, Sơn Trà, Đà Nẵng',
-  kinh_do: 108.236,
-  vi_do: 16.052,
-  gia_ve: 130000,
-  gio_mo_cua: '16:00',
-  gio_dong_cua: '01:00',
-  danh_gia_trung_binh: 4.3,
-  category: 'Quán nhậu',
-  image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=600&fit=crop'
-},
-{
-  id: 16,
-  ten_dia_diem: 'Hải Sản Năm Đảnh',
-  mo_ta: 'Quán nhậu hải sản nổi tiếng giá rẻ, cực kỳ đông khách.',
-  dia_chi: 'K139/H59/38 Trần Quang Khải, Sơn Trà, Đà Nẵng',
-  kinh_do: 108.244,
-  vi_do: 16.068,
-  gia_ve: 150000,
-  gio_mo_cua: '10:00',
-  gio_dong_cua: '22:00',
-  danh_gia_trung_binh: 4.6,
-  category: 'Quán nhậu',
-  image: 'https://images.unsplash.com/photo-1555993539-1732b0258235?w=800&h=600&fit=crop'
-},
-{
-  id: 17,
-  ten_dia_diem: 'Beer Club Draft Beer',
-  mo_ta: 'Quán beer club hiện đại, nhạc sống, phù hợp giới trẻ.',
-  dia_chi: '72 Bạch Đằng, Hải Châu, Đà Nẵng',
-  kinh_do: 108.223,
-  vi_do: 16.067,
-  gia_ve: 200000,
-  gio_mo_cua: '18:00',
-  gio_dong_cua: '02:00',
-  danh_gia_trung_binh: 4.5,
-  category: 'Quán nhậu',
-  image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop'
-}
+      // Data từ backend
+      places: [],
+      loading: false,
+      error: null,
+    };
+  },
 
-
-      ]
-    }
+  mounted() {
+    this.fetchAmThuc();
   },
 
   computed: {
     filteredPlaces() {
       let filtered = this.places;
       if (this.activeFilter !== 'Tất cả') {
-        filtered = filtered.filter(p => p.category === this.activeFilter);
+        filtered = filtered.filter(p => p.loai_dia_diem === this.activeFilter);
       }
       if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
         filtered = filtered.filter(p =>
-          p.ten_dia_diem.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.mo_ta.toLowerCase().includes(this.searchQuery.toLowerCase())
+          p.ten_dia_diem.toLowerCase().includes(q) ||
+          (p.mo_ta && p.mo_ta.toLowerCase().includes(q))
         );
       }
       return filtered;
@@ -403,41 +239,182 @@ export default {
   },
 
   methods: {
+    async searchGoogle() {
+      if (!this.tempSearchQuery.trim()) return;
+      this.loadingSerp = true;
+      this.serpResults = [];
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
+        const json = await res.json();
+        if (json.status) {
+          this.serpResults = json.data || [];
+          if (this.serpResults.length === 0) alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+        }
+      } catch (e) {
+        alert('Lỗi Google Maps: ' + e.message);
+      } finally {
+        this.loadingSerp = false;
+      }
+    },
+
+    async importAndShow(googlePlace, index) {
+      this.importingId = index;
+      const typeMap = {
+        'AmThuc': ['Quán ăn', 1],
+        'CheckIn': ['Điểm check-in', 2],
+        'GiaiTri': ['Khu vui chơi', 3],
+        'TamLinh': ['Chùa', 4],
+      };
+      let compName = this.$options.name || 'CheckIn';
+      let loai = typeMap[compName] ? typeMap[compName][0] : 'Điểm check-in';
+      let dm = typeMap[compName] ? typeMap[compName][1] : 2;
+
+      const payload = {
+        ten_dia_diem: googlePlace.ten_dia_diem,
+        dia_chi: googlePlace.dia_chi,
+        vi_do: googlePlace.vi_do,
+        kinh_do: googlePlace.kinh_do,
+        danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
+        image: googlePlace.image,
+        mo_ta: googlePlace.mo_ta || 'Được thêm chi tiết từ Google Maps.',
+        loai_dia_diem: loai, 
+        id_danh_muc: dm, 
+      };
+
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
+          alert('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
+          return;
+        }
+
+        if (json.status && json.data) {
+          this.places.unshift(json.data);
+          this.serpResults.splice(index, 1);
+          this.viewDetail(json.data);
+        }
+      } catch (e) {
+        alert('Lỗi khi tải địa điểm: ' + e.message);
+      } finally {
+        this.importingId = null;
+      }
+    },
+
+    async fetchAmThuc() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await fetch(`${BASE}/dia-diems/am-thuc`);
+        if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
+        const json = await res.json();
+        
+        const fallbacksByType = {
+          'Quán ăn':    'https://images.unsplash.com/photo-1547592180-85f173990554?w=800&h=600&fit=crop',
+          'Street food':'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&h=600&fit=crop',
+          'Hải sản':    'https://images.unsplash.com/photo-1559737022-8a20f87e61a6?w=800&h=600&fit=crop',
+          'Quán nhậu':  'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop',
+          'Ăn vặt':     'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          image: p.image || fallbacksByType[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop'
+        }));
+      } catch (e) {
+        this.error = e.message || 'Không thể tải dữ liệu. Vui lòng thử lại.';
+        this.places = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
     setFilter(filter) {
-      this.activeFilter = filter
+      this.activeFilter = filter;
     },
 
     categoryClass(category) {
-  if (!category) return 'all'
-
-  const mapping = {
-    'Quán ăn': 'restaurant',
-    'Street food': 'streetfood',
-    'Hải sản': 'seafood',
-    'Quán nhậu': 'bar',
-    'Ăn vặt': 'snack'
-  }
-
-  return mapping[category] || 'restaurant'
-},
-
+      if (!category) return 'all';
+      const mapping = {
+        'Quán ăn': 'restaurant',
+        'Street food': 'streetfood',
+        'Hải sản': 'seafood',
+        'Quán nhậu': 'bar',
+        'Ăn vặt': 'snack',
+      };
+      return mapping[category] || 'restaurant';
+    },
 
     formatPrice(price) {
-      return price.toLocaleString() + 'đ'
+      return Number(price).toLocaleString('vi-VN') + 'đ';
     },
 
     viewDetail(place) {
-      this.selectedPlace = place
-      this.showModal = true
+      this.selectedPlace = place;
+      this.showModal = true;
+      this.$nextTick(() => {
+        this.initModalMap(place);
+      });
+    },
+
+    initModalMap(place) {
+      if (!place.vi_do || !place.kinh_do) return;
+      const L = window.L;
+      if (!L) return;
+      
+      const lat = parseFloat(place.vi_do);
+      const lng = parseFloat(place.kinh_do);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      if (this.modalMapInstance) {
+        this.modalMapInstance.off();
+        this.modalMapInstance.remove();
+        this.modalMapInstance = null;
+      }
+
+      // Initialize map
+      this.modalMapInstance = L.map('detail-map', {
+        zoomControl: true,
+        scrollWheelZoom: false
+      }).setView([lat, lng], 16);
+
+      // Google Maps Tile Layer
+      L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      }).addTo(this.modalMapInstance);
+
+      // Add a nice marker
+      const marker = L.marker([lat, lng]).addTo(this.modalMapInstance)
+        .bindPopup(`<div style="font-weight:700;">${place.ten_dia_diem}</div><div style="font-size:12px;">${place.dia_chi}</div>`)
+        .openPopup();
+      
+      // Fix rendering issues in modals
+      setTimeout(() => {
+        if (this.modalMapInstance) {
+          this.modalMapInstance.invalidateSize();
+          this.modalMapInstance.setView([lat, lng], 16);
+        }
+      }, 400);
+      
+      // Extra check at 800ms for slow transitions
+      setTimeout(() => {
+        if (this.modalMapInstance) this.modalMapInstance.invalidateSize();
+      }, 800);
     },
 
     closeModal() {
-      this.showModal = false
-      this.selectedPlace = null
+      this.showModal = false;
+      this.selectedPlace = null;
     },
 
     createItinerary() {
-      alert('Chức năng tạo lịch trình đang phát triển')
+      alert('Chức năng tạo lịch trình đang phát triển');
     },
 
     performSearch() {
@@ -447,9 +424,9 @@ export default {
     clearSearch() {
       this.searchQuery = '';
       this.tempSearchQuery = '';
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>
@@ -717,7 +694,6 @@ export default {
   background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
 }
 
-
 .price-text {
   color: #059669;
   font-weight: 800;
@@ -873,12 +849,21 @@ export default {
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
 }
 
+.text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); }
+.results-title { font-weight: 800; color: #1e293b; font-size: 1.4rem; }
+.serp-item { background: #fff; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
+.serp-item:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-color: #3b82f6; }
+.serp-item-img { width: 90px; height: 90px; border-radius: 12px; background-size: cover; background-position: center; border: 1px solid #eee; }
+.serp-item-content h6 { font-weight: 700; color: #1e293b; }
+
 /* Animation keyframes */
 @keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -890,6 +875,7 @@ export default {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -900,6 +886,7 @@ export default {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -910,6 +897,7 @@ export default {
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);

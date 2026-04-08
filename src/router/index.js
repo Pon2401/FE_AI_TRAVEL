@@ -13,8 +13,30 @@ const routes = [
     meta: { layout: "blank" },
   },
   {
+    path: "/auth/callback",
+    alias: "/client/auth/callback",
+    component: () => import("../pages/Client/GoogleAuthCallback.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/auth/error",
+    alias: "/client/auth/error",
+    component: () => import("../pages/Client/AuthError.vue"),
+    meta: { layout: "blank" },
+  },
+  {
     path: "/client/dang-ky",
     component: () => import("../pages/Client/DangKy.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/client/quen-mat-khau",
+    component: () => import("../pages/Client/QuenMatKhau.vue"),
+    meta: { layout: "blank" },
+  },
+  {
+    path: "/client/dat-lai-mat-khau/:key",
+    component: () => import("../pages/Client/DatLaiMatKhau.vue"),
     meta: { layout: "blank" },
   },
   {
@@ -91,11 +113,6 @@ const routes = [
     meta: { layout: "default" },
   },
   {
-    path: "/admin/quan-ly-dia-diem-du-lich",
-    component: () => import("../pages/Admin/QuanLyDiaDiemDuLich.vue"),
-    meta: { layout: "default" },
-  },
-  {
     path: "/admin/am-thuc",
     component: () => import("../pages/Admin/Amthuc.vue"),
     meta: { layout: "default" },
@@ -115,6 +132,7 @@ const routes = [
     component: () => import("../pages/Admin/Checkin.vue"),
     meta: { layout: "default" },
   },
+
   {
     path: "/admin/quan-ly-danh-gia-phan-hoi",
     component: () => import("../pages/Admin/QuanLyDanhGia.vue"),

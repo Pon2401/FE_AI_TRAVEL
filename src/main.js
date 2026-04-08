@@ -12,6 +12,7 @@ axios.interceptors.response.use(
     (error) => {
         if (error.response?.status === 422) {
             const apiErrors = error.response.data.errors || {};
+            error.response.data.validationErrorsRaw = apiErrors;
             const parsedErrors = {};
             for (const key in apiErrors) {
                 // Return first string of the array if it is an array formed by Laravel
@@ -49,4 +50,6 @@ app.use(ToastPlugin, {
     queue: true,
 })
 
-app.mount("#app")
+router.isReady().then(() => {
+    app.mount("#app")
+})

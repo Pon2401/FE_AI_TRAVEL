@@ -11,14 +11,17 @@
           <i class="fas fa-map-marker-alt me-3"></i>Địa điểm giải trí Đà Nẵng
         </h1>
         <p class="page-subtitle mb-4 text-center">
-          <i class="fas fa-robot me-2 "></i>Khám phá địa điểm  giải trí:ngoài trời, cafe, mua sắm, xem phim, công viên ... và trải nghiệm AI đề xuất hợp ngân sách.
+          <i class="fas fa-robot me-2 "></i>Khám phá địa điểm giải trí:ngoài trời, cafe, mua sắm, xem phim, công viên
+          ... và trải nghiệm AI đề xuất hợp ngân sách.
         </p>
 
         <!-- SEARCH -->
         <div class="search-bar d-flex justify-content-center mb-3">
-          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..." style="max-width: 400px;" @keyup.enter="performSearch">
+          <input v-model="tempSearchQuery" type="text" class="form-control me-2" placeholder="Tìm kiếm địa điểm..."
+            style="max-width: 400px;" @keyup.enter="performSearch">
           <button @click="performSearch" class="btn btn-primary me-2">Tìm kiếm</button>
           <button @click="clearSearch" class="btn btn-outline-secondary" v-if="searchQuery">Xóa</button>
+          <button class="btn btn-outline-success ms-2" v-if="tempSearchQuery.length >= 2" @click="searchGoogle" :disabled="loadingSerp"><span v-if="loadingSerp" class="spinner-border spinner-border-sm"></span><i v-else class="bi bi-google"></i> Tìm GG Maps</button>
         </div>
 
         <!-- FILTER -->
@@ -32,10 +35,56 @@
       </div>
     </section>
 
+    
+    <!-- Googles Maps Serp API Results -->
+    <section class="serp-results-section py-4" v-if="serpResults.length > 0">
+      <div class="container">
+        <div class="glass-panel p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="results-title mb-0">
+              <i class="bi bi-google me-2 text-primary"></i>Kết quả từ Google Maps
+            </h3>
+            <button class="btn btn-sm btn-outline-danger" @click="serpResults = []">Đóng kết quả</button>
+          </div>
+          <div class="row g-3">
+            <div v-for="(res, index) in serpResults" :key="index" class="col-12 col-lg-6">
+              <div class="serp-item d-flex align-items-start gap-3 p-3 rounded-4 transition-all">
+                <div class="serp-item-img flex-shrink-0" :style="{ backgroundImage: `url(${res.image})` }"></div>
+                <div class="serp-item-content flex-grow-1">
+                  <h6 class="mb-1 text-truncate">{{ res.ten_dia_diem }}</h6>
+                  <p class="text-muted small mb-2 text-truncate-2">{{ res.dia_chi }}</p>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ res.vi_do }}, {{ res.kinh_do }}</span>
+                    <span class="badge bg-warning text-dark" v-if="res.danh_gia_trung_binh"><i class="bi bi-star-fill me-1"></i>{{ res.danh_gia_trung_binh }}</span>
+                  </div>
+                  <button 
+                    class="btn btn-sm btn-primary w-100 rounded-3" 
+                    @click="importAndShow(res, index)"
+                    :disabled="importingId === index"
+                  >
+                    <span v-if="importingId === index" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-plus-circle me-1"></i>Lưu vào hệ thống
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- LIST -->
     <section class="places-section py-4">
       <div class="container">
-        <div class="row g-4">
+        <div v-if="loading" class="text-center py-5">
+           <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+           <p class="mt-3 text-muted">Đang tải dữ liệu từ Google Maps Đà Nẵng...</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger text-center">
+           {{ error }}
+           <button class="btn btn-sm btn-outline-danger ms-2" @click="fetchData">Thử lại</button>
+        </div>
+        <div v-else class="row g-4">
 
           <div v-for="place in filteredPlaces" :key="place.id" class="col-12 col-md-6 col-xl-4">
             <div class="card place-card h-100 shadow-sm">
@@ -110,18 +159,22 @@
           <small class="text-muted">{{ selectedPlace.category }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
         </div>
         <div class="modal-body">
+          <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
+          <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
           <div class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
           <p>{{ selectedPlace.mo_ta }}</p>
           <ul>
             <li><strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</li>
             <li><strong>Giờ mở / đóng:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</li>
-            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</li>
+            <li><strong>Giá vé:</strong> {{ selectedPlace.gia_ve === 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve)
+              }}</li>
             <li><strong>Category:</strong> {{ selectedPlace.category }}</li>
           </ul>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary" @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary"
+            @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
@@ -130,6 +183,8 @@
 </template>
 
 <script>
+const BASE = 'http://localhost:8000/api';
+
 export default {
   data() {
     return {
@@ -137,144 +192,135 @@ export default {
       filters: ['Tất cả', 'Ngoài trời', 'Mua sắm', 'Xem phim', 'Công viên', 'Âm nhạc', 'Cafe'],
       showModal: false,
       selectedPlace: null,
+      modalMapInstance: null,
       searchQuery: '',
       tempSearchQuery: '',
-
-      places: [
-        {
-          id: 1,
-          ten_dia_diem: 'Cầu Rồng',
-          mo_ta: 'Biểu tượng Đà Nẵng, phun lửa cuối tuần',
-          dia_chi: 'Đường Nguyễn Văn Linh, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.227,
-          vi_do: 16.061,
-          gia_ve: 0,
-          gio_mo_cua: '00:00',
-          gio_dong_cua: '23:59',
-          danh_gia_trung_binh: 4.8,
-          category: 'Ngoài trời',
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop'
-        },
-        {
-          id: 6,
-          ten_dia_diem: 'The Espresso Station',
-          mo_ta: 'Quán cà phê hiện đại, không gian làm việc mở, đồ uống thơm ngon.',
-          dia_chi: '48 Trần Phú, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.218,
-          vi_do: 16.061,
-          gia_ve: 50000,
-          gio_mo_cua: '06:30',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.7,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?w=800&h=600&fit=crop'
-        },
-        {
-          id: 7,
-          ten_dia_diem: 'Cong Caphe - Trần Phú',
-          mo_ta: 'Cafe phong cách Việt, vibe vintage đặc trưng, phù hợp check-in.',
-          dia_chi: '56 Trần Phú, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.223,
-          vi_do: 16.067,
-          gia_ve: 40000,
-          gio_mo_cua: '07:30',
-          gio_dong_cua: '23:00',
-          danh_gia_trung_binh: 4.5,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&h=600&fit=crop'
-        },
-        {
-          id: 8,
-          ten_dia_diem: 'Rainforest Coffee',
-          mo_ta: 'Cafe xanh giữa đô thị, hoà mình với cây cối, nước ép healthy.',
-          dia_chi: '12 Lê Duẩn, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.215,
-          vi_do: 16.056,
-          gia_ve: 45000,
-          gio_mo_cua: '07:00',
-          gio_dong_cua: '22:30',
-          danh_gia_trung_binh: 4.6,
-          category: 'Cafe',
-          image: 'https://images.unsplash.com/photo-1517685352821-92cf88aee5a5?w=800&h=600&fit=crop'
-        },
-    
-        {
-          id: 2,
-          ten_dia_diem: 'Vincom Plaza',
-          mo_ta: 'Trung tâm mua sắm lớn',
-          dia_chi: '109 Nguyễn Văn Linh, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.223,
-          vi_do: 16.067,
-          gia_ve: 0,
-          gio_mo_cua: '09:00',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.6,
-          category: 'Mua sắm',
-          image: 'https://images.unsplash.com/photo-1519567770579-c2fc3b6d5d9b?w=800&h=600&fit=crop'
-        },
-        {
-          id: 3,
-          ten_dia_diem: 'CGV Cinema',
-          mo_ta: 'Rạp chiếu phim hiện đại',
-          dia_chi: '31 Thái Phiên, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.22,
-          vi_do: 16.06,
-          gia_ve: 90000,
-          gio_mo_cua: '09:00',
-          gio_dong_cua: '23:00',
-          danh_gia_trung_binh: 4.5,
-          category: 'Xem phim',
-          image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&h=600&fit=crop'
-        },
-        {
-          id: 4,
-          ten_dia_diem: 'Công viên Biển Đông',
-          mo_ta: 'Công viên rộng, gần biển',
-          dia_chi: 'TP. Đà Nẵng',
-          kinh_do: 108.24,
-          vi_do: 16.07,
-          gia_ve: 0,
-          gio_mo_cua: '05:00',
-          gio_dong_cua: '22:00',
-          danh_gia_trung_binh: 4.7,
-          category: 'Công viên',
-          image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop'
-        },
-        {
-          id: 5,
-          ten_dia_diem: 'Sky36',
-          mo_ta: 'Bar nhạc sống, view đẹp',
-          dia_chi: '36 Lê Duẩn, Quận Hải Châu, Đà Nẵng',
-          kinh_do: 108.21,
-          vi_do: 16.05,
-          gia_ve: 150000,
-          gio_mo_cua: '17:00',
-          gio_dong_cua: '01:00',
-          danh_gia_trung_binh: 4.4,
-          category: 'Âm nhạc',
-          image: 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=800&h=600&fit=crop'
-        }
-      ]
+      loadingSerp: false,
+      serpResults: [],
+      importingId: null,
+      places: [],
+      loading: false,
+      error: null,
     }
+  },
+
+  mounted() {
+    this.fetchData();
   },
 
   computed: {
     filteredPlaces() {
-      let filtered = this.places;
+      let f = this.places;
       if (this.activeFilter !== 'Tất cả') {
-        filtered = filtered.filter(p => p.category === this.activeFilter);
+        f = f.filter(p => (p.category || '').includes(this.activeFilter) || (p.loai_dia_diem || '').includes(this.activeFilter));
       }
       if (this.searchQuery) {
-        filtered = filtered.filter(p =>
-          p.ten_dia_diem.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          p.mo_ta.toLowerCase().includes(this.searchQuery.toLowerCase())
+        const q = this.searchQuery.toLowerCase();
+        f = f.filter(p => 
+          p.ten_dia_diem.toLowerCase().includes(q) || 
+          (p.mo_ta && p.mo_ta.toLowerCase().includes(q))
         );
       }
-      return filtered;
+      return f;
     }
   },
 
   methods: {
+    async searchGoogle() {
+      if (!this.tempSearchQuery.trim()) return;
+      this.loadingSerp = true;
+      this.serpResults = [];
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
+        const json = await res.json();
+        if (json.status) {
+          this.serpResults = json.data || [];
+          if (this.serpResults.length === 0) alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+        }
+      } catch (e) {
+        alert('Lỗi Google Maps: ' + e.message);
+      } finally {
+        this.loadingSerp = false;
+      }
+    },
+
+    async importAndShow(googlePlace, index) {
+      this.importingId = index;
+      const typeMap = {
+        'AmThuc': ['Quán ăn', 1],
+        'CheckIn': ['Điểm check-in', 2],
+        'GiaiTri': ['Khu vui chơi', 3],
+        'TamLinh': ['Chùa', 4],
+      };
+      let compName = this.$options.name || 'CheckIn';
+      let loai = typeMap[compName] ? typeMap[compName][0] : 'Điểm check-in';
+      let dm = typeMap[compName] ? typeMap[compName][1] : 2;
+
+      const payload = {
+        ten_dia_diem: googlePlace.ten_dia_diem,
+        dia_chi: googlePlace.dia_chi,
+        vi_do: googlePlace.vi_do,
+        kinh_do: googlePlace.kinh_do,
+        danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
+        image: googlePlace.image,
+        mo_ta: googlePlace.mo_ta || 'Được thêm chi tiết từ Google Maps.',
+        loai_dia_diem: loai, 
+        id_danh_muc: dm, 
+      };
+
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
+          alert('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
+          return;
+        }
+
+        if (json.status && json.data) {
+          this.places.unshift(json.data);
+          this.serpResults.splice(index, 1);
+          this.viewDetail(json.data);
+        }
+      } catch (e) {
+        alert('Lỗi khi tải địa điểm: ' + e.message);
+      } finally {
+        this.importingId = null;
+      }
+    },
+
+    async fetchData() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await fetch(`${BASE}/dia-diems/giai-tri`);
+        if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
+        const json = await res.json();
+        const fallbacks = {
+          'Ngoài trời': 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop',
+          'Mua sắm':    'https://images.unsplash.com/photo-1481437156560-3205f6a55735?w=800&h=600&fit=crop',
+          'Xem phim':   'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&h=600&fit=crop',
+          'Công viên':  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&h=600&fit=crop',
+          'Âm nhạc':    'https://images.unsplash.com/photo-1551524559-8af4e6624178?w=800&h=600&fit=crop',
+          'Cafe':       'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&h=600&fit=crop',
+        };
+        this.places = (json.data || []).map(p => ({
+          ...p,
+          category: p.loai_dia_diem,
+          image: p.image || fallbacks[p.loai_dia_diem] || 'https://images.unsplash.com/photo-1517685352821-92cf88aee5a5?w=800&h=600&fit=crop'
+        }));
+      } catch (e) {
+        this.error = e.message;
+        this.places = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
     setFilter(filter) {
       this.activeFilter = filter
     },
@@ -292,12 +338,61 @@ export default {
     },
 
     formatPrice(price) {
-      return price.toLocaleString() + 'đ'
+      return Number(price).toLocaleString('vi-VN') + 'đ'
     },
 
     viewDetail(place) {
-      this.selectedPlace = place
-      this.showModal = true
+      this.selectedPlace = place;
+      this.showModal = true;
+      this.$nextTick(() => { this.initModalMap(place); });
+    },
+
+
+    initModalMap(place) {
+      if (!place.vi_do || !place.kinh_do) return;
+      const L = window.L;
+      if (!L) return;
+      
+      const lat = parseFloat(place.vi_do);
+      const lng = parseFloat(place.kinh_do);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      if (this.modalMapInstance) {
+        this.modalMapInstance.off();
+        this.modalMapInstance.remove();
+        this.modalMapInstance = null;
+      }
+
+      // Initialize map
+      this.modalMapInstance = L.map('detail-map', {
+        zoomControl: true,
+        scrollWheelZoom: false
+      }).setView([lat, lng], 16);
+
+      // Google Maps Tile Layer
+      L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      }).addTo(this.modalMapInstance);
+
+      // Add a nice marker
+      const marker = L.marker([lat, lng]).addTo(this.modalMapInstance)
+        .bindPopup(`<div style="font-weight:700;">${place.ten_dia_diem}</div><div style="font-size:12px;">${place.dia_chi}</div>`)
+        .openPopup();
+      
+      // Fix rendering issues in modals
+      setTimeout(() => {
+        if (this.modalMapInstance) {
+          this.modalMapInstance.invalidateSize();
+          this.modalMapInstance.setView([lat, lng], 16);
+        }
+      }, 400);
+      
+      // Extra check at 800ms for slow transitions
+      setTimeout(() => {
+        if (this.modalMapInstance) this.modalMapInstance.invalidateSize();
+      }, 800);
     },
 
     closeModal() {
@@ -565,12 +660,30 @@ export default {
   letter-spacing: 0.5px;
   z-index: 5;
 }
-.place-badge.outdoor { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.place-badge.shopping { background: linear-gradient(135deg, #34d399 0%, #059669 100%); }
-.place-badge.cinema { background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); }
-.place-badge.park { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
-.place-badge.music { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
-.place-badge.cafe { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
+
+.place-badge.outdoor {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.place-badge.shopping {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+}
+
+.place-badge.cinema {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+.place-badge.park {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+.place-badge.music {
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+}
+
+.place-badge.cafe {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}
 
 .price-text {
   color: #059669;
@@ -729,46 +842,15 @@ export default {
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
 }
 
-/* Animation keyframes */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
+.text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); }
+.results-title { font-weight: 800; color: #1e293b; font-size: 1.4rem; }
+.serp-item { background: #fff; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
+.serp-item:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-color: #3b82f6; }
+.serp-item-img { width: 90px; height: 90px; border-radius: 12px; background-size: cover; background-position: center; border: 1px solid #eee; }
+.serp-item-content h6 { font-weight: 700; color: #1e293b; }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 </style>

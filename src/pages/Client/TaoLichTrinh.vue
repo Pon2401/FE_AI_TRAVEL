@@ -129,9 +129,48 @@
         </div>
 
         <!-- Search bar -->
-        <div class="search-bar mb-4">
-          <i class="bi bi-search"></i>
-          <input v-model="searchQ" type="text" placeholder="Tìm địa điểm..." />
+        <div class="search-bar-wrap mb-4">
+          <div class="search-bar">
+            <i class="bi bi-search"></i>
+            <input v-model="searchQ" type="text" placeholder="Tìm địa điểm..." />
+          </div>
+          <button v-if="searchQ.trim().length >= 2" class="btn-brand" @click="searchGoogle" :disabled="loadingSerp" style="white-space: nowrap;">
+             <i class="bi" :class="loadingSerp ? 'bi-hourglass-split spin' : 'bi-google'"></i> Tìm trên Google Maps
+          </button>
+        </div>
+
+        <!-- SerpApi Loading -->
+        <div v-if="loadingSerp" class="tlt-loading">
+          <div class="spinner" style="border-top-color: #5a67d8;"></div>
+          <span>Đang tìm kiếm trên Google Maps...</span>
+        </div>
+
+        <!-- SerpApi Results -->
+        <div v-if="serpResults.length > 0" class="serp-results mb-4" style="background: #f8fbff; padding: 1.5rem; border-radius: 1rem; border: 1px dashed #c3dafe;">
+          <h4 class="mb-3" style="color: #434190; font-size: 1.1rem; font-weight: 700;">
+            <i class="bi bi-google me-2"></i>Kết quả từ Google Maps
+          </h4>
+          <div class="dd-grid">
+            <div v-for="(res, i) in serpResults" :key="'serp'+i" class="dd-card">
+              <div class="dd-img-wrap">
+                <img :src="res.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400'" class="dd-img" />
+                <button
+                  class="dd-select-btn"
+                  @click="importAndSchedule(res, i)"
+                  :disabled="importingId === i"
+                  style="background: #4c51bf;"
+                >
+                  <i class="bi" :class="importingId === i ? 'bi-hourglass-split spin' : 'bi-cloud-download'"></i> Lấy
+                </button>
+              </div>
+              <div class="dd-content">
+                <h3 class="dd-title">{{ res.ten_dia_diem }}</h3>
+                <p class="dd-desc"><i class="bi bi-geo-alt"></i> {{ res.dia_chi }}</p>
+                <div class="dd-meta" style="color: #ed8936;">⭐ {{ res.danh_gia_trung_binh || '4.0' }} / 5</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" @click="serpResults = []">Đóng kết quả Google</button>
         </div>
 
         <!-- Loading -->
@@ -201,9 +240,7 @@
         </div>
       </div>
 
-      <!-- ══════════════════════════════
-           BƯỚC 3 – Lịch trình tự động
-           ══════════════════════════════ -->
+      <!-- BƯỚC 3 – Lịch trình tự động -->
       <div v-if="step === 3" class="tlt-section animate-in">
         <div class="section-head">
           <h2><i class="bi bi-calendar-week me-2 text-brand"></i>Lịch trình gợi ý</h2>
@@ -248,62 +285,78 @@
           </button>
         </div>
 
-        <!-- Timeline for active day -->
-        <div class="timeline" v-if="lichTrinhTheoNgay[activeDayTab - 1]">
-          <div
-            v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]"
-            :key="item.id_dia_diem + '-' + idx"
-            class="timeline-item"
-          >
-            <div class="timeline-time">
-              <span class="time-badge">{{ item.gio }}</span>
-              <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
-            </div>
-            <div class="timeline-card">
-              <div class="tc-header">
-                <div class="tc-img-wrap">
-                  <img
-                    :src="item.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=70'"
-                    class="tc-img"
-                  />
+        <!-- 2-col layout: Timeline + Map -->
+        <div class="step3-layout">
+
+          <!-- LEFT: Timeline -->
+          <div class="step3-left">
+            <div class="timeline" v-if="lichTrinhTheoNgay[activeDayTab - 1]">
+              <div
+                v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]"
+                :key="item.id_dia_diem + '-' + idx"
+                class="timeline-item"
+              >
+                <div class="timeline-time">
+                  <span class="time-badge">{{ item.gio }}</span>
+                  <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
                 </div>
-                <div class="tc-meta">
-                  <h5>{{ item.ten_dia_diem }}</h5>
-                  <p><i class="bi bi-pin-map me-1"></i>{{ item.dia_chi || 'Đà Nẵng' }}</p>
-                  <p v-if="item.gia_ve > 0">
-                    <i class="bi bi-ticket-perforated me-1"></i>{{ formatCurrency(item.gia_ve) }} / người
-                  </p>
-                </div>
-                <div class="tc-order-btns">
-                  <button @click="moveItem(activeDayTab - 1, idx, -1)" :disabled="idx === 0" title="Lên">
-                    <i class="bi bi-arrow-up"></i>
-                  </button>
-                  <button
-                    @click="moveItem(activeDayTab - 1, idx, 1)"
-                    :disabled="idx === lichTrinhTheoNgay[activeDayTab - 1].length - 1"
-                    title="Xuống"
-                  >
-                    <i class="bi bi-arrow-down"></i>
-                  </button>
-                  <button class="btn-remove" @click="removeItem(activeDayTab - 1, idx)" title="Xóa">
-                    <i class="bi bi-trash3"></i>
-                  </button>
+                <div class="timeline-card">
+                  <div class="tc-header">
+                    <div class="tc-img-wrap">
+                      <img
+                        :src="item.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=70'"
+                        class="tc-img"
+                      />
+                    </div>
+                    <div class="tc-meta">
+                      <h5>{{ item.ten_dia_diem }}</h5>
+                      <p><i class="bi bi-pin-map me-1"></i>{{ item.dia_chi || 'Đà Nẵng' }}</p>
+                      <p v-if="item.gia_ve > 0">
+                        <i class="bi bi-ticket-perforated me-1"></i>{{ formatCurrency(item.gia_ve) }} / người
+                      </p>
+                    </div>
+                    <div class="tc-order-btns">
+                      <button @click="moveItem(activeDayTab - 1, idx, -1)" :disabled="idx === 0" title="Lên">
+                        <i class="bi bi-arrow-up"></i>
+                      </button>
+                      <button
+                        @click="moveItem(activeDayTab - 1, idx, 1)"
+                        :disabled="idx === lichTrinhTheoNgay[activeDayTab - 1].length - 1"
+                        title="Xuống"
+                      >
+                        <i class="bi bi-arrow-down"></i>
+                      </button>
+                      <button class="btn-remove" @click="removeItem(activeDayTab - 1, idx)" title="Xóa">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="tc-note">
+                    <i class="bi bi-pencil-square me-1"></i>
+                    <input
+                      v-model="item.ghi_chu"
+                      type="text"
+                      placeholder="Thêm ghi chú cho địa điểm này..."
+                      class="note-input"
+                    />
+                  </div>
                 </div>
               </div>
-              <div class="tc-note">
-                <i class="bi bi-pencil-square me-1"></i>
-                <input
-                  v-model="item.ghi_chu"
-                  type="text"
-                  placeholder="Thêm ghi chú cho địa điểm này..."
-                  class="note-input"
-                />
+
+              <div v-if="lichTrinhTheoNgay[activeDayTab - 1].length === 0" class="tlt-empty">
+                Chưa có địa điểm nào cho ngày này.
               </div>
             </div>
           </div>
 
-          <div v-if="lichTrinhTheoNgay[activeDayTab - 1].length === 0" class="tlt-empty">
-            Chưa có địa điểm nào cho ngày này.
+          <!-- RIGHT: Map + Route Info -->
+          <div class="step3-right">
+            <div class="map-panel">
+              <div class="map-panel-head">
+                <i class="bi bi-map me-2"></i>Bản đồ vị trí ngày {{ activeDayTab }}
+              </div>
+              <div id="trip-map" style="height: 500px"></div>
+            </div>
           </div>
         </div>
 
@@ -312,7 +365,7 @@
           <div class="tlt-actions-row">
             <button class="btn-ghost" @click="step = 2"><i class="bi bi-arrow-left me-1"></i>Quay lại</button>
             <button class="btn-brand-lg" @click="step = 4">
-              Xem tóm tắt & Lưu <i class="bi bi-check2-circle ms-2"></i>
+              Xem tóm tắt &amp; Lưu <i class="bi bi-check2-circle ms-2"></i>
             </button>
           </div>
         </div>
@@ -431,6 +484,11 @@ export default {
       categories: [],
       searchQ: '',
 
+      // ── SerpApi ──
+      loadingSerp: false,
+      serpResults: [],
+      importingId: null,
+
       // ── Lịch trình ──
       lichTrinhTheoNgay: [], // Array<Array<item>>
 
@@ -439,7 +497,28 @@ export default {
       saveSuccess: false,
       saveMsg: '',
       saveMsgType: 'success',
+
+      // ── Map ──
+      mapInstance: null,
+      mapLayers: [],
     };
+  },
+
+  mounted() {
+    // Load Leaflet CSS dynamically
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    // Load Leaflet JS dynamically (if not already loaded)
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      document.head.appendChild(script);
+    }
   },
 
   computed: {
@@ -476,6 +555,14 @@ export default {
     },
   },
 
+  watch: {
+    activeDayTab(newVal) {
+      if (this.step === 3) {
+        this.$nextTick(() => this.renderMapForDay(newVal - 1));
+      }
+    },
+  },
+
   methods: {
     // ─── Utilities ───────────────────────────────
     formatCurrency(val) {
@@ -500,6 +587,68 @@ export default {
         this.selectedDiaDiem.push(dd);
       } else {
         this.selectedDiaDiem.splice(idx, 1);
+      }
+    },
+
+    // ─── SerpApi Google Maps ───────────────────────
+    async searchGoogle() {
+      if (!this.searchQ.trim()) return;
+      this.loadingSerp = true;
+      this.serpResults = [];
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
+        const json = await res.json();
+        if (json.status) {
+          this.serpResults = json.data || [];
+          if (this.serpResults.length === 0) {
+            alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+          }
+        }
+      } catch (e) {
+        alert('Lỗi khi gọi API Google Maps: ' + e.message);
+      } finally {
+        this.loadingSerp = false;
+      }
+    },
+
+    async importAndSchedule(googlePlace, index) {
+      this.importingId = index;
+      
+      const payload = {
+        ten_dia_diem: googlePlace.ten_dia_diem,
+        dia_chi: googlePlace.dia_chi,
+        vi_do: googlePlace.vi_do,
+        kinh_do: googlePlace.kinh_do,
+        danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
+        image: googlePlace.image,
+        mo_ta: googlePlace.mo_ta || 'Được thêm tự động từ Google Maps.',
+        loai_dia_diem: 'Điểm check-in', 
+        id_danh_muc: 2, 
+      };
+
+      try {
+        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
+          await this.fetchDiaDiem();
+          alert('Địa điểm này đã có trong hệ thống nội bộ của chúng tôi! Bạn hãy tìm nó ngay bên dưới.');
+          return;
+        }
+
+        if (json.status && json.data) {
+          this.allDiaDiem.unshift(json.data);
+          this.toggleSelect(json.data);
+          this.serpResults.splice(index, 1);
+        }
+      } catch (e) {
+        alert('Lỗi hệ thống khi tải địa điểm này: ' + e.message);
+      } finally {
+        this.importingId = null;
       }
     },
 
@@ -529,14 +678,21 @@ export default {
     async fetchDiaDiem() {
       this.loadingDiaDiem = true;
       try {
-        const res = await fetch(`${BASE}/client/dia-diem/get-data`);
+        const res = await fetch(`${BASE}/dia-diems/`);
         const json = await res.json();
-        this.allDiaDiem = json.data || [];
-        // Collect unique categories
+        
+        this.allDiaDiem = (json.data || []).map(d => ({
+          ...d,
+          // Đảm bảo có id_danh_muc để lọc
+          id_danh_muc: d.id_danh_muc || d.danh_muc || 'other',
+          ten_danh_muc: d.loai_dia_diem || 'Khác'
+        }));
+
+        // Thu thập các danh mục duy nhất
         const catMap = {};
         this.allDiaDiem.forEach(d => {
           if (d.id_danh_muc && !catMap[d.id_danh_muc]) {
-            catMap[d.id_danh_muc] = { id: d.id_danh_muc, ten_danh_muc: d.ten_danh_muc || `Loại ${d.id_danh_muc}` };
+            catMap[d.id_danh_muc] = { id: d.id_danh_muc, ten_danh_muc: d.ten_danh_muc };
           }
         });
         this.categories = Object.values(catMap);
@@ -582,6 +738,8 @@ export default {
           gio_mo_cua: dd.gio_mo_cua,
           gio: dd.gio_mo_cua || gio,
           ghi_chu: '',
+          vi_do: dd.vi_do || null,
+          kinh_do: dd.kinh_do || null,
         });
       });
 
@@ -596,6 +754,10 @@ export default {
       if (this.selectedDiaDiem.length === 0) return;
       this.buildSchedule();
       this.step = 3;
+      this.$nextTick(() => {
+        this.initMap();
+        this.renderMapForDay(0);
+      });
     },
 
     // ─── Di chuyển & xóa item trong lịch trình ──
@@ -671,6 +833,85 @@ export default {
         this.saveMsgType = 'error';
       } finally {
         this.saving = false;
+      }
+    },
+
+    // ─── Map Methods ───────────────────────────────────────────
+    initMap() {
+      if (this.mapInstance) {
+        this.mapInstance.remove();
+        this.mapInstance = null;
+      }
+      const L = window.L;
+      if (!L) return;
+      this.mapInstance = L.map('trip-map').setView([16.0544, 108.2022], 13);
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps',
+        maxZoom: 19,
+      }).addTo(this.mapInstance);
+    },
+
+    clearMapLayers() {
+      if (!this.mapInstance) return;
+      this.mapLayers.forEach(layer => this.mapInstance.removeLayer(layer));
+      this.mapLayers = [];
+    },
+
+    async renderMapForDay(dayIndex) {
+      const L = window.L;
+      if (!L) {
+        // Leaflet may still be loading; retry after a short delay
+        setTimeout(() => this.renderMapForDay(dayIndex), 500);
+        return;
+      }
+      if (!this.mapInstance) this.initMap();
+      if (!this.mapInstance) return;
+
+      this.clearMapLayers();
+
+      const dayItems = this.lichTrinhTheoNgay[dayIndex] || [];
+      const validItems = dayItems.filter(item => item.vi_do && item.kinh_do);
+
+      if (validItems.length === 0) return;
+
+      // Create numbered markers for each location
+      const bounds = [];
+      validItems.forEach((item, idx) => {
+        const lat = parseFloat(item.vi_do);
+        const lng = parseFloat(item.kinh_do);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        bounds.push([lat, lng]);
+
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            background: #5a67d8; color: #fff; border-radius: 50%;
+            width: 32px; height: 32px; display: flex; align-items: center;
+            justify-content: center; font-weight: 700; font-size: 14px;
+            border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          ">${idx + 1}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const imgUrl = item.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=60';
+        const marker = L.marker([lat, lng], { icon })
+          .bindPopup(`
+            <div style="min-width:180px">
+              <img src="${imgUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:6px">
+              <strong style="font-size:14px">${item.ten_dia_diem}</strong><br>
+              <small style="color:#666">${item.dia_chi || 'Đà Nẵng'}</small><br>
+              <small>🕐 ${item.gio}</small>
+            </div>
+          `, { maxWidth: 220 })
+          .addTo(this.mapInstance);
+
+        this.mapLayers.push(marker);
+      });
+
+      if (bounds.length > 0) {
+        this.mapInstance.fitBounds(bounds, { padding: [40, 40] });
       }
     },
   },
@@ -919,6 +1160,16 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
 }
 
 /* ──────────── Search ──────────── */
+.search-bar-wrap {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.search-bar-wrap .search-bar {
+  flex: 1;
+  margin-bottom: 0 !important;
+}
+
 .search-bar {
   display: flex;
   align-items: center;
@@ -1256,5 +1507,59 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   .form-grid { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
   .dd-grid { grid-template-columns: 1fr; }
+  .step3-layout { flex-direction: column; }
+  .step3-right { min-width: unset; }
+}
+
+/* ──── Step 3: 2-column layout ──── */
+.step3-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.step3-left {
+  flex: 1;
+  min-width: 0;
+}
+.step3-right {
+  flex: 0 0 400px;
+  min-width: 320px;
+  position: sticky;
+  top: 90px;
+}
+
+/* ──── Map Panel ──── */
+.map-panel {
+  background: #fff;
+  border-radius: 1.2rem;
+  border: 1px solid #e8edf5;
+  box-shadow: 0 8px 24px rgba(30,45,68,0.07);
+  overflow: hidden;
+}
+.map-panel-head {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #eef2f7;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #1e2d44;
+  display: flex;
+  align-items: center;
+  background: #f8fbff;
+  gap: 0.5rem;
+}
+.route-loading-text {
+  margin-left: auto;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: #5a67d8;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; display: inline-block; }
+
+#trip-map {
+  height: 500px;
+  width: 100%;
+  z-index: 0;
 }
 </style>
