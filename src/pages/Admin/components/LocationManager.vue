@@ -312,6 +312,8 @@ export default {
   props: {
     pageTitle: { type: String, default: 'Quản lý địa điểm' },
     fetchUrl: { type: String, required: true },
+    categoryId: { type: [Number, String], required: true },
+    categoryDefaultType: { type: String, default: 'Khác' },
   },
   data() {
     return {
@@ -553,9 +555,15 @@ export default {
         // Cách hay nhất là dùng loai_dia_diem từ pageTitle (Xoá chữ Quản lý)
         const loai = this.pageTitle.replace('Quản lý ', '');
         
+        // Use default type or keep the one from Google if it looks more specific
+        const finalLoai = place.loai_dia_diem && place.loai_dia_diem !== 'Khác' 
+          ? place.loai_dia_diem 
+          : this.categoryDefaultType;
+
         await axios.post('http://127.0.0.1:8000/api/serp/import', {
           ...place,
-          loai_dia_diem: loai
+          loai_dia_diem: finalLoai,
+          id_danh_muc: this.categoryId
         }, this.authHeader());
         
         alert("Đã nhập địa điểm thành công!");

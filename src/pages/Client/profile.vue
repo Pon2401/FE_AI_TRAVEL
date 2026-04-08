@@ -453,6 +453,14 @@ export default {
         this.pwErrors.new = 'Mật khẩu mới phải có ít nhất 6 ký tự.'
         ok = false
       }
+      if (this.pwForm.old && this.pwForm.new && this.pwForm.old === this.pwForm.new) {
+        this.pwErrors.new = 'Mật khẩu mới phải khác mật khẩu hiện tại.'
+        ok = false
+      }
+      if (!this.pwForm.confirm) {
+        this.pwErrors.confirm = 'Vui lòng xác nhận mật khẩu mới.'
+        ok = false
+      }
       if (this.pwForm.new !== this.pwForm.confirm) {
         this.pwErrors.confirm = 'Mật khẩu xác nhận không khớp.'
         ok = false
@@ -462,20 +470,59 @@ export default {
     async doiMatKhau() {
       if (!this.validatePw()) return
       this.savingPw = true
+      this.pwErrors = {}
       try {
-        const res = await axios.post(`${API}/doi-mat-khau`, { old: this.pwForm.old, new: this.pwForm.new }, this.authHeader())
+        const payload = {
+          mat_khau_cu: this.pwForm.old,
+          mat_khau_moi: this.pwForm.new,
+        }
+
+        const res = await axios.post(`${API}/doi-mat-khau`, payload, this.authHeader())
+
         if (res.data.status) {
-          this.$toast.success(res.data.message)
+          if (res.data.message) {
+            this.$toast.success(res.data.message)
+          }
           this.pwForm = { old: '', new: '', confirm: '' }
           this.pwErrors = {}
         } else {
-          this.$toast.error(res.data.message)
-          if ((res.data.message || '').toLowerCase().includes('cu')) {
-            this.pwErrors.old = res.data.message
+          const message = res.data.message || ''
+          if (message) {
+            this.$toast.error(message)
+          }
+          if ((message || '').toLowerCase().includes('cũ')) {
+            this.pwErrors.old = message
           }
         }
-      } catch {
-        this.$toast.error('Doi mat khau that bai!')
+      } catch (err) {
+        if (err.response?.status === 422) {
+          const errors = err.response.data.errors || {}
+          this.pwErrors = {
+            old: errors.mat_khau_cu?.[0] || '',
+            new: errors.mat_khau_moi?.[0] || '',
+            confirm: errors.xac_nhan_mat_khau?.[0] || '',
+          }
+          if (err.response.data?.message) {
+            this.$toast.error(err.response.data.message)
+          }
+        } else if (err.response?.status === 400) {
+          const message = err.response.data?.message || ''
+          this.pwErrors.old = message
+          if (message) {
+            this.$toast.error(message)
+          }
+        } else if (err.response?.status === 401) {
+          if (err.response.data?.message) {
+            this.$toast.error(err.response.data.message)
+          }
+          localStorage.removeItem('client_token')
+          localStorage.removeItem('client_id')
+          this.$router.replace('/client/dang-nhap')
+        } else {
+          if (err.response?.data?.message) {
+            this.$toast.error(err.response.data.message)
+          }
+        }
       } finally {
         this.savingPw = false
       }

@@ -1,9 +1,7 @@
 <template>
-  <router-view v-slot="{ Component }">
-    <component :is="currentLayout">
-      <component :is="Component" />
-    </component>
-  </router-view>
+  <component :is="currentLayout" :key="layoutKey">
+    <router-view :key="pageKey" />
+  </component>
 </template>
 
 <script>
@@ -27,6 +25,12 @@ export default {
       };
 
       return layouts[this.$route.meta.layout] || DefaultLayout;
+    },
+    layoutKey() {
+      return this.$route.meta.layout || 'default';
+    },
+    pageKey() {
+      return this.$route.fullPath;
     },
   },
 };

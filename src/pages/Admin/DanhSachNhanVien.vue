@@ -106,8 +106,7 @@
                     class="btn btn-sm btn-outline-primary me-2"
                     type="button"
                     title="Sửa"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalSuaNhanVien"
+                    @click="openEditModal(admin)"
                   >
                     <i class="bi bi-pencil-square"></i>
                   </button>
@@ -115,8 +114,7 @@
                     class="btn btn-sm btn-outline-danger"
                     type="button"
                     title="Xóa"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalXoaNhanVien"
+                    @click="openDeleteModal(admin)"
                   >
                     <i class="bi bi-trash3"></i>
                   </button>
@@ -144,54 +142,94 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
-          <div class="modal-body pt-3">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Họ và tên</label>
-                <input type="text" class="form-control modal-input" placeholder="Nhập họ và tên">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control modal-input" placeholder="Nhập địa chỉ email">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Số điện thoại</label>
-                <input type="text" class="form-control modal-input" placeholder="Nhập số điện thoại">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Chức vụ</label>
-                <select class="form-select modal-input">
-                  <option selected disabled>Chọn chức vụ</option>
-                  <option>Quản trị viên</option>
-                  <option>Nhân viên</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Mật khẩu</label>
-                <input type="password" class="form-control modal-input" placeholder="Nhập mật khẩu">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Trạng thái</label>
-                <select class="form-select modal-input">
-                  <option selected>Đang hoạt động</option>
-                  <option>Tạm khóa</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Ghi chú</label>
-                <textarea
-                  class="form-control modal-input modal-textarea"
-                  rows="4"
-                  placeholder="Nhập ghi chú nếu có"
-                ></textarea>
+          <form @submit.prevent="createAdmin">
+            <div class="modal-body pt-3">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Họ và tên</label>
+                  <input
+                    v-model.trim="create_admin.ten"
+                    type="text"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': formErrors.ten }"
+                    placeholder="Nhập họ và tên"
+                  >
+                  <div v-if="formErrors.ten" class="invalid-feedback d-block">{{ formErrors.ten }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  <input
+                    v-model.trim="create_admin.email"
+                    type="email"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': formErrors.email }"
+                    placeholder="Nhập địa chỉ email"
+                  >
+                  <div v-if="formErrors.email" class="invalid-feedback d-block">{{ formErrors.email }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Số điện thoại</label>
+                  <input
+                    v-model.trim="create_admin.so_dien_thoai"
+                    type="text"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': formErrors.so_dien_thoai }"
+                    placeholder="Nhập số điện thoại"
+                  >
+                  <div v-if="formErrors.so_dien_thoai" class="invalid-feedback d-block">{{ formErrors.so_dien_thoai }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Chức vụ</label>
+                  <select
+                    v-model.number="create_admin.chuc_vu"
+                    class="form-select modal-input"
+                    :class="{ 'is-invalid': formErrors.chuc_vu }"
+                  >
+                    <option :value="null" disabled>Chọn chức vụ</option>
+                    <option :value="1">Quản trị viên</option>
+                    <option :value="2">Nhân viên</option>
+                  </select>
+                  <div v-if="formErrors.chuc_vu" class="invalid-feedback d-block">{{ formErrors.chuc_vu }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Mật khẩu</label>
+                  <input
+                    v-model="create_admin.mat_khau"
+                    type="password"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': formErrors.mat_khau }"
+                    placeholder="Nhập mật khẩu"
+                  >
+                  <div v-if="formErrors.mat_khau" class="invalid-feedback d-block">{{ formErrors.mat_khau }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Trạng thái</label>
+                  <select
+                    v-model.number="create_admin.trang_thai_hoat_dong"
+                    class="form-select modal-input"
+                    :class="{ 'is-invalid': formErrors.trang_thai_hoat_dong }"
+                  >
+                    <option :value="1">Đang hoạt động</option>
+                    <option :value="0">Tạm khóa</option>
+                  </select>
+                  <div v-if="formErrors.trang_thai_hoat_dong" class="invalid-feedback d-block">{{ formErrors.trang_thai_hoat_dong }}</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-light modal-cancel-btn" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-primary action-btn">Lưu nhân viên</button>
-          </div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-light modal-cancel-btn" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary action-btn" :disabled="isSubmitting">
+                <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Lưu nhân viên
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -212,53 +250,93 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
-          <div class="modal-body pt-3">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Họ và tên</label>
-                <input type="text" class="form-control modal-input" placeholder="Tên nhân viên">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control modal-input" placeholder="Email nhân viên">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Số điện thoại</label>
-                <input type="text" class="form-control modal-input" placeholder="Số điện thoại">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Chức vụ</label>
-                <select class="form-select modal-input">
-                  <option>Quản trị viên</option>
-                  <option selected>Nhân viên</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Trạng thái</label>
-                <select class="form-select modal-input">
-                  <option selected>Đang hoạt động</option>
-                  <option>Tạm khóa</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Mật khẩu mới</label>
-                <input type="password" class="form-control modal-input" placeholder="Bỏ trống nếu không đổi">
-              </div>
-              <div class="col-12">
-                <label class="form-label">Ghi chú</label>
-                <textarea
-                  class="form-control modal-input modal-textarea"
-                  rows="4"
-                  placeholder="Cập nhật ghi chú"
-                ></textarea>
+          <form @submit.prevent="updateAdmin">
+            <div class="modal-body pt-3">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Họ và tên</label>
+                  <input
+                    v-model.trim="edit_admin.ten"
+                    type="text"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': editErrors.ten }"
+                    placeholder="Tên nhân viên"
+                  >
+                  <div v-if="editErrors.ten" class="invalid-feedback d-block">{{ editErrors.ten }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  <input
+                    v-model.trim="edit_admin.email"
+                    type="email"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': editErrors.email }"
+                    placeholder="Email nhân viên"
+                  >
+                  <div v-if="editErrors.email" class="invalid-feedback d-block">{{ editErrors.email }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Số điện thoại</label>
+                  <input
+                    v-model.trim="edit_admin.so_dien_thoai"
+                    type="text"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': editErrors.so_dien_thoai }"
+                    placeholder="Số điện thoại"
+                  >
+                  <div v-if="editErrors.so_dien_thoai" class="invalid-feedback d-block">{{ editErrors.so_dien_thoai }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Chức vụ</label>
+                  <select
+                    v-model.number="edit_admin.chuc_vu"
+                    class="form-select modal-input"
+                    :class="{ 'is-invalid': editErrors.chuc_vu }"
+                  >
+                    <option :value="1">Quản trị viên</option>
+                    <option :value="2">Nhân viên</option>
+                  </select>
+                  <div v-if="editErrors.chuc_vu" class="invalid-feedback d-block">{{ editErrors.chuc_vu }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Trạng thái</label>
+                  <select
+                    v-model.number="edit_admin.trang_thai"
+                    class="form-select modal-input"
+                    :class="{ 'is-invalid': editErrors.trang_thai }"
+                  >
+                    <option :value="1">Đang hoạt động</option>
+                    <option :value="0">Tạm khóa</option>
+                  </select>
+                  <div v-if="editErrors.trang_thai" class="invalid-feedback d-block">{{ editErrors.trang_thai }}</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Mật khẩu mới</label>
+                  <input
+                    v-model="edit_admin.mat_khau"
+                    type="password"
+                    class="form-control modal-input"
+                    :class="{ 'is-invalid': editErrors.mat_khau }"
+                    placeholder="Bỏ trống nếu không đổi"
+                  >
+                  <div v-if="editErrors.mat_khau" class="invalid-feedback d-block">{{ editErrors.mat_khau }}</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-light modal-cancel-btn" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-primary action-btn">Cập nhật</button>
-          </div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-light modal-cancel-btn" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary action-btn" :disabled="isUpdating">
+                <span v-if="isUpdating" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Cập nhật
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -278,12 +356,17 @@
             </div>
             <h5 id="modalXoaNhanVienLabel" class="modal-title text-center">Xóa nhân viên</h5>
             <p class="delete-text mb-0">
-              Bạn có chắc chắn muốn xóa nhân viên này không? 
+              Bạn có chắc chắn muốn xóa nhân viên
+              <strong>{{ delete_admin.ten || delete_admin.email || 'này' }}</strong>
+              không?
             </p>
           </div>
           <div class="modal-footer border-0 justify-content-center pt-0">
             <button type="button" class="btn btn-light modal-cancel-btn" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-danger modal-delete-btn">Xác nhận xóa</button>
+            <button type="button" class="btn btn-danger modal-delete-btn" :disabled="isDeleting" @click="deleteAdmin">
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Xác nhận xóa
+            </button>
           </div>
         </div>
       </div>
@@ -293,8 +376,35 @@
 
 <script>
 import axios from 'axios'
+import { Modal } from 'bootstrap'
 
 const API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien'
+const CREATE_API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien/them-nhan-vien'
+
+const defaultCreateAdmin = () => ({
+  ten: '',
+  email: '',
+  so_dien_thoai: '',
+  chuc_vu: null,
+  mat_khau: '',
+  trang_thai_hoat_dong: 1,
+})
+
+const defaultEditAdmin = () => ({
+  id: null,
+  ten: '',
+  email: '',
+  so_dien_thoai: '',
+  chuc_vu: 2,
+  mat_khau: '',
+  trang_thai: 1,
+})
+
+const defaultDeleteAdmin = () => ({
+  id: null,
+  ten: '',
+  email: '',
+})
 
 export default {
   name: 'DanhSachNhanVien',
@@ -303,7 +413,15 @@ export default {
       admins: [],
       keyword: '',
       loading: false,
+      isSubmitting: false,
+      isUpdating: false,
+      isDeleting: false,
       errorMessage: '',
+      formErrors: {},
+      editErrors: {},
+      create_admin: defaultCreateAdmin(),
+      edit_admin: defaultEditAdmin(),
+      delete_admin: defaultDeleteAdmin(),
     }
   },
   computed: {
@@ -319,7 +437,10 @@ export default {
           admin.ho_ten,
           admin.so_dien_thoai,
           admin.id_chuc_vu,
+          admin.chuc_vu,
+          admin.ten_chuc_vu,
           admin.trang_thai,
+          admin.trang_thai_hoat_dong,
           admin.vai_tro,
           admin.role,
         ]
@@ -332,6 +453,17 @@ export default {
     this.fetchAdmins()
   },
   methods: {
+    resetCreateForm() {
+      this.formErrors = {}
+      this.create_admin = defaultCreateAdmin()
+    },
+    resetEditForm() {
+      this.editErrors = {}
+      this.edit_admin = defaultEditAdmin()
+    },
+    resetDeleteForm() {
+      this.delete_admin = defaultDeleteAdmin()
+    },
     authHeader() {
       const token = localStorage.getItem('key_admin')
       return token
@@ -341,6 +473,143 @@ export default {
             },
           }
         : {}
+    },
+    async createAdmin() {
+      this.formErrors = {}
+      this.isSubmitting = true
+
+      try {
+        const payload = {
+          ho_ten: this.create_admin.ten,
+          email: this.create_admin.email,
+          so_dien_thoai: this.create_admin.so_dien_thoai,
+          id_chuc_vu: this.create_admin.chuc_vu,
+          mat_khau: this.create_admin.mat_khau,
+          trang_thai: this.create_admin.trang_thai_hoat_dong,
+        }
+
+        const res = await axios.post(CREATE_API_URL, payload, this.authHeader())
+        this.$toast?.success(res.data?.message || 'Thêm nhân viên thành công')
+        this.resetCreateForm()
+        await this.fetchAdmins()
+
+        const modalElement = document.getElementById('modalThemNhanVien')
+        const modalInstance = Modal.getInstance(modalElement) || Modal.getOrCreateInstance(modalElement)
+        modalInstance?.hide()
+      } catch (error) {
+        if (error.response?.status === 422) {
+          const apiErrors = error.response.data?.errors || {}
+          this.formErrors = {
+            ten: apiErrors.ho_ten?.[0] || '',
+            email: apiErrors.email?.[0] || '',
+            so_dien_thoai: apiErrors.so_dien_thoai?.[0] || '',
+            chuc_vu: apiErrors.id_chuc_vu?.[0] || '',
+            mat_khau: apiErrors.mat_khau?.[0] || '',
+            trang_thai_hoat_dong: apiErrors.trang_thai?.[0] || '',
+          }
+          this.$toast?.error(error.response.data?.message || 'Dữ liệu không hợp lệ')
+          return
+        }
+
+        this.$toast?.error(error.response?.data?.message || 'Không thể thêm nhân viên lúc này')
+      } finally {
+        this.isSubmitting = false
+      }
+    },
+    openEditModal(admin) {
+      this.resetEditForm()
+      this.edit_admin = {
+        id: admin.id,
+        ten: admin.ho_ten || admin.ten || '',
+        email: admin.email || '',
+        so_dien_thoai: admin.so_dien_thoai || admin.sdt || '',
+        chuc_vu: Number(admin.id_chuc_vu || admin.chuc_vu || 2),
+        mat_khau: '',
+        trang_thai: Number(admin.trang_thai ?? admin.trang_thai_hoat_dong ?? 1),
+      }
+
+      const modalElement = document.getElementById('modalSuaNhanVien')
+      const modalInstance = Modal.getOrCreateInstance(modalElement)
+      modalInstance?.show()
+    },
+    async updateAdmin() {
+      if (!this.edit_admin.id) return
+
+      this.editErrors = {}
+      this.isUpdating = true
+
+      try {
+        const payload = {
+          ho_ten: this.edit_admin.ten,
+          email: this.edit_admin.email,
+          so_dien_thoai: this.edit_admin.so_dien_thoai,
+          id_chuc_vu: this.edit_admin.chuc_vu,
+          trang_thai: this.edit_admin.trang_thai,
+        }
+
+        if (this.edit_admin.mat_khau) {
+          payload.mat_khau = this.edit_admin.mat_khau
+        }
+
+        const res = await axios.post(`${API_URL}/${this.edit_admin.id}`, payload, this.authHeader())
+        this.$toast?.success(res.data?.message || 'Cập nhật nhân viên thành công')
+        this.resetEditForm()
+        await this.fetchAdmins()
+
+        const modalElement = document.getElementById('modalSuaNhanVien')
+        const modalInstance = Modal.getInstance(modalElement) || Modal.getOrCreateInstance(modalElement)
+        modalInstance?.hide()
+      } catch (error) {
+        if (error.response?.status === 422) {
+          const apiErrors = error.response.data?.errors || {}
+          this.editErrors = {
+            ten: apiErrors.ho_ten?.[0] || '',
+            email: apiErrors.email?.[0] || '',
+            so_dien_thoai: apiErrors.so_dien_thoai?.[0] || '',
+            chuc_vu: apiErrors.id_chuc_vu?.[0] || '',
+            mat_khau: apiErrors.mat_khau?.[0] || '',
+            trang_thai: apiErrors.trang_thai?.[0] || '',
+          }
+          this.$toast?.error(error.response.data?.message || 'Dữ liệu không hợp lệ')
+          return
+        }
+
+        this.$toast?.error(error.response?.data?.message || 'Không thể cập nhật nhân viên lúc này')
+      } finally {
+        this.isUpdating = false
+      }
+    },
+    openDeleteModal(admin) {
+      this.resetDeleteForm()
+      this.delete_admin = {
+        id: admin.id,
+        ten: admin.ho_ten || admin.ten || '',
+        email: admin.email || '',
+      }
+
+      const modalElement = document.getElementById('modalXoaNhanVien')
+      const modalInstance = Modal.getOrCreateInstance(modalElement)
+      modalInstance?.show()
+    },
+    async deleteAdmin() {
+      if (!this.delete_admin.id) return
+
+      this.isDeleting = true
+
+      try {
+        const res = await axios.delete(`${API_URL}/${this.delete_admin.id}`, this.authHeader())
+        this.$toast?.success(res.data?.message || 'Xóa nhân viên thành công')
+        this.resetDeleteForm()
+        await this.fetchAdmins()
+
+        const modalElement = document.getElementById('modalXoaNhanVien')
+        const modalInstance = Modal.getInstance(modalElement) || Modal.getOrCreateInstance(modalElement)
+        modalInstance?.hide()
+      } catch (error) {
+        this.$toast?.error(error.response?.data?.message || 'Không thể xóa nhân viên lúc này')
+      } finally {
+        this.isDeleting = false
+      }
     },
     async fetchAdmins() {
       this.loading = true
@@ -367,6 +636,10 @@ export default {
       return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase()
     },
     getRole(admin) {
+      if (admin.ten_chuc_vu) {
+        return admin.ten_chuc_vu
+      }
+
       if (admin.vai_tro || admin.role) {
         return admin.vai_tro || admin.role
       }
@@ -376,20 +649,16 @@ export default {
         2: 'Nhân viên',
       }
 
-      return roleMap[Number(admin.id_chuc_vu)] || `Chức vụ #${admin.id_chuc_vu ?? '--'}`
+      return roleMap[Number(admin.id_chuc_vu || admin.chuc_vu)] || `Chức vụ #${admin.id_chuc_vu ?? admin.chuc_vu ?? '--'}`
     },
     getPhone(admin) {
       return admin.so_dien_thoai || admin.sdt || ''
     },
     getStatusLabel(admin) {
-      return Number(admin.trang_thai) === 1 ? 'Đang hoạt động' : 'Tạm khóa'
+      return Number(admin.trang_thai ?? admin.trang_thai_hoat_dong) === 1 ? 'Đang hoạt động' : 'Tạm khóa'
     },
     getStatusClass(admin) {
-      return Number(admin.trang_thai) === 1 ? 'status-active' : 'status-inactive'
-    },
-    formatDate(value) {
-      if (!value) return 'Chưa có dữ liệu'
-      return new Date(value).toLocaleString('vi-VN')
+      return Number(admin.trang_thai ?? admin.trang_thai_hoat_dong) === 1 ? 'status-active' : 'status-inactive'
     },
   },
 }

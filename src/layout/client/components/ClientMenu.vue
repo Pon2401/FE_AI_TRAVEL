@@ -41,10 +41,10 @@
         <div class="d-flex align-items-center gap-2">
           <template v-if="!isLoggedIn">
             <router-link to="/client/dang-nhap" class="btn btn-login px-4">
-              Dang nhap
+              Đăng nhập
             </router-link>
             <router-link to="/client/dang-ky" class="btn btn-register-outline px-4 rounded-pill">
-              Dang ky
+              Đăng ký
             </router-link>
           </template>
 
@@ -101,7 +101,7 @@
 </template>
 
 <script>
-const PROFILE_UPDATED_EVENT = 'client-profile-updated'
+import { clearClientSession, CLIENT_PROFILE_UPDATED_EVENT } from '../../../utils/clientAuth'
 
 export default {
   data() {
@@ -131,11 +131,11 @@ export default {
     this.checkAuth()
     this.updateLocationMenuState()
     window.addEventListener('storage', this.checkAuth)
-    window.addEventListener(PROFILE_UPDATED_EVENT, this.checkAuth)
+    window.addEventListener(CLIENT_PROFILE_UPDATED_EVENT, this.checkAuth)
   },
   beforeUnmount() {
     window.removeEventListener('storage', this.checkAuth)
-    window.removeEventListener(PROFILE_UPDATED_EVENT, this.checkAuth)
+    window.removeEventListener(CLIENT_PROFILE_UPDATED_EVENT, this.checkAuth)
   },
   watch: {
     $route() {
@@ -151,11 +151,7 @@ export default {
       this.userAvatar = localStorage.getItem('client_avatar') || ''
     },
     dangXuat() {
-      localStorage.removeItem('client_token')
-      localStorage.removeItem('client_id')
-      localStorage.removeItem('client_ten')
-      localStorage.removeItem('client_avatar')
-      window.dispatchEvent(new CustomEvent(PROFILE_UPDATED_EVENT))
+      clearClientSession()
       this.isLoggedIn = false
       this.userName = ''
       this.userAvatar = ''
@@ -164,7 +160,7 @@ export default {
     handleAvatarError() {
       this.userAvatar = ''
       localStorage.removeItem('client_avatar')
-      window.dispatchEvent(new CustomEvent(PROFILE_UPDATED_EVENT))
+      window.dispatchEvent(new CustomEvent(CLIENT_PROFILE_UPDATED_EVENT))
     },
     updateLocationMenuState() {
       this.$nextTick(() => {

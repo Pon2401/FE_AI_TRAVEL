@@ -37,7 +37,11 @@
                         Trang chủ
                     </router-link>
 
-                    <div class="form-container w-100 slide-in-left mx-auto" style="max-width: 500px;">
+                    <form
+                        class="form-container w-100 slide-in-left mx-auto"
+                        style="max-width: 500px;"
+                        @submit.prevent="dangKyTaiKhoan"
+                    >
                         <div class="text-center form-header">
                             <div class="logo-box mx-auto mb-2 shadow-sm">
                                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
@@ -132,7 +136,7 @@
                         </div>
 
                         <!-- Nút Đăng ký -->
-                        <button @click="dangKyTaiKhoan" :disabled="loading"
+                        <button type="submit" :disabled="loading"
                             class="btn btn-primary-gradient w-100 btn-lg action-btn mb-3 shadow-sm hover-lift d-flex align-items-center justify-content-center">
                             <span v-if="loading"><span class="spinner-border spinner-border-sm me-2"></span> Đang xử
                                 lý...</span>
@@ -148,7 +152,7 @@
                             <div class="line flex-grow-1"></div>
                         </div>
 
-                        <button
+                        <button type="button"
                             class="btn btn-social w-100 btn-lg action-btn text-dark d-flex align-items-center justify-content-center hover-lift">
                             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="22"
                                 class="me-3" />
@@ -163,7 +167,7 @@
                                     ngay</router-link>
                             </p>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -236,9 +240,15 @@ export default {
             if (!this.validateClient()) return;
 
             this.loading = true;
-            const { re_password, ...payload } = this.user;
+            const payload = {
+                ho_va_ten: this.user.ten,
+                email: this.user.email,
+                so_dien_thoai: this.user.so_dien_thoai,
+                password: this.user.mat_khau,
+                password_confirmation: this.user.re_password,
+            };
 
-            axios.post('http://127.0.0.1:8000/api/client/dang-ky', payload)
+            axios.post('http://localhost:8000/api/client/dang-ky', payload)
                 .then((res) => {
                     if (res.data.status) {
                         this.$toast.success(res.data.message);
@@ -249,13 +259,41 @@ export default {
                 })
                 .catch((error) => {
                     if (error.response?.status === 422) {
-                        const apiErrors = error.response.data.errors || {};
+                        const apiErrors = error.response.data.validationErrorsRaw || error.response.data.errors || {};
+                        const responseMessage = error.response.data.message || '';
+                        const fieldAliasMap = {
+                            ho_va_ten: 'ten',
+                            password: 'mat_khau',
+                            password_confirmation: 're_password',
+                        };
+                        const normalizedErrors = Object.entries(apiErrors).reduce((acc, [key, value]) => {
+                            acc[fieldAliasMap[key] || key] = value;
+                            return acc;
+                        }, {});
+                        const allApiMessages = Object.values(normalizedErrors).flatMap((value) => Array.isArray(value) ? value : [value]).filter(Boolean);
+                        const duplicateEmailMessages = [
+                            ...allApiMessages.filter((message) =>
+                                /email/i.test(message) && /tồn tại|đã được sử dụng|already been taken|already exists|unique|trùng|đã đăng ký/i.test(message)
+                            ),
+                            ...(!allApiMessages.length && /email/i.test(responseMessage) && /tồn tại|đã được sử dụng|already been taken|already exists|unique|trùng|đã đăng ký/i.test(responseMessage)
+                                ? [responseMessage]
+                                : []),
+                        ];
+                        const shouldOnlyShowEmailError = duplicateEmailMessages.length > 0;
+                        const sourceErrors = shouldOnlyShowEmailError ? { email: duplicateEmailMessages } : normalizedErrors;
                         const parsedErrors = {};
-                        for (const key in apiErrors) {
-                            parsedErrors[key] = Array.isArray(apiErrors[key]) ? apiErrors[key][0] : apiErrors[key];
+                        const allMessages = [];
+
+                        for (const key in sourceErrors) {
+                            const fieldMessages = Array.isArray(sourceErrors[key]) ? sourceErrors[key] : [sourceErrors[key]];
+                            parsedErrors[key] = fieldMessages[0];
+                            allMessages.push(...fieldMessages.filter(Boolean));
                         }
-                        this.errors = { ...this.errors, ...parsedErrors };
-                        this.$toast.error(error.response.data.message || 'Dữ liệu không hợp lệ!');
+
+                        this.errors = shouldOnlyShowEmailError ? parsedErrors : { ...this.errors, ...parsedErrors };
+                        if (!shouldOnlyShowEmailError) {
+                            this.$toast.error(allMessages.join('\n') || responseMessage || 'Dữ liệu không hợp lệ!');
+                        }
                     } else if (error.response?.status === 500) {
                         this.$toast.error('Lỗi máy chủ, vui lòng thử lại sau.');
                     } else {

@@ -2,6 +2,8 @@
   <LocationManager
     pageTitle="Quản lý Giải trí"
     fetchUrl="http://127.0.0.1:8000/api/dia-diems/giai-tri"
+    categoryId="3"
+    categoryDefaultType="Khu vui chơi"
   />
 </template>
 
