@@ -98,6 +98,9 @@
               <!-- IMAGE -->
               <div class="place-image" :style="{ backgroundImage: `url(${place.image})` }">
                 <div :class="['place-badge', categoryClass(place.loai_dia_diem)]">{{ place.loai_dia_diem }}</div>
+                <button class="favorite-btn" @click.stop="toggleFavorite(place)" :class="{ active: place.is_favorite }">
+                  <i :class="place.is_favorite ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+                </button>
               </div>
 
               <!-- BODY -->
@@ -163,22 +166,108 @@
       <div class="modal-content">
         <button class="btn-close" @click="closeModal">×</button>
         <div class="modal-header">
-          <h4>{{ selectedPlace.ten_dia_diem }}</h4>
-          <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh
-            }}</small>
+          <div class="d-flex justify-content-between align-items-center w-100 pe-5">
+            <div>
+              <h4>{{ selectedPlace.ten_dia_diem }}</h4>
+              <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
+            </div>
+            <div class="modal-tabs">
+              <button :class="{ active: activeModalTab === 'info' }" @click="activeModalTab = 'info'">
+                <i class="bi bi-info-circle me-1"></i> Thông tin
+              </button>
+              <button :class="{ active: activeModalTab === 'reviews' }" @click="activeModalTab = 'reviews'">
+                <i class="bi bi-chat-left-text me-1"></i> Đánh giá ({{ detailReviews.length }})
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="modal-body">
-          <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
-          <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
-          <div class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
-          <p>{{ selectedPlace.mo_ta }}</p>
-          <ul>
-            <li><strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</li>
-            <li><strong>Giờ mở / đóng:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</li>
-            <li><strong>Giá:</strong> {{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}
-            </li>
-            <li><strong>Loại:</strong> {{ selectedPlace.loai_dia_diem }}</li>
-          </ul>
+        <div class="modal-body custom-scrollbar">
+          <!-- Tab 1: Info -->
+          <div v-if="activeModalTab === 'info'" class="fade-in-content">
+            <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
+            <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
+            
+            <div class="modal-gallery mb-3" v-if="selectedPlace.gallery && selectedPlace.gallery.length > 0">
+              <div class="carousel-container" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
+                <button class="carousel-nav prev" @click="prevImage" v-if="selectedPlace.gallery.length > 1">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="carousel-slide" :style="{ backgroundImage: `url(${currentGalleryImage})` }"></div>
+                <button class="carousel-nav next" @click="nextImage" v-if="selectedPlace.gallery.length > 1">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+                <div class="carousel-indicators" v-if="selectedPlace.gallery.length > 1">
+                  <span v-for="(img, idx) in selectedPlace.gallery" :key="idx" 
+                        :class="{ active: currentImageIdx === idx }"
+                        @click="currentImageIdx = idx"></span>
+                </div>
+              </div>
+              <div class="carousel-thumbnails mt-2" v-if="selectedPlace.gallery.length > 1">
+                <div v-for="(img, idx) in selectedPlace.gallery" :key="idx"
+                     :class="['thumb-item', { active: currentImageIdx === idx }]"
+                     @click="currentImageIdx = idx"
+                     :style="{ backgroundImage: `url(${img.duong_dan_anh || img.image})` }">
+                </div>
+              </div>
+            </div>
+            <div v-else class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
+            
+            <p class="mb-3">{{ selectedPlace.mo_ta }}</p>
+            <div class="info-list">
+              <div class="info-item"><i class="bi bi-geo-alt text-danger"></i> <strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</div>
+              <div class="info-item"><i class="bi bi-clock text-success"></i> <strong>Giờ mở cửa:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</div>
+              <div class="info-item"><i class="bi bi-cash green-text"></i> <strong>Giá:</strong> {{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</div>
+              <div class="info-item"><i class="bi bi-tag text-primary"></i> <strong>Loại:</strong> {{ selectedPlace.loai_dia_diem }}</div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Reviews -->
+          <div v-else class="fade-in-content">
+            <!-- Review Form -->
+            <div class="review-form-card mb-4" v-if="isLoggedIn">
+              <h6>Gửi đánh giá của bạn</h6>
+              <div class="star-rating-input mb-2">
+                <i v-for="s in 5" :key="s" class="bi" 
+                   :class="s <= newReview.so_sao ? 'bi-star-fill active' : 'bi-star'"
+                   @click="newReview.so_sao = s"></i>
+              </div>
+              <textarea v-model="newReview.noi_dung" class="form-control mb-2" rows="2" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+              <button class="btn btn-sm btn-primary" @click="submitReview" :disabled="submittingReview">
+                <span v-if="submittingReview" class="spinner-border spinner-border-sm me-1"></span>
+                Gửi nhận xét
+              </button>
+            </div>
+            <div v-else class="alert alert-info py-2" style="font-size: 0.85rem;">
+              <i class="bi bi-info-circle me-1"></i> <router-link to="/client/dang-nhap">Đăng nhập</router-link> để để lại đánh giá.
+            </div>
+
+            <!-- Review List -->
+            <div v-if="loadingReviews" class="text-center py-4">
+              <div class="spinner-border text-primary spinner-border-sm"></div>
+            </div>
+            <div v-else-if="detailReviews.length === 0" class="text-center py-4 text-muted">
+              <i class="bi bi-chat-square-dots fs-3 d-block mb-2"></i>
+              Chưa có đánh giá nào cho địa điểm này.
+            </div>
+            <div v-else class="review-scroll-area">
+              <div v-for="rv in detailReviews" :key="rv.id" class="review-item-card">
+                <div class="rv-meta">
+                  <div class="rv-user">
+                    <div class="rv-avatar" v-if="rv.nguoi_dung?.avatar">
+                      <img :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar">
+                    </div>
+                    <div class="rv-avatar-text" v-else>{{ (rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</div>
+                    <span class="rv-name">{{ rv.nguoi_dung?.ten || 'Người dùng' }}</span>
+                  </div>
+                  <div class="rv-stars">
+                    <i v-for="s in rv.so_sao" :key="s" class="bi bi-star-fill text-warning"></i>
+                  </div>
+                </div>
+                <p class="rv-text">{{ rv.noi_dung }}</p>
+                <small class="rv-date text-muted">{{ formatDate(rv.created_at) }}</small>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
@@ -214,6 +303,17 @@ export default {
       places: [],
       loading: false,
       error: null,
+      currentImageIdx: 0,
+      token: localStorage.getItem('client_token'),
+      isLoggedIn: !!localStorage.getItem('client_token'),
+      autoplayInterval: null,
+      
+      // Reviews
+      activeModalTab: 'info',
+      loadingReviews: false,
+      detailReviews: [],
+      newReview: { so_sao: 5, noi_dung: '' },
+      submittingReview: false,
     };
   },
 
@@ -235,6 +335,12 @@ export default {
         );
       }
       return filtered;
+    },
+    currentGalleryImage() {
+      if (!this.selectedPlace || !this.selectedPlace.gallery || this.selectedPlace.gallery.length === 0) {
+        return this.selectedPlace ? this.selectedPlace.image : '';
+      }
+      return this.selectedPlace.gallery[this.currentImageIdx].duong_dan_anh || this.selectedPlace.gallery[this.currentImageIdx].image;
     }
   },
 
@@ -355,10 +461,66 @@ export default {
 
     viewDetail(place) {
       this.selectedPlace = place;
+      this.currentImageIdx = 0;
       this.showModal = true;
+      this.activeModalTab = 'info';
+      this.detailReviews = [];
       this.$nextTick(() => {
         this.initModalMap(place);
       });
+      this.startAutoplay();
+      this.fetchReviews(place.id);
+    },
+
+    startAutoplay() {
+      this.stopAutoplay();
+      if (this.selectedPlace?.gallery?.length > 1) {
+        this.autoplayInterval = setInterval(() => {
+          this.nextImage();
+        }, 4000);
+      }
+    },
+    stopAutoplay() {
+      if (this.autoplayInterval) {
+        clearInterval(this.autoplayInterval);
+        this.autoplayInterval = null;
+      }
+    },
+
+    nextImage() {
+      if (this.selectedPlace.gallery) {
+        this.currentImageIdx = (this.currentImageIdx + 1) % this.selectedPlace.gallery.length;
+      }
+    },
+    prevImage() {
+      if (this.selectedPlace.gallery) {
+        this.currentImageIdx = (this.currentImageIdx - 1 + this.selectedPlace.gallery.length) % this.selectedPlace.gallery.length;
+      }
+    },
+
+    async toggleFavorite(place) {
+      if (!this.token) {
+        alert('Vui lòng đăng nhập để thêm vào yêu thích!');
+        return;
+      }
+      try {
+        const res = await fetch(`${BASE}/client/yeu-thich/toggle`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          },
+          body: JSON.stringify({ id_dia_diem: place.id })
+        });
+        const json = await res.json();
+        if (json.status) {
+          place.is_favorite = json.is_favorite;
+        } else {
+          alert(json.message || 'Lỗi khi thực hiện thao tác.');
+        }
+      } catch (e) {
+        console.error(e);
+      }
     },
 
     initModalMap(place) {
@@ -409,6 +571,7 @@ export default {
     },
 
     closeModal() {
+      this.stopAutoplay();
       this.showModal = false;
       this.selectedPlace = null;
     },
@@ -424,6 +587,75 @@ export default {
     clearSearch() {
       this.searchQuery = '';
       this.tempSearchQuery = '';
+    },
+
+    async fetchReviews(contentId) {
+      this.loadingReviews = true;
+      try {
+        const res = await fetch(`${BASE}/dia-diems/danh-gia/place/${contentId}`);
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.detailReviews = json.data;
+        }
+      } catch (e) {
+        console.error('Error fetching reviews:', e);
+      } finally {
+        this.loadingReviews = false;
+      }
+    },
+
+    async submitReview() {
+      if (!this.newReview.noi_dung.trim()) {
+        alert('Vui lòng nhập nội dung đánh giá!');
+        return;
+      }
+      this.submittingReview = true;
+      try {
+        const res = await fetch(`${BASE}/danh-gias`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          },
+          body: JSON.stringify({
+            id_dia_diem: this.selectedPlace.id,
+            so_sao: this.newReview.so_sao,
+            noi_dung: this.newReview.noi_dung,
+            id_nguoi_dung: 0
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.status === 'success') {
+          this.newReview.noi_dung = '';
+          this.newReview.so_sao = 5;
+          await this.fetchReviews(this.selectedPlace.id);
+          alert('Cảm ơn bạn đã gửi đánh giá!');
+        } else {
+          const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('\n') : 'Không thể gửi đánh giá.');
+          alert('Lỗi: ' + msg);
+        }
+      } catch (e) {
+        console.error('Submit review error:', e);
+        alert('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng.');
+      } finally {
+        this.submittingReview = false;
+      }
+    },
+
+    getFullAvatar(path) {
+      if (!path) return '';
+      if (path.startsWith('http')) return path;
+      return `http://localhost:8000${path.startsWith('/') ? '' : '/'}${path}`;
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('vi-VN', { 
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
     },
   },
 };
@@ -704,6 +936,36 @@ export default {
   background-clip: text;
 }
 
+/* Favorite Button */
+.favorite-btn {
+  position: absolute; top: 15px; right: 15px; width: 40px; height: 40px;
+  background: rgba(255, 255, 255, 0.85); color: #64748b; border: none;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; transition: all 0.3s ease; z-index: 10;
+  backdrop-filter: blur(5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.favorite-btn:hover { transform: scale(1.1); background: #fff; color: #ef4444; }
+.favorite-btn.active { color: #ef4444; background: #fff; }
+
+/* Carousel */
+.carousel-container { position: relative; width: 100%; height: 320px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+.carousel-slide { width: 100%; height: 100%; background-size: cover; background-position: center; transition: background-image 0.4s ease; }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; background: rgba(255,255,255,0.9); border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; transition: all 0.3s ease; z-index: 5; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.carousel-nav:hover { background: #fff; color: #3b82f6; transform: translateY(-50%) scale(1.1); }
+.carousel-nav.prev { left: 15px; }
+.carousel-nav.next { right: 15px; }
+.carousel-indicators { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
+.carousel-indicators span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.3; }
+.carousel-indicators span.active { background: #fff; width: 24px; border-radius: 4px; }
+
+/* Thumbnails */
+.carousel-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; scrollbar-width: thin; }
+.carousel-thumbnails::-webkit-scrollbar { height: 4px; }
+.carousel-thumbnails::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.thumb-item { width: 70px; height: 50px; border-radius: 8px; background-size: cover; background-position: center; cursor: pointer; opacity: 0.6; transition: all 0.3s ease; border: 2px solid transparent; flex-shrink: 0; }
+.thumb-item:hover { opacity: 0.9; }
+.thumb-item.active { opacity: 1; border-color: #3b82f6; transform: scale(1.05); }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -766,6 +1028,69 @@ export default {
   font-weight: 600;
   font-size: 0.95rem;
 }
+
+.modal-tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 5px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.modal-tabs button {
+  border: none !important;
+  outline: none !important;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-tabs button:hover {
+  color: #3b82f6;
+}
+
+.modal-tabs button.active {
+  background: #ffffff;
+  color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+.fade-in-content { animation: fadeIn 0.4s ease; }
+
+.info-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.info-item { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f8fbff; border-radius: 12px; border: 1px solid #edf2f7; font-weight: 600; color: #334155; }
+.info-item i { font-size: 1.2rem; }
+
+/* Review Section */
+.review-form-card { background: #f8fafc; padding: 1.25rem; border-radius: 16px; border: 1px solid #e2e8f0; }
+.review-form-card h6 { font-weight: 800; color: #1e293b; margin-bottom: 0.75rem; }
+.star-rating-input { display: flex; gap: 4px; font-size: 1.4rem; color: #d1d5db; }
+.star-rating-input i { cursor: pointer; transition: 0.2s; }
+.star-rating-input i:hover { transform: scale(1.15); }
+.star-rating-input i.active { color: #f59e0b; }
+
+.review-scroll-area { display: flex; flex-direction: column; gap: 1rem; padding-right: 5px; }
+.review-item-card { background: #fff; padding: 1.25rem; border-radius: 16px; border: 1px solid #f1f5f9; transition: all 0.3s; }
+.review-item-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+.rv-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+.rv-user { display: flex; align-items: center; gap: 0.75rem; }
+.rv-avatar, .rv-avatar-text { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #3b82f6; color: #fff; font-weight: 700; font-size: 0.9rem; overflow: hidden; }
+.rv-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.rv-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
+.rv-stars { display: flex; gap: 2px; font-size: 0.8rem; }
+.rv-text { color: #475569; font-size: 0.92rem; line-height: 1.5; margin-bottom: 0.5rem; }
+.rv-date { font-size: 0.75rem; font-weight: 500; }
 
 .modal-image {
   width: 100%;

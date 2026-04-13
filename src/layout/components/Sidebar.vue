@@ -57,7 +57,7 @@
             :class="{ active: showCategorySubmenu || isCategoryMenuActive() }"
           >
             <i class="bi bi-tags"></i>
-            <span v-if="!isCollapsed" class="nav-label">Quản lý danh mục</span>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý địa điểm</span>
             <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
           </a>
           <ul v-if="showCategorySubmenu && !isCollapsed" class="submenu">

@@ -4,12 +4,8 @@
     <div class="tlt-wizard-bar">
       <div class="container">
         <div class="wizard-steps">
-          <div
-            v-for="(s, i) in steps"
-            :key="i"
-            class="wizard-step"
-            :class="{ active: step === i + 1, done: step > i + 1 }"
-          >
+          <div v-for="(s, i) in steps" :key="i" class="wizard-step"
+            :class="{ active: step === i + 1, done: step > i + 1 }">
             <div class="step-icon">
               <i v-if="step > i + 1" class="bi bi-check-lg"></i>
               <span v-else>{{ i + 1 }}</span>
@@ -34,31 +30,28 @@
         <div class="form-grid">
           <div class="form-group full-col">
             <label>Tên chuyến đi <span class="req">*</span></label>
-            <input
-              v-model="form.ten_chuyen_di"
-              type="text"
-              class="tlt-input"
-              placeholder="Ví dụ: Đà Nẵng cùng gia đình 3N2Đ"
-            />
+            <input v-model="form.ten_chuyen_di" type="text" class="tlt-input"
+              placeholder="Ví dụ: Đà Nẵng cùng gia đình 3N2Đ" />
             <span v-if="errors.ten_chuyen_di" class="err-msg">{{ errors.ten_chuyen_di }}</span>
           </div>
 
           <div class="form-group">
             <label>Ngày bắt đầu <span class="req">*</span></label>
-            <input v-model="form.ngay_bat_dau" type="date" class="tlt-input" />
+            <input v-model="form.ngay_bat_dau" type="date" class="tlt-input" :min="today" />
             <span v-if="errors.ngay_bat_dau" class="err-msg">{{ errors.ngay_bat_dau }}</span>
           </div>
 
           <div class="form-group">
             <label>Ngày kết thúc <span class="req">*</span></label>
-            <input v-model="form.ngay_ket_thuc" type="date" class="tlt-input" />
+            <input v-model="form.ngay_ket_thuc" type="date" class="tlt-input" :min="form.ngay_bat_dau || today" />
             <span v-if="errors.ngay_ket_thuc" class="err-msg">{{ errors.ngay_ket_thuc }}</span>
           </div>
 
           <div class="form-group">
             <label>Số thành viên</label>
             <div class="number-input">
-              <button type="button" @click="form.so_luong_thanh_vien = Math.max(1, form.so_luong_thanh_vien - 1)">−</button>
+              <button type="button"
+                @click="form.so_luong_thanh_vien = Math.max(1, form.so_luong_thanh_vien - 1)">−</button>
               <span>{{ form.so_luong_thanh_vien }}</span>
               <button type="button" @click="form.so_luong_thanh_vien++">+</button>
             </div>
@@ -66,23 +59,13 @@
 
           <div class="form-group">
             <label>Ngân sách dự kiến (VNĐ)</label>
-            <input
-              v-model.number="form.ngan_sach_du_kien"
-              type="number"
-              class="tlt-input"
-              placeholder="0"
-              min="0"
-            />
+            <input v-model.number="form.ngan_sach_du_kien" type="number" class="tlt-input" placeholder="0" min="0" />
           </div>
 
           <div class="form-group full-col">
             <label>Ghi chú</label>
-            <textarea
-              v-model="form.chu_thich"
-              class="tlt-input"
-              rows="3"
-              placeholder="Sở thích, yêu cầu đặc biệt..."
-            ></textarea>
+            <textarea v-model="form.chu_thich" class="tlt-input" rows="3"
+              placeholder="Sở thích, yêu cầu đặc biệt..."></textarea>
           </div>
         </div>
 
@@ -96,9 +79,13 @@
           </span>
         </div>
 
-        <div class="tlt-actions">
-          <button class="btn-brand-lg" @click="goStep2">
+        <div class="tlt-actions d-flex gap-3">
+          <button class="btn-brand-lg flex-fill" @click="goStep2">
             Tiếp tục – Chọn địa điểm <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+          <button class="btn-outline-brand-lg flex-fill" @click="generateByAI" :disabled="loadingAI">
+            <span v-if="loadingAI" class="spinner-border spinner-border-sm me-2"></span>
+            <i v-else class="bi bi-magic me-2"></i> Tạo lịch bằng AI
           </button>
         </div>
       </div>
@@ -114,18 +101,9 @@
 
         <!-- Category filter tabs -->
         <div class="filter-tabs">
-          <button
-            class="filter-tab"
-            :class="{ active: filterCat === null }"
-            @click="filterCat = null"
-          >Tất cả</button>
-          <button
-            v-for="cat in categories"
-            :key="cat.id"
-            class="filter-tab"
-            :class="{ active: filterCat === cat.id }"
-            @click="filterCat = cat.id"
-          >{{ cat.ten_danh_muc }}</button>
+          <button class="filter-tab" :class="{ active: filterCat === null }" @click="filterCat = null">Tất cả</button>
+          <button v-for="cat in categories" :key="cat.id" class="filter-tab" :class="{ active: filterCat === cat.id }"
+            @click="filterCat = cat.id">{{ cat.ten_danh_muc }}</button>
         </div>
 
         <!-- Search bar -->
@@ -134,8 +112,9 @@
             <i class="bi bi-search"></i>
             <input v-model="searchQ" type="text" placeholder="Tìm địa điểm..." />
           </div>
-          <button v-if="searchQ.trim().length >= 2" class="btn-brand" @click="searchGoogle" :disabled="loadingSerp" style="white-space: nowrap;">
-             <i class="bi" :class="loadingSerp ? 'bi-hourglass-split spin' : 'bi-google'"></i> Tìm trên Google Maps
+          <button v-if="searchQ.trim().length >= 2" class="btn-brand" @click="searchGoogle" :disabled="loadingSerp"
+            style="white-space: nowrap;">
+            <i class="bi" :class="loadingSerp ? 'bi-hourglass-split spin' : 'bi-google'"></i> Tìm trên Google Maps
           </button>
         </div>
 
@@ -146,20 +125,18 @@
         </div>
 
         <!-- SerpApi Results -->
-        <div v-if="serpResults.length > 0" class="serp-results mb-4" style="background: #f8fbff; padding: 1.5rem; border-radius: 1rem; border: 1px dashed #c3dafe;">
+        <div v-if="serpResults.length > 0" class="serp-results mb-4"
+          style="background: #f8fbff; padding: 1.5rem; border-radius: 1rem; border: 1px dashed #c3dafe;">
           <h4 class="mb-3" style="color: #434190; font-size: 1.1rem; font-weight: 700;">
             <i class="bi bi-google me-2"></i>Kết quả từ Google Maps
           </h4>
           <div class="dd-grid">
-            <div v-for="(res, i) in serpResults" :key="'serp'+i" class="dd-card">
+            <div v-for="(res, i) in serpResults" :key="'serp' + i" class="dd-card">
               <div class="dd-img-wrap">
-                <img :src="res.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400'" class="dd-img" />
-                <button
-                  class="dd-select-btn"
-                  @click="importAndSchedule(res, i)"
-                  :disabled="importingId === i"
-                  style="background: #4c51bf;"
-                >
+                <img :src="res.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400'"
+                  class="dd-img" />
+                <button class="dd-select-btn" @click="importAndSchedule(res, i)" :disabled="importingId === i"
+                  style="background: #4c51bf;">
                   <i class="bi" :class="importingId === i ? 'bi-hourglass-split spin' : 'bi-cloud-download'"></i> Lấy
                 </button>
               </div>
@@ -170,7 +147,8 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" @click="serpResults = []">Đóng kết quả Google</button>
+          <button class="btn btn-outline-secondary w-100 mt-3 rounded-pill" @click="serpResults = []">Đóng kết quả
+            Google</button>
         </div>
 
         <!-- Loading -->
@@ -181,24 +159,12 @@
 
         <!-- Grid -->
         <div v-else class="dd-grid">
-          <div
-            v-for="dd in filteredDiaDiem"
-            :key="dd.id"
-            class="dd-card"
-            :class="{ selected: isSelected(dd.id) }"
-          >
+          <div v-for="dd in filteredDiaDiem" :key="dd.id" class="dd-card" :class="{ selected: isSelected(dd.id) }">
             <div class="dd-img-wrap">
-              <img
-                :src="dd.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80'"
-                :alt="dd.ten_dia_diem"
-                class="dd-img"
-              />
+              <img :src="dd.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80'"
+                :alt="dd.ten_dia_diem" class="dd-img" />
               <div class="dd-badge" v-if="dd.gia_ve > 0">{{ formatCurrency(dd.gia_ve) }}</div>
-              <button
-                class="dd-select-btn"
-                :class="{ remove: isSelected(dd.id) }"
-                @click="toggleSelect(dd)"
-              >
+              <button class="dd-select-btn" :class="{ remove: isSelected(dd.id) }" @click="toggleSelect(dd)">
                 <i :class="isSelected(dd.id) ? 'bi bi-check-circle-fill' : 'bi bi-plus-circle'"></i>
                 {{ isSelected(dd.id) ? 'Đã chọn' : 'Thêm' }}
               </button>
@@ -229,11 +195,7 @@
           </div>
           <div class="tlt-actions-row">
             <button class="btn-ghost" @click="step = 1"><i class="bi bi-arrow-left me-1"></i>Quay lại</button>
-            <button
-              class="btn-brand-lg"
-              :disabled="selectedDiaDiem.length === 0"
-              @click="goStep3"
-            >
+            <button class="btn-brand-lg" :disabled="selectedDiaDiem.length === 0" @click="goStep3">
               Tạo lịch trình <i class="bi bi-magic ms-2"></i>
             </button>
           </div>
@@ -263,23 +225,15 @@
             </strong>
           </div>
           <div v-if="form.ngan_sach_du_kien > 0" class="budget-bar-wrap">
-            <div
-              class="budget-bar-fill"
-              :class="tongGiaVe > form.ngan_sach_du_kien ? 'over' : ''"
-              :style="{ width: Math.min(100, (tongGiaVe / form.ngan_sach_du_kien) * 100) + '%' }"
-            ></div>
+            <div class="budget-bar-fill" :class="tongGiaVe > form.ngan_sach_du_kien ? 'over' : ''"
+              :style="{ width: Math.min(100, (tongGiaVe / form.ngan_sach_du_kien) * 100) + '%' }"></div>
           </div>
         </div>
 
         <!-- Day tabs -->
         <div class="day-tabs">
-          <button
-            v-for="n in soNgay"
-            :key="n"
-            class="day-tab"
-            :class="{ active: activeDayTab === n }"
-            @click="activeDayTab = n"
-          >
+          <button v-for="n in soNgay" :key="n" class="day-tab" :class="{ active: activeDayTab === n }"
+            @click="activeDayTab = n">
             <span class="day-tab-num">Ngày {{ n }}</span>
             <span class="day-tab-date">{{ formatDate(form.ngay_bat_dau, n - 1) }}</span>
           </button>
@@ -290,12 +244,10 @@
 
           <!-- LEFT: Timeline -->
           <div class="step3-left">
-            <div class="timeline" v-if="lichTrinhTheoNgay[activeDayTab - 1]">
-              <div
-                v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]"
-                :key="item.id_dia_diem + '-' + idx"
-                class="timeline-item"
-              >
+            <div class="timeline"
+              v-if="lichTrinhTheoNgay[activeDayTab - 1] && lichTrinhTheoNgay[activeDayTab - 1].length > 0">
+              <div v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]" :key="item.id_dia_diem + '-' + idx"
+                class="timeline-item">
                 <div class="timeline-time">
                   <span class="time-badge">{{ item.gio }}</span>
                   <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
@@ -305,8 +257,7 @@
                     <div class="tc-img-wrap">
                       <img
                         :src="item.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=70'"
-                        class="tc-img"
-                      />
+                        class="tc-img" loading="lazy" />
                     </div>
                     <div class="tc-meta">
                       <h5>{{ item.ten_dia_diem }}</h5>
@@ -319,11 +270,8 @@
                       <button @click="moveItem(activeDayTab - 1, idx, -1)" :disabled="idx === 0" title="Lên">
                         <i class="bi bi-arrow-up"></i>
                       </button>
-                      <button
-                        @click="moveItem(activeDayTab - 1, idx, 1)"
-                        :disabled="idx === lichTrinhTheoNgay[activeDayTab - 1].length - 1"
-                        title="Xuống"
-                      >
+                      <button @click="moveItem(activeDayTab - 1, idx, 1)"
+                        :disabled="idx === lichTrinhTheoNgay[activeDayTab - 1].length - 1" title="Xuống">
                         <i class="bi bi-arrow-down"></i>
                       </button>
                       <button class="btn-remove" @click="removeItem(activeDayTab - 1, idx)" title="Xóa">
@@ -333,19 +281,23 @@
                   </div>
                   <div class="tc-note">
                     <i class="bi bi-pencil-square me-1"></i>
-                    <input
-                      v-model="item.ghi_chu"
-                      type="text"
-                      placeholder="Thêm ghi chú cho địa điểm này..."
-                      class="note-input"
-                    />
+                    <input v-model="item.ghi_chu" type="text" placeholder="Thêm ghi chú cho địa điểm này..."
+                      class="note-input" />
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div v-if="lichTrinhTheoNgay[activeDayTab - 1].length === 0" class="tlt-empty">
-                Chưa có địa điểm nào cho ngày này.
+            <!-- Empty State for Day -->
+            <div v-else class="empty-day-placeholder py-5 text-center">
+              <div class="empty-icon-wrap mb-3">
+                <i class="bi bi-calendar-x"></i>
               </div>
+              <h5>Ngày này chưa có lịch trình</h5>
+              <p class="text-muted">Quay lại Bước 2 để chọn thêm địa điểm hoặc sử dụng quy hoạch AI.</p>
+              <button class="btn-brand-lg mt-2" @click="step = 2">
+                <i class="bi bi-plus-circle me-1"></i> Thêm địa điểm
+              </button>
             </div>
           </div>
 
@@ -410,11 +362,7 @@
 
         <!-- Day-by-day mini summary -->
         <div class="mini-days">
-          <div
-            v-for="(day, di) in lichTrinhTheoNgay"
-            :key="di"
-            class="mini-day"
-          >
+          <div v-for="(day, di) in lichTrinhTheoNgay" :key="di" class="mini-day">
             <div class="mini-day-head">
               <strong>Ngày {{ di + 1 }}</strong>
               <span>{{ formatDate(form.ngay_bat_dau, di) }}</span>
@@ -454,7 +402,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api';
+const BASE = 'http://127.0.0.1:8000/api';
 
 export default {
   name: 'TaoLichTrinh',
@@ -464,6 +412,8 @@ export default {
       step: 1,
       steps: ['Thông tin', 'Chọn địa điểm', 'Lịch trình', 'Xác nhận'],
       activeDayTab: 1,
+
+      today: new Date().toISOString().split('T')[0],
 
       // ── Form bước 1 ──
       form: {
@@ -501,6 +451,8 @@ export default {
       // ── Map ──
       mapInstance: null,
       mapLayers: [],
+
+      loadingAI: false,
     };
   },
 
@@ -517,6 +469,12 @@ export default {
     if (!window.L) {
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      document.head.appendChild(script);
+    }
+    // Load Sortable.js for Drag-and-Drop
+    if (!window.Sortable) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js';
       document.head.appendChild(script);
     }
   },
@@ -558,7 +516,10 @@ export default {
   watch: {
     activeDayTab(newVal) {
       if (this.step === 3) {
-        this.$nextTick(() => this.renderMapForDay(newVal - 1));
+        this.$nextTick(() => {
+          this.renderMapForDay(newVal - 1);
+          this.initSortable();
+        });
       }
     },
   },
@@ -596,7 +557,7 @@ export default {
       this.loadingSerp = true;
       this.serpResults = [];
       try {
-        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
+        const res = await fetch(`http://127.0.0.1:8000/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
         const json = await res.json();
         if (json.status) {
           this.serpResults = json.data || [];
@@ -613,7 +574,7 @@ export default {
 
     async importAndSchedule(googlePlace, index) {
       this.importingId = index;
-      
+
       const payload = {
         ten_dia_diem: googlePlace.ten_dia_diem,
         dia_chi: googlePlace.dia_chi,
@@ -622,12 +583,12 @@ export default {
         danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
         image: googlePlace.image,
         mo_ta: googlePlace.mo_ta || 'Được thêm tự động từ Google Maps.',
-        loai_dia_diem: 'Điểm check-in', 
-        id_danh_muc: 2, 
+        loai_dia_diem: 'Điểm check-in',
+        id_danh_muc: 2,
       };
 
       try {
-        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+        const res = await fetch(`http://127.0.0.1:8000/api/serp/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -656,14 +617,16 @@ export default {
     validateStep1() {
       this.errors = {};
       if (!this.form.ten_chuyen_di.trim()) this.errors.ten_chuyen_di = 'Vui lòng nhập tên chuyến đi.';
-      if (!this.form.ngay_bat_dau) this.errors.ngay_bat_dau = 'Vui lòng chọn ngày bắt đầu.';
-      if (!this.form.ngay_ket_thuc) this.errors.ngay_ket_thuc = 'Vui lòng chọn ngày kết thúc.';
-      if (
-        this.form.ngay_bat_dau &&
-        this.form.ngay_ket_thuc &&
-        this.form.ngay_ket_thuc < this.form.ngay_bat_dau
-      ) {
-        this.errors.ngay_ket_thuc = 'Ngày kết thúc phải sau ngày bắt đầu.';
+      if (!this.form.ngay_bat_dau) {
+        this.errors.ngay_bat_dau = 'Vui lòng chọn ngày bắt đầu.';
+      } else if (this.form.ngay_bat_dau < this.today) {
+        this.errors.ngay_bat_dau = 'Ngày bắt đầu không được nhỏ hơn ngày hiện tại.';
+      }
+
+      if (!this.form.ngay_ket_thuc) {
+        this.errors.ngay_ket_thuc = 'Vui lòng chọn ngày kết thúc.';
+      } else if (this.form.ngay_bat_dau && this.form.ngay_ket_thuc <= this.form.ngay_bat_dau) {
+        this.errors.ngay_ket_thuc = 'Ngày kết thúc phải lớn hơn ngày bắt đầu.';
       }
       return Object.keys(this.errors).length === 0;
     },
@@ -680,7 +643,7 @@ export default {
       try {
         const res = await fetch(`${BASE}/dia-diems/`);
         const json = await res.json();
-        
+
         this.allDiaDiem = (json.data || []).map(d => ({
           ...d,
           // Đảm bảo có id_danh_muc để lọc
@@ -750,6 +713,69 @@ export default {
       this.activeDayTab = 1;
     },
 
+    async generateByAI() {
+      if (!this.validateStep1()) return;
+
+      const token = localStorage.getItem('client_token');
+      if (!token) {
+        alert('Vui lòng đăng nhập để sử dụng tính năng AI.');
+        return;
+      }
+
+      this.loadingAI = true;
+      try {
+        const res = await fetch(`${BASE}/client/ai/generate-itinerary`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(this.form)
+        });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          // AI returns Array<Array<item>>
+          if (this.allDiaDiem.length === 0) await this.fetchDiaDiem();
+
+          this.lichTrinhTheoNgay = json.data.map(day => {
+            return day.map(item => {
+              const original = this.allDiaDiem.find(d => d.id === item.id_dia_diem);
+              return {
+                ...item,
+                ten_dia_diem: item.ten_dia_diem || original?.ten_dia_diem || 'Địa điểm không tên',
+                dia_chi: item.dia_chi || original?.dia_chi || 'Đà Nẵng',
+                hinh_anh: item.image || original?.hinh_anh || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
+                vi_do: item.vi_do || original?.vi_do || null,
+                kinh_do: item.kinh_do || original?.kinh_do || null,
+                gia_ve: item.gia_ve || original?.gia_ve || 0,
+                ghi_chu: item.ghi_chu || ''
+              };
+            });
+          });
+
+          this.step = 3;
+          this.activeDayTab = 1;
+
+          // Smooth transition to step 3 and map initialization
+          this.$nextTick(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => {
+              this.initMap();
+              this.renderMapForDay(0);
+              this.initSortable();
+            }, 500);
+          });
+        } else {
+          alert('AI gặp sự cố: ' + (json.message || 'Vui lòng thử lại sau.'));
+        }
+      } catch (e) {
+        alert('Lỗi kết nối máy chủ AI: ' + e.message);
+      } finally {
+        this.loadingAI = false;
+      }
+    },
+
     goStep3() {
       if (this.selectedDiaDiem.length === 0) return;
       this.buildSchedule();
@@ -757,6 +783,38 @@ export default {
       this.$nextTick(() => {
         this.initMap();
         this.renderMapForDay(0);
+        this.initSortable();
+      });
+    },
+
+    initSortable() {
+      const el = document.querySelector('.timeline');
+      if (!el || !window.Sortable) return;
+
+      // Cleanup previous instance if any
+      if (this.sortableInstance) this.sortableInstance.destroy();
+
+      this.sortableInstance = new window.Sortable(el, {
+        animation: 150,
+        handle: '.timeline-card',
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+          const dayIdx = this.activeDayTab - 1;
+          const dayItems = [...this.lichTrinhTheoNgay[dayIdx]];
+          const item = dayItems.splice(evt.oldIndex, 1)[0];
+          dayItems.splice(evt.newIndex, 0, item);
+
+          // Re-update hours based on new positions
+          const timeSlots = ['08:00', '10:30', '13:30', '16:00', '19:00'];
+          dayItems.forEach((it, i) => {
+            it.gio = timeSlots[i] || `0${8 + i * 2}:00`.slice(-5);
+          });
+
+          this.lichTrinhTheoNgay[dayIdx] = dayItems;
+          this.$nextTick(() => {
+            this.renderMapForDay(dayIdx);
+          });
+        }
       });
     },
 
@@ -960,7 +1018,7 @@ export default {
   transition: color 0.3s;
 }
 
-.wizard-step + .wizard-step::before {
+.wizard-step+.wizard-step::before {
   content: '';
   position: absolute;
   left: 0;
@@ -971,8 +1029,13 @@ export default {
   background: #e2e8f0;
 }
 
-.wizard-step.active { color: #10b981; }
-.wizard-step.done { color: #22c55e; }
+.wizard-step.active {
+  color: #10b981;
+}
+
+.wizard-step.done {
+  color: #22c55e;
+}
 
 .step-icon {
   width: 2rem;
@@ -1002,29 +1065,51 @@ export default {
   font-weight: 600;
   display: none;
 }
-@media (min-width: 576px) { .step-label { display: block; } }
+
+@media (min-width: 576px) {
+  .step-label {
+    display: block;
+  }
+}
 
 /* ──────────── animate-in ──────────── */
 .animate-in {
   animation: fadeUp 0.45s ease both;
 }
+
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ──────────── Section head ──────────── */
 .section-head {
   margin-bottom: 2rem;
 }
+
 .section-head h2 {
   font-size: 1.75rem;
   font-weight: 800;
   color: #1e2d44;
   margin-bottom: 0.4rem;
 }
-.section-head p { color: #627289; margin-bottom: 0; font-size: 0.97rem; }
-.text-brand { color: #10b981; }
+
+.section-head p {
+  color: #627289;
+  margin-bottom: 0;
+  font-size: 0.97rem;
+}
+
+.text-brand {
+  color: #10b981;
+}
 
 /* ──────────── Form bước 1 ──────────── */
 .form-grid {
@@ -1032,10 +1117,26 @@ export default {
   grid-template-columns: 1fr 1fr;
   gap: 1.2rem;
 }
-.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-.full-col { grid-column: 1 / -1; }
-label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
-.req { color: #f43f5e; }
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.full-col {
+  grid-column: 1 / -1;
+}
+
+label {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: #3d5166;
+}
+
+.req {
+  color: #f43f5e;
+}
 
 .tlt-input {
   padding: 0.7rem 1rem;
@@ -1048,11 +1149,16 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   color: #1e2d44;
   width: 100%;
 }
+
 .tlt-input:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
 }
-.err-msg { font-size: 0.8rem; color: #f43f5e; }
+
+.err-msg {
+  font-size: 0.8rem;
+  color: #f43f5e;
+}
 
 .number-input {
   display: flex;
@@ -1063,6 +1169,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   overflow: hidden;
   background: #fff;
 }
+
 .number-input button {
   width: 42px;
   height: 46px;
@@ -1073,7 +1180,11 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   color: #3d5166;
   transition: background 0.18s;
 }
-.number-input button:hover { background: #e4edfc; }
+
+.number-input button:hover {
+  background: #e4edfc;
+}
+
 .number-input span {
   flex: 1;
   text-align: center;
@@ -1095,7 +1206,10 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
 }
 
 /* ──────────── Actions ──────────── */
-.tlt-actions { margin-top: 2rem; }
+.tlt-actions {
+  margin-top: 2rem;
+}
+
 .tlt-bottom-bar {
   display: flex;
   justify-content: space-between;
@@ -1104,7 +1218,12 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   padding-top: 1.5rem;
   border-top: 1px solid #e8edf5;
 }
-.tlt-actions-row { display: flex; gap: 0.9rem; align-items: center; }
+
+.tlt-actions-row {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
 
 .btn-brand-lg {
   background: linear-gradient(135deg, #10b981, #0ea5e9);
@@ -1118,8 +1237,35 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   transition: all 0.2s;
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
 }
-.btn-brand-lg:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35); }
-.btn-brand-lg:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-brand-lg:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35);
+}
+
+.btn-brand-lg:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-outline-brand-lg {
+  background: white;
+  border: 1.5px solid #10b981;
+  color: #10b981;
+  border-radius: 999px;
+  padding: 0.75rem 1.9rem;
+  font-size: 0.97rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline-brand-lg:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  transform: translateY(-2px);
+}
 
 .btn-ghost {
   background: transparent;
@@ -1132,8 +1278,14 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   cursor: pointer;
   transition: all 0.18s;
 }
-.btn-ghost:hover:not(:disabled) { background: #f0f4fb; }
-.btn-ghost:disabled { opacity: 0.5; }
+
+.btn-ghost:hover:not(:disabled) {
+  background: #f0f4fb;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.5;
+}
 
 /* ──────────── Filter tabs ──────────── */
 .filter-tabs {
@@ -1142,6 +1294,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   gap: 0.5rem;
   margin-bottom: 1.2rem;
 }
+
 .filter-tab {
   padding: 0.42rem 1rem;
   border-radius: 999px;
@@ -1153,7 +1306,9 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   cursor: pointer;
   transition: all 0.18s;
 }
-.filter-tab.active, .filter-tab:hover {
+
+.filter-tab.active,
+.filter-tab:hover {
   background: #10b981;
   border-color: #10b981;
   color: #fff;
@@ -1165,6 +1320,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   gap: 0.75rem;
   align-items: center;
 }
+
 .search-bar-wrap .search-bar {
   flex: 1;
   margin-bottom: 0 !important;
@@ -1179,7 +1335,12 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   border-radius: 999px;
   padding: 0.55rem 1.2rem;
 }
-.search-bar i { color: #a0adbf; font-size: 1rem; }
+
+.search-bar i {
+  color: #a0adbf;
+  font-size: 1rem;
+}
+
 .search-bar input {
   border: none;
   outline: none;
@@ -1196,6 +1357,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   gap: 1.2rem;
   margin-bottom: 1rem;
 }
+
 .dd-card {
   background: #fff;
   border-radius: 1.2rem;
@@ -1204,12 +1366,33 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   overflow: hidden;
   transition: all 0.22s;
 }
-.dd-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(30, 45, 68, 0.12); }
-.dd-card.selected { border-color: #10b981; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2); }
 
-.dd-img-wrap { position: relative; overflow: hidden; }
-.dd-img { width: 100%; height: 170px; object-fit: cover; display: block; transition: transform 0.3s; }
-.dd-card:hover .dd-img { transform: scale(1.05); }
+.dd-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(30, 45, 68, 0.12);
+}
+
+.dd-card.selected {
+  border-color: #10b981;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+.dd-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.dd-img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+
+.dd-card:hover .dd-img {
+  transform: scale(1.05);
+}
 
 .dd-badge {
   position: absolute;
@@ -1239,22 +1422,56 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   cursor: pointer;
   transition: all 0.18s;
   color: #1e2d44;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.dd-select-btn i { font-size: 1rem; }
-.dd-select-btn:hover { background: #10b981; border-color: #10b981; color: #fff; }
-.dd-select-btn.remove { background: #10b981; border-color: #10b981; color: #fff; }
 
-.dd-info { padding: 1rem; }
-.dd-info h5 { font-size: 0.97rem; font-weight: 700; margin-bottom: 0.3rem; color: #1e2d44; }
-.dd-addr { font-size: 0.82rem; color: #7a8ea0; margin-bottom: 0.4rem; }
-.dd-meta { display: flex; gap: 0.8rem; font-size: 0.8rem; color: #7a8ea0; flex-wrap: wrap; }
+.dd-select-btn i {
+  font-size: 1rem;
+}
+
+.dd-select-btn:hover {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.dd-select-btn.remove {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.dd-info {
+  padding: 1rem;
+}
+
+.dd-info h5 {
+  font-size: 0.97rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: #1e2d44;
+}
+
+.dd-addr {
+  font-size: 0.82rem;
+  color: #7a8ea0;
+  margin-bottom: 0.4rem;
+}
+
+.dd-meta {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  color: #7a8ea0;
+  flex-wrap: wrap;
+}
 
 .tlt-selection-info {
   font-size: 0.9rem;
   color: #5a6d80;
   font-weight: 600;
 }
+
 .sel-count {
   display: inline-block;
   background: #10b981;
@@ -1282,11 +1499,31 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 14px rgba(30, 45, 68, 0.06);
 }
-.budget-info { display: flex; flex-direction: column; font-size: 0.85rem; }
-.budget-info span { color: #7a8ea0; }
-.budget-info strong { font-size: 1.1rem; color: #1e2d44; font-weight: 800; }
-.budget-info strong.over { color: #f43f5e; }
-.budget-info strong.ok { color: #10b981; }
+
+.budget-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.budget-info span {
+  color: #7a8ea0;
+}
+
+.budget-info strong {
+  font-size: 1.1rem;
+  color: #1e2d44;
+  font-weight: 800;
+}
+
+.budget-info strong.over {
+  color: #f43f5e;
+}
+
+.budget-info strong.ok {
+  color: #10b981;
+}
+
 .budget-bar-wrap {
   flex: 1;
   min-width: 120px;
@@ -1295,13 +1532,17 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   border-radius: 999px;
   overflow: hidden;
 }
+
 .budget-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #10b981, #0ea5e9);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
-.budget-bar-fill.over { background: linear-gradient(90deg, #f43f5e, #fb923c); }
+
+.budget-bar-fill.over {
+  background: linear-gradient(90deg, #f43f5e, #fb923c);
+}
 
 /* ──────────── Day tabs ──────────── */
 .day-tabs {
@@ -1310,6 +1551,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }
+
 .day-tab {
   display: flex;
   flex-direction: column;
@@ -1322,18 +1564,36 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   transition: all 0.2s;
   min-width: 80px;
 }
+
 .day-tab.active {
   background: linear-gradient(135deg, #10b981, #0ea5e9);
   border-color: transparent;
   color: #fff;
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.28);
 }
-.day-tab-num { font-weight: 700; font-size: 0.88rem; }
-.day-tab-date { font-size: 0.75rem; opacity: 0.8; }
+
+.day-tab-num {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.day-tab-date {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
 
 /* ──────────── Timeline ──────────── */
-.timeline { display: flex; flex-direction: column; gap: 0; }
-.timeline-item { display: flex; gap: 1rem; }
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 1rem;
+}
+
 .timeline-time {
   width: 62px;
   flex-shrink: 0;
@@ -1342,6 +1602,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   align-items: center;
   padding-top: 0.2rem;
 }
+
 .time-badge {
   background: linear-gradient(135deg, #10b981, #0ea5e9);
   color: #fff;
@@ -1351,24 +1612,45 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   border-radius: 0.6rem;
   white-space: nowrap;
 }
+
 .timeline-line {
   flex: 1;
-  width: 2px;
-  background: linear-gradient(to bottom, #10b98166, transparent);
+  width: 3px;
+  background: linear-gradient(to bottom, #10b981, #0ea5e9, transparent);
   margin: 0.4rem 0;
-  min-height: 20px;
+  min-height: 40px;
+  border-radius: 99px;
+  opacity: 0.4;
 }
+
 .timeline-card {
   flex: 1;
-  background: #fff;
-  border-radius: 1.1rem;
-  border: 1px solid #e8edf5;
-  padding: 1rem 1.1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 14px rgba(30, 45, 68, 0.06);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 10px 30px rgba(30, 45, 68, 0.08);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.tc-header { display: flex; gap: 0.9rem; align-items: flex-start; }
-.tc-img-wrap { flex-shrink: 0; }
+
+.timeline-card:hover {
+  transform: translateX(8px);
+  box-shadow: 0 15px 40px rgba(30, 45, 68, 0.12);
+  border-color: #10b981;
+}
+
+.tc-header {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.tc-img-wrap {
+  flex-shrink: 0;
+}
+
 .tc-img {
   width: 70px;
   height: 60px;
@@ -1376,27 +1658,98 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   border-radius: 0.7rem;
   display: block;
 }
-.tc-meta { flex: 1; }
-.tc-meta h5 { font-size: 0.93rem; font-weight: 700; margin-bottom: 0.2rem; color: #1e2d44; }
-.tc-meta p { font-size: 0.8rem; color: #7a8ea0; margin-bottom: 0.15rem; }
-.tc-order-btns { display: flex; flex-direction: column; gap: 0.2rem; flex-shrink: 0; }
+
+.tc-meta {
+  flex: 1;
+}
+
+.tc-meta h5 {
+  font-size: 0.93rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  color: #1e2d44;
+}
+
+.tc-meta p {
+  font-size: 0.8rem;
+  color: #7a8ea0;
+  margin-bottom: 0.15rem;
+}
+
+.tc-order-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
 .tc-order-btns button {
-  width: 28px;
-  height: 28px;
-  border-radius: 0.5rem;
-  border: 1.5px solid #dbe3f0;
-  background: #f5f8fe;
+  width: 32px;
+  height: 32px;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  color: #5a6d80;
-  transition: all 0.15s;
+  font-size: 0.9rem;
+  color: #64748b;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
-.tc-order-btns button:hover:not(:disabled) { background: #eef4ff; border-color: #0ea5e9; color: #0ea5e9; }
-.tc-order-btns button:disabled { opacity: 0.3; cursor: not-allowed; }
-.tc-order-btns .btn-remove:hover:not(:disabled) { background: #fff1f2; border-color: #f43f5e; color: #f43f5e; }
+
+.tc-order-btns button:hover:not(:disabled) {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.tc-order-btns button:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.tc-order-btns .btn-remove:hover:not(:disabled) {
+  background: #f43f5e;
+  border-color: #f43f5e;
+  color: #fff;
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+  background: #eef4ff;
+  border: 2px dashed #3b82f6;
+}
+
+.empty-day-placeholder {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 1.5rem;
+  border: 2px dashed #dbe3f0;
+}
+
+.empty-icon-wrap {
+  font-size: 3rem;
+  color: #c0cedf;
+}
+
+.btn-brand-lg {
+  padding: 0.8rem 2rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #0ea5e9);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.3s;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+}
+
+.btn-brand-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3);
+}
 
 .tc-note {
   display: flex;
@@ -1408,6 +1761,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   font-size: 0.82rem;
   color: #a0adbf;
 }
+
 .note-input {
   flex: 1;
   border: none;
@@ -1416,7 +1770,10 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   color: #3d5166;
   background: transparent;
 }
-.note-input::placeholder { color: #c0c8d8; }
+
+.note-input::placeholder {
+  color: #c0c8d8;
+}
 
 /* ──────────── Summary bước 4 ──────────── */
 .summary-grid {
@@ -1427,15 +1784,35 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   margin-bottom: 2rem;
   flex-wrap: wrap;
 }
+
 .summary-card-big {
   background: linear-gradient(135deg, #f0fff8, #e0f2fe);
   border-radius: 1.2rem;
   padding: 1.4rem 1.6rem;
   border: 1px solid #a7f3d0;
 }
-.sum-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: #065f46; font-weight: 700; }
-.summary-card-big h3 { font-size: 1.4rem; font-weight: 800; color: #1e2d44; margin: 0.3rem 0 0.65rem; }
-.sum-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.sum-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.summary-card-big h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1e2d44;
+  margin: 0.3rem 0 0.65rem;
+}
+
+.sum-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .sum-chips span {
   background: rgba(16, 185, 129, 0.1);
   color: #065f46;
@@ -1444,6 +1821,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   font-size: 0.82rem;
   font-weight: 600;
 }
+
 .summary-stat {
   background: #fff;
   border-radius: 1.1rem;
@@ -1457,17 +1835,65 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   box-shadow: 0 4px 14px rgba(30, 45, 68, 0.06);
   min-width: 120px;
 }
-.summary-stat i { font-size: 1.4rem; color: #10b981; margin-bottom: 0.3rem; }
-.summary-stat strong { font-size: 1.1rem; font-weight: 800; color: #1e2d44; }
-.summary-stat span { font-size: 0.78rem; color: #7a8ea0; }
 
-.mini-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.mini-day { background: #fff; border-radius: 1rem; padding: 1rem 1.1rem; border: 1px solid #e8edf5; }
-.mini-day-head { display: flex; justify-content: space-between; margin-bottom: 0.6rem; }
-.mini-day-head strong { font-size: 0.9rem; color: #1e2d44; }
-.mini-day-head span { font-size: 0.8rem; color: #7a8ea0; }
-.mini-day ul { list-style: none; padding: 0; margin: 0; }
-.mini-day li { font-size: 0.83rem; color: #3d5166; padding: 0.18rem 0; }
+.summary-stat i {
+  font-size: 1.4rem;
+  color: #10b981;
+  margin-bottom: 0.3rem;
+}
+
+.summary-stat strong {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e2d44;
+}
+
+.summary-stat span {
+  font-size: 0.78rem;
+  color: #7a8ea0;
+}
+
+.mini-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mini-day {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e8edf5;
+}
+
+.mini-day-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.mini-day-head strong {
+  font-size: 0.9rem;
+  color: #1e2d44;
+}
+
+.mini-day-head span {
+  font-size: 0.8rem;
+  color: #7a8ea0;
+}
+
+.mini-day ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mini-day li {
+  font-size: 0.83rem;
+  color: #3d5166;
+  padding: 0.18rem 0;
+}
 
 /* ──────────── Save alert ──────────── */
 .save-alert {
@@ -1480,8 +1906,18 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   font-weight: 600;
   margin-bottom: 1rem;
 }
-.save-alert.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-.save-alert.error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+.save-alert.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.save-alert.error {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
 
 /* ──────────── Loading / Empty ──────────── */
 .tlt-loading {
@@ -1492,6 +1928,7 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   padding: 3rem;
   color: #7a8ea0;
 }
+
 .spinner {
   width: 36px;
   height: 36px;
@@ -1500,15 +1937,40 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.tlt-empty { text-align: center; color: #a0adbf; padding: 2rem; font-size: 0.92rem; }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tlt-empty {
+  text-align: center;
+  color: #a0adbf;
+  padding: 2rem;
+  font-size: 0.92rem;
+}
 
 @media (max-width: 640px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .summary-grid { grid-template-columns: 1fr 1fr; }
-  .dd-grid { grid-template-columns: 1fr; }
-  .step3-layout { flex-direction: column; }
-  .step3-right { min-width: unset; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dd-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step3-layout {
+    flex-direction: column;
+  }
+
+  .step3-right {
+    min-width: unset;
+  }
 }
 
 /* ──── Step 3: 2-column layout ──── */
@@ -1518,10 +1980,12 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   align-items: flex-start;
   margin-bottom: 1.5rem;
 }
+
 .step3-left {
   flex: 1;
   min-width: 0;
 }
+
 .step3-right {
   flex: 0 0 400px;
   min-width: 320px;
@@ -1534,9 +1998,10 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   background: #fff;
   border-radius: 1.2rem;
   border: 1px solid #e8edf5;
-  box-shadow: 0 8px 24px rgba(30,45,68,0.07);
+  box-shadow: 0 8px 24px rgba(30, 45, 68, 0.07);
   overflow: hidden;
 }
+
 .map-panel-head {
   padding: 0.85rem 1.1rem;
   border-bottom: 1px solid #eef2f7;
@@ -1548,14 +2013,24 @@ label { font-size: 0.87rem; font-weight: 600; color: #3d5166; }
   background: #f8fbff;
   gap: 0.5rem;
 }
+
 .route-loading-text {
   margin-left: auto;
   font-weight: 500;
   font-size: 0.8rem;
   color: #5a67d8;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; display: inline-block; }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+}
 
 #trip-map {
   height: 500px;
