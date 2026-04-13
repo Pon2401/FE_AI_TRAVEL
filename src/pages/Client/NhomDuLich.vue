@@ -10,7 +10,7 @@
         </div>
         <div class="header-actions">
           <!-- Bell invite badge -->
-          <button class="bell-btn" @click="showInvites = true" :class="{ pulse: pendingInvites.length > 0 }">
+          <button class="bell-btn" @click="openInvitesModal" :class="{ pulse: pendingInvites.length > 0 }">
             <i class="bi bi-bell-fill"></i>
             <span v-if="pendingInvites.length > 0" class="bell-badge">{{ pendingInvites.length }}</span>
           </button>
@@ -73,6 +73,9 @@
                 <button class="btn-sm-outline" @click="openMembersPanel(g)">
                   <i class="bi bi-person-lines-fill me-1"></i>Thành viên
                 </button>
+                <button class="btn-sm-outline" @click="openChatRoom(g)">
+                  <i class="bi bi-chat-left-text me-1"></i>Chat
+                </button>
                 <button
                   v-if="!g.la_truong_nhom"
                   class="btn-sm-danger"
@@ -112,6 +115,9 @@
               <div class="gc-actions">
                 <button class="btn-sm-outline" @click="openMembersPanel(g)">
                   <i class="bi bi-person-lines-fill me-1"></i>Thành viên
+                </button>
+                <button class="btn-sm-outline" @click="openChatRoom(g)">
+                  <i class="bi bi-chat-left-text me-1"></i>Chat
                 </button>
                 <button class="btn-sm-outline" @click="openInviteModal(g)">
                   <i class="bi bi-person-plus me-1"></i>Mời
@@ -164,64 +170,30 @@
     <!-- ══════════════════════════════════════════════
          MODAL – Lời mời chờ xác nhận
     ══════════════════════════════════════════════ -->
-    <div v-if="showInvites" class="modal-overlay" @click.self="showInvites = false">
-      <div class="modal-box">
-        <button class="modal-close" @click="showInvites = false"><i class="bi bi-x-lg"></i></button>
-        <div class="modal-icon-head invite-icon"><i class="bi bi-envelope-open-heart-fill"></i></div>
-        <h3>Lời mời tham gia nhóm</h3>
-
-        <div v-if="pendingInvites.length === 0" class="ndl-empty small-empty">
-          <i class="bi bi-inbox"></i>
-          <p>Không có lời mời nào đang chờ.</p>
-        </div>
-
-        <div v-else class="invite-list">
-          <div v-for="inv in pendingInvites" :key="inv.id_thanh_vien" class="invite-item">
-            <div class="invite-info">
-              <strong>{{ inv.ten_nhom }}</strong>
-              <span>Được mời bởi: {{ inv.nguoi_tao }}</span>
-              <span v-if="inv.mo_ta" class="invite-desc">{{ inv.mo_ta }}</span>
-            </div>
-            <div class="invite-btns">
-              <button class="btn-accept" @click="respond(inv, true)" :disabled="inv.responding">
-                <i class="bi bi-check-lg"></i>
-              </button>
-              <button class="btn-reject" @click="respond(inv, false)" :disabled="inv.responding">
-                <i class="bi bi-x-lg"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <GroupInvitesModal
+      :open="showInvites"
+      :loading="invitesLoading"
+      :error="inviteError"
+      :invites="pendingInvites"
+      @close="showInvites = false"
+      @respond="respondToInvite"
+    />
 
     <!-- ══════════════════════════════════════════════
          MODAL – Mời thành viên
     ══════════════════════════════════════════════ -->
-    <div v-if="showInvite" class="modal-overlay" @click.self="showInvite = false">
-      <div class="modal-box">
-        <button class="modal-close" @click="showInvite = false"><i class="bi bi-x-lg"></i></button>
-        <div class="modal-icon-head"><i class="bi bi-person-plus-fill"></i></div>
-        <h3>Mời thành viên vào "{{ inviteTarget?.ten_nhom }}"</h3>
-        <div class="mform-group">
-          <label>Email người dùng</label>
-          <div class="invite-input-row">
-            <input
-              v-model="inviteEmail"
-              class="mform-input"
-              type="email"
-              placeholder="email@example.com"
-              @keyup.enter="doInvite"
-            />
-            <button class="btn-brand-lg" @click="doInvite" :disabled="inviting">
-              <span v-if="inviting"><i class="bi bi-hourglass-split"></i></span>
-              <span v-else>Gửi</span>
-            </button>
-          </div>
-        </div>
-        <div v-if="inviteMsg" class="save-alert" :class="inviteMsgType">{{ inviteMsg }}</div>
-      </div>
-    </div>
+    <GroupInviteModal
+      :open="showInvite"
+      :group-name="inviteTarget?.ten_nhom || ''"
+      :email="inviteEmail"
+      :loading="inviteSubmitting"
+      :error="inviteEmailError"
+      :message="inviteMsg"
+      :message-type="inviteMsgType"
+      @close="showInvite = false"
+      @submit="doInvite"
+      @update:email="inviteEmail = $event"
+    />
 
     <!-- ══════════════════════════════════════════════
          PANEL – Danh sách thành viên (slide-in)
@@ -240,8 +212,11 @@
 
         <div v-else class="member-list">
           <div v-for="m in members" :key="m.id_thanh_vien" class="member-item">
-            <div class="member-avatar" :style="{ background: groupColor(m.id_nguoi_dung) }">
-              {{ (m.ten || '?').charAt(0).toUpperCase() }}
+            <div class="member-avatar">
+              <img v-if="getAvatarUrl(m)" :src="getAvatarUrl(m)" alt="avt" class="avt-img" />
+              <div v-else class="avt-letter" :style="{ background: groupColor(m.id_nguoi_dung) }">
+                {{ (m.ten || '?').charAt(0).toUpperCase() }}
+              </div>
             </div>
             <div class="member-info">
               <strong>{{ m.ten }}</strong>
@@ -270,7 +245,7 @@
 
         <!-- Invite from panel if leader -->
         <div v-if="panelGroup?.la_truong_nhom" class="panel-invite">
-          <label>Mời thêm qua email</label>
+          <label>Mời thêm thành viên bằng email tài khoản</label>
           <div class="invite-input-row">
             <input
               v-model="panelInviteEmail"
@@ -279,11 +254,12 @@
               placeholder="email@example.com"
               @keyup.enter="doInviteFromPanel"
             />
-            <button class="btn-brand-lg" @click="doInviteFromPanel" :disabled="panelInviting">
-              <span v-if="panelInviting"><i class="bi bi-hourglass-split"></i></span>
+            <button class="btn-brand-lg" @click="doInviteFromPanel" :disabled="inviteSubmitting">
+              <span v-if="inviteSubmitting"><i class="bi bi-hourglass-split"></i></span>
               <span v-else><i class="bi bi-send"></i></span>
             </button>
           </div>
+          <div v-if="panelInviteError" class="err-msg mt-1">{{ panelInviteError }}</div>
           <div v-if="panelMsg" class="save-alert mt-1" :class="panelMsgType">{{ panelMsg }}</div>
         </div>
       </div>
@@ -307,19 +283,74 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════
+         MODAL – Xác nhận rời nhóm
+    ══════════════════════════════════════════════ -->
+    <div v-if="leaveTarget" class="modal-overlay" @click.self="leaveTarget = null">
+      <div class="modal-box">
+        <div class="modal-icon warning-icon"><i class="bi bi-box-arrow-right"></i></div>
+        <h4>Rời nhóm?</h4>
+        <p>Bạn có chắc muốn rời khỏi nhóm <strong>"{{ leaveTarget.ten_nhom }}"</strong>? Bạn sẽ không thể xem hay gửi tin nhắn trong nhóm này nữa.</p>
+        <div class="modal-actions">
+          <button class="btn-ghost" @click="leaveTarget = null">Hủy</button>
+          <button class="btn-danger" @click="doLeave" :disabled="leaving">
+            <span v-if="leaving">Đang rời...</span>
+            <span v-else><i class="bi bi-box-arrow-right me-1"></i>Rời nhóm</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         MODAL – Xác nhận xoá thành viên
+    ══════════════════════════════════════════════ -->
+    <div v-if="kickTarget" class="modal-overlay" @click.self="kickTarget = null">
+      <div class="modal-box">
+        <div class="modal-icon warning-icon"><i class="bi bi-person-x-fill"></i></div>
+        <h4>Xóa thành viên?</h4>
+        <p>Bạn có chắc muốn xóa <strong>"{{ kickTarget.ten }}"</strong> khỏi nhóm?</p>
+        <div class="modal-actions">
+          <button class="btn-ghost" @click="kickTarget = null">Hủy</button>
+          <button class="btn-danger" @click="doKick" :disabled="kicking">
+            <span v-if="kicking">Đang xóa...</span>
+            <span v-else><i class="bi bi-person-x-fill me-1"></i>Xóa</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api/client/nhom-du-lich';
-const BASE_CD = 'http://localhost:8000/api/client/chuyen-di';
+import { useToast } from 'vue-toast-notification';
+import GroupInviteModal from '../../components/group/GroupInviteModal.vue';
+import GroupInvitesModal from '../../components/group/GroupInvitesModal.vue';
+import { useGroupInvites } from '../../composables/useGroupInvites';
+import { CLIENT_API_BASE_URL } from '../../services/clientApi';
+import { getClientAccessToken } from '../../utils/clientAuth';
+
+const BASE = `${CLIENT_API_BASE_URL}/client/nhom-du-lich`;
+const BASE_CD = `${CLIENT_API_BASE_URL}/client/chuyen-di`;
 
 export default {
   name: 'NhomDuLich',
+  components: {
+    GroupInviteModal,
+    GroupInvitesModal,
+  },
+
+  setup() {
+    const toast = useToast();
+
+    return {
+      ...useGroupInvites(toast),
+    };
+  },
 
   data() {
     return {
-      token: localStorage.getItem('client_token'),
+      token: getClientAccessToken(),
       activeTab: 'joined',
       loading: false,
 
@@ -327,7 +358,6 @@ export default {
       joinedGroups: [],
       myGroups: [],
       myTrips: [],
-      pendingInvites: [],
       members: [],
 
       // Modals
@@ -346,21 +376,25 @@ export default {
       // Invite modal
       inviteTarget: null,
       inviteEmail: '',
+      inviteEmailError: '',
       inviteMsg: '',
       inviteMsgType: 'success',
-      inviting: false,
 
       // Members panel
       panelGroup: null,
       loadingMembers: false,
       panelInviteEmail: '',
+      panelInviteError: '',
       panelMsg: '',
       panelMsgType: 'success',
-      panelInviting: false,
 
-      // Dissolve
+      // Dissolve, Leave, Kick modal targets
       dissolveTarget: null,
       dissolving: false,
+      leaveTarget: null,
+      leaving: false,
+      kickTarget: null,
+      kicking: false,
     };
   },
 
@@ -373,8 +407,29 @@ export default {
 
   methods: {
     // ─── Helpers ────────────────────────────────────────
-    h() { return { Authorization: `Bearer ${this.token}` }; },
-    hJson() { return { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` }; },
+    getAvatarUrl(m) {
+      const path = m.anh_dai_dien || m.hinh_anh || m.hinh_dai_dien;
+      if (!path) return '';
+      if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+        return path;
+      }
+      const cleanPath = path.startsWith('/') ? path : `/${path}`;
+      return `http://127.0.0.1:8000${cleanPath}`;
+    },
+
+    h() {
+      return {
+        Accept: 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      };
+    },
+    hJson() {
+      return {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      };
+    },
 
     groupColor(id) {
       const colors = [
@@ -388,11 +443,45 @@ export default {
       return colors[id % colors.length];
     },
 
+    async resolveChatMemberDetailId(group) {
+      if (!group || typeof group !== 'object') return null;
+
+      const quickId =
+        group.id_chi_tiet_nhom ??
+        group.id_thanh_vien ??
+        group.id_chi_tiet ??
+        group.id_thanh_vien_nhom ??
+        null;
+
+      if (quickId) return quickId;
+
+      // Fallback: fetch group members and locate current user's membership detail id.
+      const currentUserId = Number(localStorage.getItem('client_id') || 0);
+      if (!currentUserId || !group.id) return null;
+
+      try {
+        const response = await fetch(`${BASE}/members/${group.id}`, { headers: this.h() });
+        const json = await response.json();
+        const members = Array.isArray(json?.data) ? json.data : [];
+        const me = members.find((item) => Number(item?.id_nguoi_dung) === currentUserId);
+        return me?.id_thanh_vien ?? me?.id_chi_tiet_nhom ?? null;
+      } catch {
+        return null;
+      }
+    },
+
+    async openChatRoom(group) {
+      this.$router.push(`/nhom-du-lich/${group.id}/chat`);
+    },
+
     // ─── Fetch ───────────────────────────────────────────
     async fetchAll() {
       this.loading = true;
-      await Promise.all([this.fetchJoined(), this.fetchMine(), this.fetchInvites()]);
-      this.loading = false;
+      try {
+        await Promise.allSettled([this.fetchJoined(), this.fetchMine(), this.fetchInvites()]);
+      } finally {
+        this.loading = false;
+      }
     },
 
     async fetchJoined() {
@@ -407,13 +496,6 @@ export default {
         const r = await fetch(`${BASE}/get-my-groups`, { headers: this.h() });
         this.myGroups = (await r.json()).data || [];
       } catch { this.myGroups = []; }
-    },
-
-    async fetchInvites() {
-      try {
-        const r = await fetch(`${BASE}/get-invites`, { headers: this.h() });
-        this.pendingInvites = ((await r.json()).data || []).map(i => ({ ...i, responding: false }));
-      } catch { this.pendingInvites = []; }
     },
 
     async fetchMyTrips() {
@@ -438,6 +520,15 @@ export default {
       this.createErr = {};
       this.createMsg = '';
       this.showCreate = true;
+    },
+
+    async openInvitesModal() {
+      this.showInvites = true;
+      try {
+        await this.fetchInvites();
+      } catch {
+        // Error state is rendered inside the invites modal.
+      }
     },
 
     async doCreate() {
@@ -468,84 +559,105 @@ export default {
     openInviteModal(g) {
       this.inviteTarget = g;
       this.inviteEmail = '';
+      this.inviteEmailError = '';
       this.inviteMsg = '';
       this.showInvite = true;
     },
 
     async doInvite() {
-      if (!this.inviteEmail) return;
-      this.inviting = true;
-      const r = await fetch(`${BASE}/invite`, {
-        method: 'POST', headers: this.hJson(),
-        body: JSON.stringify({ id_nhom: this.inviteTarget.id, email: this.inviteEmail }),
-      });
-      const j = await r.json();
-      this.inviteMsg = j.message;
-      this.inviteMsgType = j.status ? 'success' : 'error';
-      if (j.status) this.inviteEmail = '';
-      this.inviting = false;
+      this.inviteEmailError = this.validateInviteEmail(this.inviteEmail);
+      this.inviteMsg = '';
+
+      if (this.inviteEmailError || !this.inviteTarget?.id) return;
+
+      try {
+        const response = await this.submitInvite(this.inviteTarget.id, this.inviteEmail);
+        this.inviteMsg = '';
+        this.inviteMsgType = 'success';
+        this.inviteEmail = '';
+        await this.fetchMembers(this.inviteTarget.id);
+      } catch (error) {
+        this.inviteMsg = '';
+        this.inviteMsgType = 'error';
+      }
     },
 
     // ─── Accept / Reject invite ──────────────────────────
-    async respond(inv, accept) {
-      inv.responding = true;
-      const r = await fetch(`${BASE}/accept-invite`, {
-        method: 'POST', headers: this.hJson(),
-        body: JSON.stringify({ id_thanh_vien: inv.id_thanh_vien, chap_nhan: accept }),
-      });
-      const j = await r.json();
-      if (j.status) {
-        this.pendingInvites = this.pendingInvites.filter(i => i.id_thanh_vien !== inv.id_thanh_vien);
-        await this.fetchJoined();
+    async respondToInvite(inv, accept) {
+      try {
+        await this.handleInviteResponse(inv, accept);
+        if (accept) {
+          await this.fetchJoined();
+        }
+      } catch {
+        // Toast is handled by the invitation composable.
       }
-      inv.responding = false;
     },
 
     // ─── Members panel ───────────────────────────────────
     async openMembersPanel(g) {
       this.panelGroup = g;
       this.panelInviteEmail = '';
+      this.panelInviteError = '';
       this.panelMsg = '';
       this.showMembers = true;
       await this.fetchMembers(g.id);
     },
 
-    async kickMember(m) {
-      if (!confirm(`Xóa "${m.ten}" khỏi nhóm?`)) return;
+    kickMember(m) {
+      this.kickTarget = m;
+    },
+
+    async doKick() {
+      this.kicking = true;
       const r = await fetch(`${BASE}/remove-member`, {
         method: 'POST', headers: this.hJson(),
-        body: JSON.stringify({ id_nhom: this.panelGroup.id, id_nguoi_dung: m.id_nguoi_dung }),
+        body: JSON.stringify({ id_nhom: this.panelGroup.id, id_nguoi_dung: this.kickTarget.id_nguoi_dung }),
       });
       const j = await r.json();
       if (j.status) {
+        this.kickTarget = null;
         await this.fetchMembers(this.panelGroup.id);
         await this.fetchAll();
       }
+      this.kicking = false;
     },
 
     async doInviteFromPanel() {
-      if (!this.panelInviteEmail) return;
-      this.panelInviting = true;
-      const r = await fetch(`${BASE}/invite`, {
-        method: 'POST', headers: this.hJson(),
-        body: JSON.stringify({ id_nhom: this.panelGroup.id, email: this.panelInviteEmail }),
-      });
-      const j = await r.json();
-      this.panelMsg = j.message;
-      this.panelMsgType = j.status ? 'success' : 'error';
-      if (j.status) { this.panelInviteEmail = ''; await this.fetchMembers(this.panelGroup.id); }
-      this.panelInviting = false;
+      this.panelInviteError = this.validateInviteEmail(this.panelInviteEmail);
+      this.panelMsg = '';
+
+      if (this.panelInviteError || !this.panelGroup?.id) return;
+
+      try {
+        const response = await this.submitInvite(this.panelGroup.id, this.panelInviteEmail);
+        this.panelMsg = '';
+        this.panelMsgType = 'success';
+        this.panelInviteEmail = '';
+        await this.fetchMembers(this.panelGroup.id);
+      } catch (error) {
+        this.panelMsg = '';
+        this.panelMsgType = 'error';
+      }
     },
 
     // ─── Leave ───────────────────────────────────────────
-    async leaveGroup(g) {
-      if (!confirm(`Rời nhóm "${g.ten_nhom}"?`)) return;
+    leaveGroup(g) {
+      this.leaveTarget = g;
+    },
+
+    async doLeave() {
+      this.leaving = true;
       const r = await fetch(`${BASE}/leave`, {
         method: 'POST', headers: this.hJson(),
-        body: JSON.stringify({ id_nhom: g.id }),
+        body: JSON.stringify({ id_nhom: this.leaveTarget.id }),
       });
       const j = await r.json();
-      if (j.status) await this.fetchJoined();
+      if (j.status) {
+        this.leaveTarget = null;
+        await this.fetchJoined();
+      }
+      this.leaving = false;
     },
 
     // ─── Dissolve ────────────────────────────────────────
@@ -785,6 +897,14 @@ export default {
   animation: popIn 0.28s ease both;
   box-shadow: 0 30px 60px rgba(15,23,42,0.18);
 }
+.chat-modal-box {
+  background: #fff;
+  border-radius: 1.2rem;
+  padding: 0.9rem;
+  width: min(760px, 96vw);
+  box-shadow: 0 30px 60px rgba(15,23,42,0.18);
+  position: relative;
+}
 @keyframes popIn { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal-close { position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #e2e8f0; background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #5a6d80; font-size: 0.9rem; transition: all 0.18s; }
 .modal-close:hover { background: #f43f5e; border-color: #f43f5e; color: #fff; }
@@ -869,7 +989,9 @@ export default {
 
 .member-list { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.7rem; }
 .member-item { display: flex; align-items: center; gap: 0.85rem; background: #f8fbff; border-radius: 0.9rem; padding: 0.75rem 0.9rem; border: 1px solid #e6ecf5; }
-.member-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+.member-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; color: #fff; flex-shrink: 0; position: relative; overflow: hidden; }
+.avt-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 1.5px solid #fff; }
+.avt-letter { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; border: 1.5px solid #fff; }
 .member-info { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 0; }
 .member-info strong { font-size: 0.9rem; color: #1e2d44; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-info span { font-size: 0.78rem; color: #7a8ea0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

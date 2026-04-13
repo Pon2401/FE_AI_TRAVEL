@@ -60,6 +60,11 @@ const routes = [
     meta: { layout: "client" },
   },
   {
+    path: "/nhom-du-lich/:id/chat",
+    component: () => import("../pages/Client/GroupChatView.vue"),
+    meta: { layout: "client" },
+  },
+  {
     path: "/profile",
     component: () => import("../pages/Client/profile.vue"),
     meta: { layout: "client" },
