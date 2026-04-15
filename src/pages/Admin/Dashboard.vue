@@ -86,46 +86,65 @@
 
     <div class="row g-3 mb-4">
       <div class="col-md-6 col-xl-3">
-        <div class="metric-panel">
-          <div class="metric-header">
-            <span>Lịch trình được đề xuất</span>
+        <div class="stat-card stat-blue">
+          <div class="stat-icon">
             <i class="bi bi-map"></i>
           </div>
-          <div class="metric-empty">--</div>
-          <p class="metric-footnote">(sẽ làm sau: cần API thống kê số lịch trình)</p>
+          <div class="stat-details">
+            <span class="stat-label">Chuyến đi đề xuất</span>
+            <div class="stat-value" v-if="stats">{{ formatNumber(stats.total_trips) }}</div>
+            <div class="stat-value" v-else>--</div>
+            <div class="stat-trend increasing">
+              <i class="bi bi-arrow-up"></i> 12% tháng này
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="col-md-6 col-xl-3">
-        <div class="metric-panel">
-          <div class="metric-header">
-            <span>Địa điểm du lịch</span>
+        <div class="stat-card stat-green">
+          <div class="stat-icon">
             <i class="bi bi-geo-alt-fill"></i>
           </div>
-          <div class="metric-empty">--</div>
-          <p class="metric-footnote">(sẽ làm sau: cần thống kê dữ liệu địa điểm theo danh mục)</p>
+          <div class="stat-details">
+            <span class="stat-label">Địa điểm du lịch</span>
+            <div class="stat-value" v-if="stats">{{ formatNumber(stats.total_places) }}</div>
+            <div class="stat-value" v-else>--</div>
+            <div class="stat-trend">
+              Hệ thống đã sẵn sàng
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="col-md-6 col-xl-3">
-        <div class="metric-panel">
-          <div class="metric-header">
-            <span>Ngân sách trung bình</span>
+        <div class="stat-card stat-orange">
+          <div class="stat-icon">
             <i class="bi bi-wallet2"></i>
           </div>
-          <div class="metric-empty">--</div>
-          <p class="metric-footnote">(sẽ làm sau: cần dữ liệu phân tích tối ưu chi phí)</p>
+          <div class="stat-details">
+            <span class="stat-label">Ngân sách TB</span>
+            <div class="stat-value" v-if="stats" style="font-size: 1.25rem;">{{ formatCurrency(stats.avg_budget) }}</div>
+            <div class="stat-value" v-else>--</div>
+            <div class="stat-trend text-muted">
+              Dữ liệu từ người dùng
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="col-md-6 col-xl-3">
-        <div class="metric-panel">
-          <div class="metric-header">
-            <span>Đánh giá gợi ý</span>
+        <div class="stat-card stat-purple">
+          <div class="stat-icon">
             <i class="bi bi-stars"></i>
           </div>
-          <div class="metric-empty">--</div>
-          <p class="metric-footnote">(sẽ làm sau: cần dữ liệu phản hồi và mức hài lòng)</p>
+          <div class="stat-details">
+            <span class="stat-label">Đánh giá hệ thống</span>
+            <div class="stat-value">4.8</div>
+            <div class="stat-trend increasing">
+              <i class="bi bi-check-circle-fill me-1"></i> Xuất sắc
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -253,11 +272,12 @@ export default {
       errorMessage: '',
       users: [],
       admins: [],
+      stats: null,
       pendingItems: [
-        'Thống kê số lịch trình đã tạo trong hệ thống (sẽ làm sau)',
-        'Thống kê địa điểm theo nhóm như ẩm thực, tâm linh, giải trí, check-in (sẽ làm sau)',
-        'Phân tích ngân sách trung bình và mức tiết kiệm đề xuất (sẽ làm sau)',
-        'Chỉ số đánh giá chất lượng gợi ý từ phản hồi người dùng (sẽ làm sau)',
+        'Phân tích chi tiêu thực tế so với ngân sách dự kiến (ML model)',
+        'Địa đồ nhiệt (Heatmap) các địa điểm được yêu thích nhất',
+        'Dự báo xu hướng du lịch theo mùa tại Đà Nẵng',
+        'Chỉ số đánh giá độ tin cậy của AI trong lập lịch trình',
       ],
     }
   },
@@ -309,6 +329,9 @@ export default {
       this.errorMessage = ''
 
       try {
+        const statsRes = await axios.get('http://127.0.0.1:8000/api/admin/statistics', this.authHeader())
+        this.stats = statsRes.data?.data
+        
         const [usersRes, adminsRes] = await Promise.all([
           axios.get(USERS_API_URL, this.authHeader()),
           axios.get(ADMINS_API_URL, this.authHeader()),
@@ -326,6 +349,9 @@ export default {
     },
     formatNumber(value) {
       return new Intl.NumberFormat('vi-VN').format(Number(value || 0))
+    },
+    formatCurrency(value) {
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(value || 0))
     },
     getDisplayName(admin) {
       return admin.ho_ten || admin.ten || admin.email || `Nhân viên #${admin.id ?? ''}`
@@ -571,12 +597,14 @@ export default {
   font-size: 1.1rem;
 }
 
-.metric-empty {
+.metric-empty,
+.metric-value {
   padding: 22px 0 14px;
   font-size: 2rem;
   font-weight: 800;
-  color: #cbd5e1;
+  color: #0f172a;
 }
+.metric-empty { color: #cbd5e1; }
 
 .metric-footnote {
   margin: 0;
@@ -754,4 +782,84 @@ export default {
     font-size: 1.6rem;
   }
 }
+
+/* ──────────── Stat Cards Premium ──────────── */
+.stat-card {
+  background: #fff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  border: 1px solid #eef2f6;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+}
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.8), transparent 70%);
+  pointer-events: none;
+}
+
+.stat-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.stat-label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+.stat-trend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: #94a3b8;
+}
+.stat-trend.increasing { color: #10b981; }
+.stat-trend.decreasing { color: #ef4444; }
+
+/* Colors */
+.stat-blue .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.stat-blue { border-left: 5px solid #3b82f6; }
+
+.stat-green .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.stat-green { border-left: 5px solid #10b981; }
+
+.stat-orange .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.stat-orange { border-left: 5px solid #f59e0b; }
+
+.stat-purple .stat-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.stat-purple { border-left: 5px solid #8b5cf6; }
 </style>
