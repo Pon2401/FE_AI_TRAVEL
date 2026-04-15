@@ -70,14 +70,11 @@
                 <span v-if="g.id_chuyen_di"><i class="bi bi-map me-1"></i>Có chuyến đi</span>
               </div>
               <div class="gc-actions">
-                <button class="btn-sm-brand" @click="$router.push(`/nhom-du-lich/chat/${g.id}`)">
+                <button class="btn-sm-brand" @click="openChatRoom(g)">
                   <i class="bi bi-chat-dots-fill me-1"></i>Trò chuyện
                 </button>
                 <button class="btn-sm-outline" @click="openMembersPanel(g)">
                   <i class="bi bi-person-lines-fill me-1"></i>Thành viên
-                </button>
-                <button class="btn-sm-outline" @click="openChatRoom(g)">
-                  <i class="bi bi-chat-left-text me-1"></i>Chat
                 </button>
                 <button
                   v-if="!g.la_truong_nhom"
@@ -116,14 +113,11 @@
                 <span v-if="g.id_chuyen_di"><i class="bi bi-map me-1"></i>Có chuyến đi</span>
               </div>
               <div class="gc-actions">
-                <button class="btn-sm-brand" @click="$router.push(`/nhom-du-lich/chat/${g.id}`)">
+                <button class="btn-sm-brand" @click="openChatRoom(g)">
                   <i class="bi bi-chat-dots-fill me-1"></i>Trò chuyện
                 </button>
                 <button class="btn-sm-outline" @click="openMembersPanel(g)">
                   <i class="bi bi-person-lines-fill me-1"></i>Thành viên
-                </button>
-                <button class="btn-sm-outline" @click="openChatRoom(g)">
-                  <i class="bi bi-chat-left-text me-1"></i>Chat
                 </button>
                 <button class="btn-sm-outline" @click="openInviteModal(g)">
                   <i class="bi bi-person-plus me-1"></i>Mời
@@ -221,11 +215,11 @@
 
         <div v-else class="member-list">
           <div v-for="m in members" :key="m.id_thanh_vien" class="member-item">
-            <div class="member-avatar">
-              <img v-if="getAvatarUrl(m)" :src="getAvatarUrl(m)" alt="avt" class="avt-img" />
-              <div v-else class="avt-letter" :style="{ background: groupColor(m.id_nguoi_dung) }">
+            <div class="member-avatar" :style="!getAvatarUrl(m) ? { background: groupColor(m.id_nguoi_dung) } : {}">
+              <img v-if="getAvatarUrl(m)" :src="getAvatarUrl(m)" alt="avt" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
+              <template v-else>
                 {{ (m.ten || '?').charAt(0).toUpperCase() }}
-              </div>
+              </template>
             </div>
             <div class="member-info">
               <strong>{{ m.ten }}</strong>
