@@ -63,6 +63,7 @@ const routes = [
 
     path: "/nhom-du-lich/:id/chat",
     component: () => import("../pages/Client/GroupChatView.vue"),
+    meta: { layout: "client" },
   },
   {
     path: "/yeu-thich",
