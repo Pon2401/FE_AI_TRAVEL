@@ -378,8 +378,8 @@
 import axios from 'axios'
 import { Modal } from 'bootstrap'
 
-const API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien'
-const CREATE_API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien/them-nhan-vien'
+const API_URL = 'http://127.0.0.1:8001/api/admin/danh-sach-nhan-vien'
+const CREATE_API_URL = 'http://127.0.0.1:8001/api/admin/danh-sach-nhan-vien/them-nhan-vien'
 
 const defaultCreateAdmin = () => ({
   ten: '',

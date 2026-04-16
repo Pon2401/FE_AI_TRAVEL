@@ -39,7 +39,7 @@
           <div v-else class="message-list">
             <div v-for="(msg, idx) in messages" :key="msg.id" class="msg-row" :class="{ 'msg-mine': isMine(msg.id_nguoi_gui) }">
               <div class="msg-avatar" v-if="!isMine(msg.id_nguoi_gui) && (!messages[idx-1] || messages[idx-1].id_nguoi_gui !== msg.id_nguoi_gui)">
-                <img v-if="msg.nguoi_gui && msg.nguoi_gui.hinh_anh" :src="'http://localhost:8000' + msg.nguoi_gui.hinh_anh" alt="avt" />
+                <img v-if="msg.nguoi_gui && msg.nguoi_gui.hinh_anh" :src="'http://localhost:8001' + msg.nguoi_gui.hinh_anh" alt="avt" />
                 <div v-else class="avt-letter" :style="{ background: groupColor(msg.id_nguoi_gui) }">{{ msg.nguoi_gui ? msg.nguoi_gui.ten.charAt(0).toUpperCase() : '?' }}</div>
               </div>
               <div class="msg-avatar empty" v-else-if="!isMine(msg.id_nguoi_gui)"></div>
@@ -80,7 +80,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api/client/nhom-du-lich';
+const BASE = 'http://localhost:8001/api/client/nhom-du-lich';
 
 export default {
   name: 'NhomChat',
@@ -137,7 +137,7 @@ export default {
       // It's better to get my user ID from the profile API, but for simplicity, 
       // we can get it from the first message I sent, or local storage if available.
       // Laravel Sanctum doesn't use JWT, it's an opaque token. So we need to call profile API.
-      fetch('http://localhost:8000/api/client/profile', { headers: this.h() })
+      fetch('http://localhost:8001/api/client/profile', { headers: this.h() })
         .then(r => r.json())
         .then(res => {
           if (res.status && res.data) this.myUserId = res.data.id;

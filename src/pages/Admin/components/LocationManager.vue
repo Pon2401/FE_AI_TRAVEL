@@ -54,6 +54,26 @@
               <i v-else class="bi bi-google me-2"></i>Tìm ảnh tự động (Tất cả)
             </button>
             <button
+              class="btn action-btn"
+              style="background:linear-gradient(90deg,#f59e0b,#d97706);color:white;"
+              type="button"
+              @click="crawlReviews()"
+              :disabled="loadingCrawlReviews"
+            >
+              <span v-if="loadingCrawlReviews" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-chat-square-text me-2"></i>Crawl Đánh giá
+            </button>
+            <button
+              class="btn action-btn"
+              style="background:linear-gradient(90deg,#8b5cf6,#6d28d9);color:white;"
+              type="button"
+              @click="crawlImages()"
+              :disabled="loadingCrawlImages"
+            >
+              <span v-if="loadingCrawlImages" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-images me-2"></i>Crawl Ảnh Gallery
+            </button>
+            <button
               class="btn btn-primary action-btn"
               type="button"
               @click="openAddModal"
@@ -304,8 +324,8 @@
 <script>
 import axios from 'axios'
 
-const API_URL = 'http://127.0.0.1:8000/api/dia-diems';
-const SERP_URL_MULTI = 'http://127.0.0.1:8000/api/serp/update-images';
+const API_URL = 'http://127.0.0.1:8001/api/dia-diems';
+const SERP_URL_MULTI = 'http://127.0.0.1:8001/api/serp/update-images';
 
 export default {
   name: 'LocationManager',
@@ -324,6 +344,8 @@ export default {
       saving: false,
       loadingSerp: false,
       loadingSingleSerp: false,
+      loadingCrawlReviews: false,
+      loadingCrawlImages: false,
       errorMessage: '',
       
       isGoogleSearch: false,
@@ -415,7 +437,7 @@ export default {
     },
     async savePlace() {
       if (!this.form.ten_dia_diem || !this.form.loai_dia_diem) {
-        alert("Vui lòng nhập tên và loại địa điểm!");
+        this.$toast.warning('Vui lòng nhập tên và loại địa điểm!');
         return;
       }
       this.saving = true;
@@ -427,8 +449,9 @@ export default {
         }
         await this.fetchPlaces();
         this.modalInstance.hide();
+        this.$toast.success(this.isEditing ? 'Đã cập nhật địa điểm thành công!' : 'Đã thêm địa điểm mới thành công!');
       } catch (e) {
-        alert("Có lỗi xảy ra: " + (e.response?.data?.message || e.message));
+        this.$toast.error('Có lỗi xảy ra: ' + (e.response?.data?.message || e.message));
       } finally {
         this.saving = false;
       }
@@ -492,31 +515,100 @@ export default {
         await axios.delete(`${API_URL}/${this.selectedPlace.id}`, this.authHeader());
         await this.fetchPlaces();
         this.deleteModalInstance.hide();
+        this.$toast.success(`Đã xóa địa điểm "${this.selectedPlace.ten_dia_diem}" thành công!`);
       } catch (e) {
-        alert("Xoá thất bại: " + (e.response?.data?.message || e.message));
+        this.$toast.error('Xoá thất bại: ' + (e.response?.data?.message || e.message));
       }
     },
     async triggerSerpApiUpdate() {
-      if(!confirm("Hệ thống sẽ chạy ngầm lấy ảnh thực cho các địa điểm chưa có ảnh.\nViệc này có thể mất vài chục giây. Chắc chắn?")) return;
       this.loadingSerp = true;
+      this.$toast.info('Đang tìm ảnh tự động cho các địa điểm. Vui lòng chờ...');
       try {
         const res = await axios.post(SERP_URL_MULTI, {}, this.authHeader());
-        alert(res.data.message);
-        this.fetchPlaces(); // Refresh list after
+        this.$toast.success(res.data.message);
+        this.fetchPlaces();
       } catch (e) {
-        alert("Có lỗi SerpApi: " + (e.response?.data?.message || e.message));
+        this.$toast.error('Có lỗi SerpApi: ' + (e.response?.data?.message || e.message));
       } finally {
         this.loadingSerp = false;
       }
     },
+    async crawlReviews() {
+      this.loadingCrawlReviews = true;
+      this.$toast.info('Đang crawl đánh giá từ Google Maps (3 địa điểm)... Vui lòng chờ khoảng 1-2 phút.');
+      try {
+        const res = await axios.post(
+          'http://127.0.0.1:8001/api/serp/crawl-reviews',
+          { limit: 3 },
+          {
+            ...this.authHeader(),
+            timeout: 180000, // 3 phút
+          }
+        );
+        const ok = (res.data.results || []).filter(r => r.ok).length;
+        const fail = (res.data.results || []).filter(r => !r.ok).length;
+        if (ok > 0) {
+          this.$toast.success(`Đã crawl ${res.data.total} đánh giá cho ${ok} địa điểm${fail > 0 ? ` (${fail} thất bại)` : ''}!`);
+        } else {
+          this.$toast.warning(res.data.message || 'Không tìm được đánh giá mới từ Google Maps.');
+        }
+        this.fetchPlaces();
+      } catch (e) {
+        if (e.code === 'ECONNABORTED') {
+          this.$toast.error('Request timeout - Server đang xử lý, vui lòng thử lại với nhỏ hơn.');
+        } else {
+          this.$toast.error('Lỗi crawl đánh giá: ' + (e.response?.data?.message || e.message));
+        }
+      } finally {
+        this.loadingCrawlReviews = false;
+      }
+    },
+    async crawlImages() {
+      this.loadingCrawlImages = true;
+      this.$toast.info('Đang crawl ảnh gallery từ Google Images (5 địa điểm)... Vui lòng chờ.');
+      try {
+        const res = await axios.post(
+          'http://127.0.0.1:8001/api/serp/crawl-images',
+          { limit: 5 },
+          {
+            ...this.authHeader(),
+            timeout: 120000, // 2 phút
+          }
+        );
+        const ok = (res.data.results || []).filter(r => r.ok).length;
+        this.$toast.success(res.data.message || `Đã crawl ảnh cho ${ok} địa điểm!`);
+        this.fetchPlaces();
+      } catch (e) {
+        if (e.code === 'ECONNABORTED') {
+          this.$toast.error('Request timeout - Vui lòng thử lại.');
+        } else {
+          this.$toast.error('Lỗi crawl ảnh: ' + (e.response?.data?.message || e.message));
+        }
+      } finally {
+        this.loadingCrawlImages = false;
+      }
+    },
     async fetchSingleImage() {
+      if (!this.form.ten_dia_diem) {
+        this.$toast.warning('Vui lòng nhập tên địa điểm trước!');
+        return;
+      }
       this.loadingSingleSerp = true;
       try {
-        // Tận dụng endpoint updateImages của SerpApi nhưng trick bằng cách truyền array id ảo nếu tạo mới, hoặc dùng trực tiếp backend.
-        // Tuy nhiên do API chỉ nhận ids, với địa điểm chưa lưu ta phải tạo endpoint phụ hoặc gọi trick.
-        alert("Chức năng đang phát triển độc lập cho ảnh preview. Vui lòng bấm lưu rồi Fetch ảnh tất cả bên ngoài!");
+        // Gọi API tìm kiếm 1 ảnh từ Google Images
+        const res = await axios.post('http://127.0.0.1:8001/api/serp/update-images', {
+          ids: this.form.id ? [this.form.id] : [],
+          force: true,
+          limit: 1
+        }, this.authHeader());
+        if (res.data.results && res.data.results[0]?.image) {
+          this.form.image = res.data.results[0].image;
+          this.$toast.success('Đã lấy ảnh từ Google thành công!');
+        } else {
+          this.$toast.warning('Không tìm thấy ảnh phù hợp. Hãy lưu rồi dùng nút Crawl Ảnh Gallery.');
+        }
       } catch (e) {
-        console.error(e);
+        this.$toast.error('Lỗi: ' + (e.response?.data?.message || e.message));
       } finally {
         this.loadingSingleSerp = false;
       }
@@ -529,13 +621,13 @@ export default {
     },
     async searchGoogle() {
       if (!this.keyword) {
-        alert("Vui lòng nhập từ khóa để tìm trên Google Maps!");
+        this.$toast.warning('Vui lòng nhập từ khóa để tìm trên Google Maps!');
         return;
       }
       this.searchingGoogle = true;
       this.errorMessage = '';
       try {
-        const res = await axios.get(`http://127.0.0.1:8000/api/serp/search?query=${encodeURIComponent(this.keyword)}`, this.authHeader());
+        const res = await axios.get(`http://127.0.0.1:8001/api/serp/search?query=${encodeURIComponent(this.keyword)}`, this.authHeader());
         this.googleResults = res.data.data || [];
         if (this.googleResults.length === 0) {
            this.errorMessage = "Không tìm thấy kết quả nào trên Google Maps.";
@@ -547,32 +639,29 @@ export default {
       }
     },
     async importPlace(place) {
-      if (!confirm(`Bạn có chắc chắn muốn nhập địa điểm "${place.ten_dia_diem}" vào danh mục hiện tại?`)) return;
-      
       this.importingId = place.ten_dia_diem;
       try {
-        // Mặc định gán danh mục hiện tại dựa trên pageTitle hoặc bóc tách từ fetchUrl
-        // Cách hay nhất là dùng loai_dia_diem từ pageTitle (Xoá chữ Quản lý)
         const loai = this.pageTitle.replace('Quản lý ', '');
-        
-        // Use default type or keep the one from Google if it looks more specific
         const finalLoai = place.loai_dia_diem && place.loai_dia_diem !== 'Khác' 
           ? place.loai_dia_diem 
           : this.categoryDefaultType;
 
-        await axios.post('http://127.0.0.1:8000/api/serp/import', {
+        await axios.post('http://127.0.0.1:8001/api/serp/import', {
           ...place,
           loai_dia_diem: finalLoai,
           id_danh_muc: this.categoryId
         }, this.authHeader());
         
-        alert("Đã nhập địa điểm thành công!");
-        // Chuyển về chế độ nội bộ để thấy kết quả
+        this.$toast.success('Đã nhập địa điểm và crawl ảnh + đánh giá thành công! 🌟');
         this.isGoogleSearch = false;
         this.googleResults = [];
         this.fetchPlaces();
       } catch (e) {
-        alert("Lỗi Import: " + (e.response?.data?.message || e.message));
+        if (e.response?.status === 409) {
+          this.$toast.warning('Địa điểm này đã tồn tại trong hệ thống!');
+        } else {
+          this.$toast.error('Lỗi Import: ' + (e.response?.data?.message || e.message));
+        }
       } finally {
         this.importingId = null;
       }

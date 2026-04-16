@@ -208,7 +208,7 @@
 <script>
 import axios from 'axios'
 
-const API = 'http://127.0.0.1:8000/api/client'
+const API = 'http://127.0.0.1:8001/api/client'
 const PROFILE_UPDATED_EVENT = 'client-profile-updated'
 
 export default {
@@ -280,7 +280,7 @@ export default {
         return path
       }
       const cleanPath = path.startsWith('/') ? path : `/${path}`
-      return `http://127.0.0.1:8000${cleanPath}`
+      return `http://127.0.0.1:8001${cleanPath}`
     },
     async fetchProfile() {
       this.loading = true

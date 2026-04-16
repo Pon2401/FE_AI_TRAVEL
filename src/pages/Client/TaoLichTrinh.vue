@@ -79,14 +79,29 @@
           </span>
         </div>
 
-        <div class="tlt-actions d-flex gap-3">
-          <button class="btn-brand-lg flex-fill" @click="goStep2">
-            Tiếp tục – Chọn địa điểm <i class="bi bi-arrow-right ms-2"></i>
+        <div class="tlt-actions d-flex flex-column gap-3">
+          <button class="btn-brand-lg w-100" @click="goStep2">
+            Tiếp tục – Chọn địa điểm tự túc <i class="bi bi-arrow-right ms-2"></i>
           </button>
-          <button class="btn-outline-brand-lg flex-fill" @click="generateByAI" :disabled="loadingAI">
-            <span v-if="loadingAI" class="spinner-border spinner-border-sm me-2"></span>
-            <i v-else class="bi bi-magic me-2"></i> Tạo lịch bằng AI
-          </button>
+          <div class="ai-gen-wrapper">
+            <button class="btn-outline-brand-lg w-100" @click="generateByAI" :disabled="loadingAI">
+              <span v-if="loadingAI" class="spinner-border spinner-border-sm me-2"></span>
+              <i v-else class="bi bi-magic me-2"></i> Tạo lịch trình thông minh (Algorithm + AI)
+            </button>
+            <div v-if="loadingAI" class="ai-progress-status mt-3 p-3 rounded"
+              style="background: #f0f7ff; border: 1px solid #cce5ff;">
+              <h6 class="mb-2" style="color: #004085;"><i class="bi bi-cpu-fill me-2"></i>Đang xử lý hệ thống lai...
+              </h6>
+              <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                <li v-for="(log, i) in generationLog" :key="i" class="mb-1">
+                  <i class="bi bi-check2-circle text-success me-2"></i>{{ log }}
+                </li>
+                <li v-if="aiStage === 3" class="text-primary animate-pulse">
+                  <i class="bi bi-stars me-2"></i>Gemini AI đang hoàn thiện mô tả...
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -284,6 +299,13 @@
                     <input v-model="item.ghi_chu" type="text" placeholder="Thêm ghi chú cho địa điểm này..."
                       class="note-input" />
                   </div>
+                  <div v-if="item.travel_tips" class="tc-tips mt-2 p-2 rounded"
+                    style="background: #fff8e1; border-left: 3px solid #ffc107;">
+                    <small class="d-block mb-1 font-weight-bold" style="color: #856404;">
+                      <i class="bi bi-lightbulb-fill me-1"></i>Mẹo từ chuyên gia AI:
+                    </small>
+                    <span style="font-size: 0.85rem; color: #555;">{{ item.travel_tips }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -402,7 +424,7 @@
 </template>
 
 <script>
-const BASE = 'http://127.0.0.1:8000/api';
+const BASE = 'http://localhost:8001/api';
 
 export default {
   name: 'TaoLichTrinh',
@@ -453,6 +475,8 @@ export default {
       mapLayers: [],
 
       loadingAI: false,
+      aiStage: 0, // 0: Idle, 1: Filtering, 2: Scheduling, 3: AI Refinement
+      generationLog: [],
     };
   },
 
@@ -557,16 +581,16 @@ export default {
       this.loadingSerp = true;
       this.serpResults = [];
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
+        const res = await fetch(`http://127.0.0.1:8001/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
         const json = await res.json();
         if (json.status) {
           this.serpResults = json.data || [];
           if (this.serpResults.length === 0) {
-            alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+            this.$toast.info('Không tìm thấy kết quả nào mới trên Google Maps.');
           }
         }
       } catch (e) {
-        alert('Lỗi khi gọi API Google Maps: ' + e.message);
+        this.$toast.error('Lỗi khi gọi API Google Maps: ' + e.message);
       } finally {
         this.loadingSerp = false;
       }
@@ -588,7 +612,7 @@ export default {
       };
 
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/serp/import`, {
+        const res = await fetch(`http://127.0.0.1:8001/api/serp/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -597,7 +621,7 @@ export default {
 
         if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
           await this.fetchDiaDiem();
-          alert('Địa điểm này đã có trong hệ thống nội bộ của chúng tôi! Bạn hãy tìm nó ngay bên dưới.');
+          this.$toast.warning('Địa điểm này đã có trong hệ thống nội bộ! Bạn hãy tìm nó ngay bên dưới.');
           return;
         }
 
@@ -607,7 +631,7 @@ export default {
           this.serpResults.splice(index, 1);
         }
       } catch (e) {
-        alert('Lỗi hệ thống khi tải địa điểm này: ' + e.message);
+        this.$toast.error('Lỗi hệ thống khi tải địa điểm này: ' + e.message);
       } finally {
         this.importingId = null;
       }
@@ -718,12 +742,20 @@ export default {
 
       const token = localStorage.getItem('client_token');
       if (!token) {
-        alert('Vui lòng đăng nhập để sử dụng tính năng AI.');
+        this.$toast.warning('Vui lòng đăng nhập để sử dụng tính năng AI.');
         return;
       }
 
       this.loadingAI = true;
+      this.aiStage = 1;
+      this.generationLog = ['Đang khởi tạo thuật toán...'];
+
       try {
+        // Stage 1: Content-based (Technical)
+        await new Promise(r => setTimeout(r, 600));
+        this.aiStage = 2;
+        this.generationLog.push('Đang tối ưu quãng đường di chuyển (Haversine)...');
+
         const res = await fetch(`${BASE}/client/ai/generate-itinerary`, {
           method: 'POST',
           headers: {
@@ -735,7 +767,10 @@ export default {
         const json = await res.json();
 
         if (json.status === 'success') {
-          // AI returns Array<Array<item>>
+          this.aiStage = 3;
+          this.generationLog.push('AI đang thêm lời khuyên du lịch chuyên sâu...');
+          await new Promise(r => setTimeout(r, 600));
+
           if (this.allDiaDiem.length === 0) await this.fetchDiaDiem();
 
           this.lichTrinhTheoNgay = json.data.map(day => {
@@ -749,7 +784,8 @@ export default {
                 vi_do: item.vi_do || original?.vi_do || null,
                 kinh_do: item.kinh_do || original?.kinh_do || null,
                 gia_ve: item.gia_ve || original?.gia_ve || 0,
-                ghi_chu: item.ghi_chu || ''
+                ghi_chu: item.ghi_chu || '',
+                travel_tips: item.travel_tips || (json.is_technical_only ? 'Nên mang theo nước và kem chống nắng.' : '')
               };
             });
           });
@@ -757,7 +793,6 @@ export default {
           this.step = 3;
           this.activeDayTab = 1;
 
-          // Smooth transition to step 3 and map initialization
           this.$nextTick(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => {
@@ -767,12 +802,13 @@ export default {
             }, 500);
           });
         } else {
-          alert('AI gặp sự cố: ' + (json.message || 'Vui lòng thử lại sau.'));
+          this.$toast.error('Hệ thống gặp sự cố: ' + (json.message || 'Vui lòng thử lại sau.'));
         }
       } catch (e) {
-        alert('Lỗi kết nối máy chủ AI: ' + e.message);
+        this.$toast.error('Lỗi kết nối máy chủ: ' + e.message);
       } finally {
         this.loadingAI = false;
+        this.aiStage = 0;
       }
     },
 

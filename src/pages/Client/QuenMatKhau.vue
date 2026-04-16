@@ -154,7 +154,7 @@
 <script>
 import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8000/api/client/quen-mat-khau';
+const API_URL = 'http://127.0.0.1:8001/api/client/quen-mat-khau';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default {

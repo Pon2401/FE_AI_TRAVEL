@@ -94,7 +94,7 @@ export default {
         return path;
       }
       const cleanPath = path.startsWith('/') ? path : `/${path}`;
-      return `http://127.0.0.1:8000${cleanPath}`;
+      return `http://127.0.0.1:8001${cleanPath}`;
     },
     groupColor(id) {
       const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899', '#f97316'];

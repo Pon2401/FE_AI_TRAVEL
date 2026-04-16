@@ -126,8 +126,8 @@
 import axios from 'axios';
 import { saveClientRedirectPath, saveClientSession } from '../../utils/clientAuth';
 
-const GOOGLE_AUTH_URL = 'http://127.0.0.1:8000/auth/google';
-const LOGIN_API_URL = 'http://127.0.0.1:8000/api/client/dang-nhap';
+const GOOGLE_AUTH_URL = 'http://127.0.0.1:8001/auth/google';
+const LOGIN_API_URL = 'http://127.0.0.1:8001/api/client/dang-nhap';
 
 export default {
     data() {

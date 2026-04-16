@@ -261,8 +261,8 @@
 <script>
 import axios from 'axios'
 
-const USERS_API_URL = 'http://127.0.0.1:8000/api/admin/nguoi-dungs/get-data'
-const ADMINS_API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien'
+const USERS_API_URL = 'http://127.0.0.1:8001/api/admin/nguoi-dungs/get-data'
+const ADMINS_API_URL = 'http://127.0.0.1:8001/api/admin/danh-sach-nhan-vien'
 
 export default {
   name: 'Dashboard',
@@ -329,7 +329,7 @@ export default {
       this.errorMessage = ''
 
       try {
-        const statsRes = await axios.get('http://127.0.0.1:8000/api/admin/statistics', this.authHeader())
+        const statsRes = await axios.get('http://127.0.0.1:8001/api/admin/statistics', this.authHeader())
         this.stats = statsRes.data?.data
         
         const [usersRes, adminsRes] = await Promise.all([

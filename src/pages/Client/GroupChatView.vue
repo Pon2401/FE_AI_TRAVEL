@@ -218,7 +218,7 @@ const getAvatarUrl = (msg) => {
     return path;
   }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `http://127.0.0.1:8000${cleanPath}`;
+  return `http://127.0.0.1:8001${cleanPath}`;
 };
 
 const scrollToBottom = async () => {
@@ -258,7 +258,7 @@ const handleSend = async () => {
   
   // Nếu API backend tạo lỗi thì dừng
   if (!member) {
-    alert('Bạn không phải thành viên của nhóm này');
+    this.$toast.warning('Bạn không phải thành viên của nhóm này');
     return;
   }
 

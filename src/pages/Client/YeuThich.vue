@@ -149,7 +149,7 @@
         </div>
         <div class="modal-footer p-4 pt-0 border-0">
           <button class="btn btn-outline-secondary px-4 me-2" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary px-4 shadow" @click="alert('Chức năng đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary px-4 shadow" @click="addToItinerary">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
@@ -157,7 +157,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api';
+const BASE = 'http://localhost:8001/api';
 
 export default {
   name: 'YeuThich',
@@ -292,7 +292,11 @@ export default {
     clearSearch() {
       this.searchQuery = '';
       this.tempSearchQuery = '';
-    }
+    },
+    addToItinerary() {
+      this.$toast.info('Vui lòng sử dụng trang Tạo lịch trình để thêm địa điểm này!');
+      this.closeModal();
+    },
   }
 };
 </script>

@@ -253,11 +253,17 @@
               <div v-for="rv in detailReviews" :key="rv.id" class="review-item-card">
                 <div class="rv-meta">
                   <div class="rv-user">
-                    <div class="rv-avatar" v-if="rv.nguoi_dung?.avatar">
+                    <div class="rv-avatar" v-if="rv.la_danh_gia_google && rv.avatar_nguoi_danh_gia">
+                      <img :src="rv.avatar_nguoi_danh_gia" alt="avatar">
+                    </div>
+                    <div class="rv-avatar" v-else-if="rv.nguoi_dung?.avatar">
                       <img :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar">
                     </div>
-                    <div class="rv-avatar-text" v-else>{{ (rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</div>
-                    <span class="rv-name">{{ rv.nguoi_dung?.ten || 'Người dùng' }}</span>
+                    <div class="rv-avatar-text" v-else>{{ (rv.la_danh_gia_google ? rv.ten_nguoi_danh_gia : rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</div>
+                    <span class="rv-name">
+                      {{ rv.la_danh_gia_google ? rv.ten_nguoi_danh_gia : (rv.nguoi_dung?.ten || 'Người dùng') }}
+                      <span v-if="rv.la_danh_gia_google" class="badge ms-1" style="font-size:0.65rem;background:linear-gradient(135deg,#4285f4,#34a853);color:#fff;padding:2px 6px;border-radius:10px;"><i class="bi bi-google me-1"></i>Google</span>
+                    </span>
                   </div>
                   <div class="rv-stars">
                     <i v-for="s in rv.so_sao" :key="s" class="bi bi-star-fill text-warning"></i>
@@ -271,8 +277,7 @@
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary"
-            @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
+          <button class="btn btn-primary" @click="addToItinerary">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>
@@ -281,7 +286,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api';
+const BASE = 'http://localhost:8001/api';
 
 export default {
   name: 'AmThuc',
@@ -350,14 +355,14 @@ export default {
       this.loadingSerp = true;
       this.serpResults = [];
       try {
-        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
+        const res = await fetch(`http://localhost:8001/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
         const json = await res.json();
         if (json.status) {
           this.serpResults = json.data || [];
-          if (this.serpResults.length === 0) alert('Không tìm thấy kết quả nào mới trên Google Maps.');
+          if (this.serpResults.length === 0) this.$toast.info('Không tìm thấy kết quả nào mới trên Google Maps.');
         }
       } catch (e) {
-        alert('Lỗi Google Maps: ' + e.message);
+        this.$toast.error('Lỗi Google Maps: ' + e.message);
       } finally {
         this.loadingSerp = false;
       }
@@ -388,7 +393,7 @@ export default {
       };
 
       try {
-        const res = await fetch(`http://localhost:8000/api/serp/import`, {
+        const res = await fetch(`http://localhost:8001/api/serp/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -396,17 +401,18 @@ export default {
         const json = await res.json();
 
         if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
-          alert('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
+          this.$toast.warning('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
           return;
         }
 
         if (json.status && json.data) {
+          this.$toast.success('Đã lưu địa điểm và crawl ảnh + đánh giá từ Google!');
           this.places.unshift(json.data);
           this.serpResults.splice(index, 1);
           this.viewDetail(json.data);
         }
       } catch (e) {
-        alert('Lỗi khi tải địa điểm: ' + e.message);
+        this.$toast.error('Lỗi khi tải địa điểm: ' + e.message);
       } finally {
         this.importingId = null;
       }
@@ -500,7 +506,7 @@ export default {
 
     async toggleFavorite(place) {
       if (!this.token) {
-        alert('Vui lòng đăng nhập để thêm vào yêu thích!');
+        this.$toast.warning('Vui lòng đăng nhập để thêm vào yêu thích!');
         return;
       }
       try {
@@ -515,8 +521,9 @@ export default {
         const json = await res.json();
         if (json.status) {
           place.is_favorite = json.is_favorite;
+          this.$toast.success(json.is_favorite ? `Đã thêm vào yêu thích! ❤️` : `Đã xoá khỏi yêu thích`);
         } else {
-          alert(json.message || 'Lỗi khi thực hiện thao tác.');
+          this.$toast.error(json.message || 'Lỗi khi thực hiện thao tác.');
         }
       } catch (e) {
         console.error(e);
@@ -577,8 +584,10 @@ export default {
     },
 
     createItinerary() {
-      alert('Chức năng tạo lịch trình đang phát triển');
+      this.$router.push('/client/tao-lich-trinh');
     },
+
+    addToItinerary() { this.$toast.info('Vui lòng sử dụng trang Tạo lịch trình để thêm địa điểm này!'); this.closeModal(); },
 
     performSearch() {
       this.searchQuery = this.tempSearchQuery;
@@ -606,7 +615,7 @@ export default {
 
     async submitReview() {
       if (!this.newReview.noi_dung.trim()) {
-        alert('Vui lòng nhập nội dung đánh giá!');
+        this.$toast.warning('Vui lòng nhập nội dung đánh giá!');
         return;
       }
       this.submittingReview = true;
@@ -630,14 +639,14 @@ export default {
           this.newReview.noi_dung = '';
           this.newReview.so_sao = 5;
           await this.fetchReviews(this.selectedPlace.id);
-          alert('Cảm ơn bạn đã gửi đánh giá!');
+          this.$toast.success('Cảm ơn bạn đã gửi đánh giá! 🌟');
         } else {
           const msg = json.message || (json.errors ? Object.values(json.errors).flat().join('\n') : 'Không thể gửi đánh giá.');
-          alert('Lỗi: ' + msg);
+          this.$toast.error('Lỗi: ' + msg);
         }
       } catch (e) {
         console.error('Submit review error:', e);
-        alert('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng.');
+        this.$toast.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng.');
       } finally {
         this.submittingReview = false;
       }
@@ -646,7 +655,7 @@ export default {
     getFullAvatar(path) {
       if (!path) return '';
       if (path.startsWith('http')) return path;
-      return `http://localhost:8000${path.startsWith('/') ? '' : '/'}${path}`;
+      return `http://localhost:8001${path.startsWith('/') ? '' : '/'}${path}`;
     },
 
     formatDate(dateStr) {
