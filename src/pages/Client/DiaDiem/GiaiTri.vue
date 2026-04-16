@@ -2,6 +2,7 @@
   <div class="giai-tri-page">
 
     <!-- HERO -->
+    <div v-show="!showModal">
     <section class="hero-section py-5 position-relative">
       <button class="btn btn-success create-itinerary-btn" @click="createItinerary">
         <i class="fas fa-calendar-plus me-2"></i>Tạo lịch trình
@@ -153,114 +154,169 @@
         </div>
       </div>
     </section>
+    </div>
 
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <button class="btn-close" @click="closeModal">×</button>
-        <div class="modal-header">
-          <div class="d-flex justify-content-between align-items-center w-100 pe-5">
-            <div>
-              <h4>{{ selectedPlace.ten_dia_diem }}</h4>
-              <small class="text-muted">{{ selectedPlace.loai_dia_diem }} - ⭐ {{ selectedPlace.danh_gia_trung_binh }}</small>
-            </div>
-            <div class="modal-tabs">
-              <button :class="{ active: activeModalTab === 'info' }" @click="activeModalTab = 'info'">
-                <i class="bi bi-info-circle me-1"></i> Thông tin
-              </button>
-              <button :class="{ active: activeModalTab === 'reviews' }" @click="activeModalTab = 'reviews'">
-                <i class="bi bi-chat-left-text me-1"></i> Đánh giá ({{ detailReviews.length }})
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-body custom-scrollbar">
-          <!-- Tab 1: Info -->
-          <div v-if="activeModalTab === 'info'" class="fade-in-content">
-            <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" id="detail-map" style="height: 250px; width: 100%; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0; z-index: 1;"></div>
-            <div v-else class="alert alert-warning py-2 mb-3" style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt"></i> Chưa có tọa độ bản đồ chi tiết.</div>
-            
-            <div class="modal-gallery mb-3" v-if="selectedPlace.gallery && selectedPlace.gallery.length > 0">
-              <div class="carousel-container" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
-                <button class="carousel-nav prev" @click="prevImage" v-if="selectedPlace.gallery.length > 1">
-                  <i class="bi bi-chevron-left"></i>
-                </button>
-                <div class="carousel-slide" :style="{ backgroundImage: `url(${currentGalleryImage})` }"></div>
-                <button class="carousel-nav next" @click="nextImage" v-if="selectedPlace.gallery.length > 1">
-                  <i class="bi bi-chevron-right"></i>
-                </button>
-                <div class="carousel-indicators" v-if="selectedPlace.gallery.length > 1">
-                  <span v-for="(img, idx) in selectedPlace.gallery" :key="idx" 
-                        :class="{ active: currentImageIdx === idx }"
-                        @click="currentImageIdx = idx"></span>
-                </div>
+    <!-- VIEW CHI TIẾT (Thay thế Modal) -->
+    <div v-if="showModal" class="detail-page bg-light py-4 fade-in-content">
+      <div class="container">
+        <!-- Breadcrumb / Header -->
+        <nav aria-label="breadcrumb" class="mb-4 d-flex align-items-center">
+          <button class="btn btn-sm btn-outline-secondary me-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" @click="closeModal" style="width: 36px; height: 36px; padding: 0;">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="#" @click.prevent="closeModal" class="text-decoration-none text-muted">Địa điểm</a></li>
+            <li class="breadcrumb-item"><a href="#" @click.prevent="closeModal" class="text-decoration-none text-muted">{{ activeFilter }}</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">{{ selectedPlace.ten_dia_diem }}</li>
+          </ol>
+        </nav>
+
+        <div class="row g-4">
+          <!-- LEFT COLUMN -->
+          <div class="col-lg-8">
+            <!-- Gallery Section -->
+            <div class="gallery-container bg-white p-3 rounded-4 shadow-sm mb-4">
+              <div class="main-image mb-2 rounded-3" :style="{ backgroundImage: `url(${currentGalleryImage})`, height: '450px', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative', overflow: 'hidden' }">
+                <button v-if="selectedPlace.gallery && selectedPlace.gallery.length > 1" class="btn btn-light position-absolute top-50 start-0 translate-middle-y ms-3 shadow-sm d-flex align-items-center justify-content-center" @click="prevImage" style="border-radius: 50%; width: 44px; height: 44px; z-index: 10;"><i class="bi bi-chevron-left fs-5"></i></button>
+                <button v-if="selectedPlace.gallery && selectedPlace.gallery.length > 1" class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-3 shadow-sm d-flex align-items-center justify-content-center" @click="nextImage" style="border-radius: 50%; width: 44px; height: 44px; z-index: 10;"><i class="bi bi-chevron-right fs-5"></i></button>
               </div>
-              <div class="carousel-thumbnails mt-2" v-if="selectedPlace.gallery.length > 1">
+              <div class="thumbnails d-flex gap-2 py-2 flex-wrap" v-if="selectedPlace.gallery && selectedPlace.gallery.length > 1">
                 <div v-for="(img, idx) in selectedPlace.gallery" :key="idx"
-                     :class="['thumb-item', { active: currentImageIdx === idx }]"
+                     :class="['thumbnail-item rounded-3', { 'border border-3 border-primary': currentImageIdx === idx }]"
                      @click="currentImageIdx = idx"
-                     :style="{ backgroundImage: `url(${img.duong_dan_anh || img.image})` }">
+                     :style="{ backgroundImage: `url(${img.duong_dan_anh || img.image})`, flex: '1 1 0', minWidth: '100px', maxWidth: '140px', height: '80px', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer', opacity: currentImageIdx === idx ? '1' : '0.6', transition: 'all 0.3s' }">
                 </div>
               </div>
             </div>
-            <div v-else class="modal-image" :style="{ backgroundImage: `url(${selectedPlace.image})` }"></div>
-            
-            <p class="mb-3">{{ selectedPlace.mo_ta }}</p>
-            <div class="info-list">
-              <div class="info-item"><i class="bi bi-geo-alt text-danger"></i> <strong>Địa chỉ:</strong> {{ selectedPlace.dia_chi }}</div>
-              <div class="info-item"><i class="bi bi-clock text-success"></i> <strong>Giờ mở cửa:</strong> {{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</div>
-              <div class="info-item"><i class="bi bi-cash green-text"></i> <strong>Giá:</strong> {{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</div>
-              <div class="info-item"><i class="bi bi-tag text-primary"></i> <strong>Loại:</strong> {{ selectedPlace.loai_dia_diem }}</div>
+
+            <!-- Intro Section -->
+            <div class="intro-container bg-white p-4 rounded-4 shadow-sm mb-4">
+              <h4 class="mb-3 fw-bold">Giới thiệu</h4>
+              <p class="text-secondary" style="line-height: 1.8; font-size: 1.05rem;">{{ selectedPlace.mo_ta }}</p>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="reviews-container bg-white p-4 rounded-4 shadow-sm">
+              <h4 class="mb-4 fw-bold">Đánh giá ({{ detailReviews.length }})</h4>
+              
+              <div class="review-form-card mb-5 p-4 bg-light border-0 rounded-4" v-if="isLoggedIn">
+                <h6 class="fw-bold mb-3">Gửi đánh giá của bạn</h6>
+                <div class="d-flex align-items-center mb-3">
+                  <div class="star-rating-input me-3" style="font-size: 1.5rem; cursor: pointer;">
+                    <i v-for="s in 5" :key="s" class="bi" 
+                       :class="s <= newReview.so_sao ? 'bi-star-fill text-warning' : 'bi-star text-secondary'"
+                       @click="newReview.so_sao = s"></i>
+                  </div>
+                  <span class="text-muted">{{ newReview.so_sao }} sao</span>
+                </div>
+                <textarea v-model="newReview.noi_dung" class="form-control mb-3 border-0 shadow-sm rounded-3 p-3" rows="3" placeholder="Chia sẻ cảm nhận của bạn về địa điểm này..."></textarea>
+                <div class="text-end">
+                  <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm" @click="submitReview" :disabled="submittingReview">
+                    <span v-if="submittingReview" class="spinner-border spinner-border-sm me-2"></span>
+                    Gửi nhận xét
+                  </button>
+                </div>
+              </div>
+              <div v-else class="alert alert-info py-3 border-0 shadow-sm rounded-3 mb-5">
+                <i class="bi bi-info-circle-fill me-2"></i> Vui lòng <router-link to="/client/dang-nhap" class="fw-bold text-decoration-none">Đăng nhập</router-link> để để lại đánh giá.
+              </div>
+
+              <div v-if="loadingReviews" class="text-center py-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+              </div>
+              <div v-else-if="detailReviews.length === 0" class="text-center py-5 text-muted">
+                <i class="bi bi-chat-square-text" style="font-size: 3rem; opacity: 0.5;"></i>
+                <p class="mt-3 fs-6">Chưa có đánh giá nào cho địa điểm này.</p>
+              </div>
+              <div v-else class="review-list">
+                <div v-for="rv in detailReviews" :key="rv.id" class="review-item border-bottom py-4 last-border-0">
+                  <div class="d-flex align-items-center mb-3">
+                    <div class="avatar shadow-sm me-3" style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: #6c757d;">
+                      <img v-if="rv.nguoi_dung?.avatar" :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                      <span v-else>{{ (rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</span>
+                    </div>
+                    <div>
+                      <h6 class="mb-0 fw-bold">{{ rv.nguoi_dung?.ten || 'Người dùng' }}</h6>
+                      <small class="text-muted">{{ formatDate(rv.created_at) }}</small>
+                    </div>
+                    <div class="ms-auto text-warning" style="font-size: 1.1rem;">
+                      <i v-for="s in rv.so_sao" :key="s" class="bi bi-star-fill me-1"></i>
+                    </div>
+                  </div>
+                  <p class="mb-0 text-secondary" style="padding-left: 66px; line-height: 1.6;">{{ rv.noi_dung }}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Tab 2: Reviews -->
-          <div v-else class="fade-in-content">
-            <div class="review-form-card mb-4" v-if="isLoggedIn">
-              <h6>Gửi đánh giá của bạn</h6>
-              <div class="star-rating-input mb-2">
-                <i v-for="s in 5" :key="s" class="bi" 
-                   :class="s <= newReview.so_sao ? 'bi-star-fill active' : 'bi-star'"
-                   @click="newReview.so_sao = s"></i>
+          <!-- RIGHT COLUMN -->
+          <div class="col-lg-4">
+            <div class="info-card bg-white p-4 rounded-4 shadow-sm position-sticky" style="top: 20px;">
+              <h3 class="fw-bold mb-2">{{ selectedPlace.ten_dia_diem }}</h3>
+              <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                <div class="stars text-warning me-2">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                </div>
+                <span class="fw-bold me-1">{{ selectedPlace.danh_gia_trung_binh }}</span>
+                <span class="text-muted">({{ detailReviews.length }} đánh giá)</span>
               </div>
-              <textarea v-model="newReview.noi_dung" class="form-control mb-2" rows="2" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
-              <button class="btn btn-sm btn-primary" @click="submitReview" :disabled="submittingReview">
-                <span v-if="submittingReview" class="spinner-border spinner-border-sm me-1"></span>
-                Gửi nhận xét
+
+              <!-- Map Block -->
+              <div v-if="selectedPlace.vi_do && selectedPlace.kinh_do" class="map-container mb-4 rounded-4 overflow-hidden shadow-sm border" style="height: 220px; position: relative;">
+                <div id="detail-map" style="width: 100%; height: 100%; z-index: 1;"></div>
+              </div>
+              <div v-else class="alert alert-warning py-2 mb-4 d-flex align-items-center rounded-3">
+                <i class="bi bi-geo-alt-fill me-2"></i> Chưa có tọa độ bản đồ chi tiết.
+              </div>
+
+              <!-- Info List -->
+              <ul class="list-unstyled mb-4">
+                <li class="d-flex align-items-start mb-3">
+                  <i class="bi bi-geo-alt text-danger me-3 fs-5 mt-1"></i>
+                  <div>
+                    <span class="d-block text-muted small">Địa chỉ</span>
+                    <span class="fw-medium">{{ selectedPlace.dia_chi }}</span>
+                  </div>
+                </li>
+                <li class="d-flex align-items-start mb-3">
+                  <i class="bi bi-clock text-success me-3 fs-5 mt-1"></i>
+                  <div>
+                    <span class="d-block text-muted small">Giờ hoạt động</span>
+                    <span class="fw-medium">{{ selectedPlace.gio_mo_cua }} - {{ selectedPlace.gio_dong_cua }}</span>
+                  </div>
+                </li>
+                <li class="d-flex align-items-start mb-3">
+                  <i class="bi bi-telephone text-primary me-3 fs-5 mt-1"></i>
+                  <div>
+                    <span class="d-block text-muted small">Điện thoại</span>
+                    <span class="fw-medium">Liên hệ ban quản lý</span>
+                  </div>
+                </li>
+                <li class="d-flex align-items-start mb-3">
+                  <i class="bi bi-tag text-info me-3 fs-5 mt-1"></i>
+                  <div>
+                    <span class="d-block text-muted small">Loại hình</span>
+                    <span class="fw-medium">{{ selectedPlace.loai_dia_diem }}</span>
+                  </div>
+                </li>
+                <li class="d-flex align-items-start py-3 mt-2 border-top">
+                  <i class="bi bi-cash-coin text-success me-3 fs-4 mt-1"></i>
+                  <div>
+                    <span class="d-block text-muted small">Giá vé tham khảo</span>
+                    <span class="fw-bold text-success fs-5">{{ selectedPlace.gia_ve == 0 ? 'Miễn phí' : formatPrice(selectedPlace.gia_ve) }}</span>
+                  </div>
+                </li>
+              </ul>
+
+              <button class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center mt-4" style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); border: none;" @click="alert('Chức năng thêm vào lịch trình đang phát triển')">
+                <i class="bi bi-calendar-plus me-2 fs-5"></i> Thêm vào lịch trình
               </button>
             </div>
-            <div v-else class="alert alert-info py-2" style="font-size: 0.85rem;">
-              <i class="bi bi-info-circle me-1"></i> <router-link to="/client/dang-nhap">Đăng nhập</router-link> để để lại đánh giá.
-            </div>
-
-            <div v-if="loadingReviews" class="text-center py-4">
-              <div class="spinner-border text-primary spinner-border-sm"></div>
-            </div>
-            <div v-else-if="detailReviews.length === 0" class="text-center py-4 text-muted">
-              Chưa có đánh giá nào cho địa điểm này.
-            </div>
-            <div v-else class="review-scroll-area">
-              <div v-for="rv in detailReviews" :key="rv.id" class="review-item-card">
-                <div class="rv-meta">
-                  <div class="rv-user">
-                    <div class="rv-avatar" v-if="rv.nguoi_dung?.avatar">
-                      <img :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar">
-                    </div>
-                    <div class="rv-avatar-text" v-else>{{ (rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</div>
-                    <span class="rv-name">{{ rv.nguoi_dung?.ten || 'Người dùng' }}</span>
-                  </div>
-                  <div class="rv-stars">
-                    <i v-for="s in rv.so_sao" :key="s" class="bi bi-star-fill text-warning"></i>
-                  </div>
-                </div>
-                <p class="rv-text">{{ rv.noi_dung }}</p>
-                <small class="rv-date text-muted">{{ formatDate(rv.created_at) }}</small>
-              </div>
-            </div>
           </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="closeModal">Đóng</button>
-          <button class="btn btn-primary" @click="alert('Chức năng thêm vào lịch trình đang phát triển'); closeModal()">Thêm vào lịch trình</button>
         </div>
       </div>
     </div>

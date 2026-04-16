@@ -143,6 +143,12 @@ const routes = [
     component: () => import("../pages/Admin/Checkin.vue"),
     meta: { layout: "default" },
   },
+  {
+    path: "/admin/danh-muc",
+    component: () => import("../pages/Admin/DanhMuc.vue"),
+    meta: { layout: "default" },
+  },
+
 
   {
     path: "/admin/quan-ly-danh-gia-phan-hoi",
