@@ -324,8 +324,8 @@
 <script>
 import axios from 'axios'
 
-const API_URL = 'http://127.0.0.1:8001/api/dia-diems';
-const SERP_URL_MULTI = 'http://127.0.0.1:8001/api/serp/update-images';
+const API_URL = 'http://127.0.0.1:8000/api/dia-diems';
+const SERP_URL_MULTI = 'http://127.0.0.1:8000/api/serp/update-images';
 
 export default {
   name: 'LocationManager',
@@ -538,7 +538,7 @@ export default {
       this.$toast.info('Đang crawl đánh giá từ Google Maps (3 địa điểm)... Vui lòng chờ khoảng 1-2 phút.');
       try {
         const res = await axios.post(
-          'http://127.0.0.1:8001/api/serp/crawl-reviews',
+          'http://127.0.0.1:8000/api/serp/crawl-reviews',
           { limit: 3 },
           {
             ...this.authHeader(),
@@ -568,7 +568,7 @@ export default {
       this.$toast.info('Đang crawl ảnh gallery từ Google Images (5 địa điểm)... Vui lòng chờ.');
       try {
         const res = await axios.post(
-          'http://127.0.0.1:8001/api/serp/crawl-images',
+          'http://127.0.0.1:8000/api/serp/crawl-images',
           { limit: 5 },
           {
             ...this.authHeader(),
@@ -596,7 +596,7 @@ export default {
       this.loadingSingleSerp = true;
       try {
         // Gọi API tìm kiếm 1 ảnh từ Google Images
-        const res = await axios.post('http://127.0.0.1:8001/api/serp/update-images', {
+        const res = await axios.post('http://127.0.0.1:8000/api/serp/update-images', {
           ids: this.form.id ? [this.form.id] : [],
           force: true,
           limit: 1
@@ -627,7 +627,7 @@ export default {
       this.searchingGoogle = true;
       this.errorMessage = '';
       try {
-        const res = await axios.get(`http://127.0.0.1:8001/api/serp/search?query=${encodeURIComponent(this.keyword)}`, this.authHeader());
+        const res = await axios.get(`http://127.0.0.1:8000/api/serp/search?query=${encodeURIComponent(this.keyword)}`, this.authHeader());
         this.googleResults = res.data.data || [];
         if (this.googleResults.length === 0) {
            this.errorMessage = "Không tìm thấy kết quả nào trên Google Maps.";
@@ -646,7 +646,7 @@ export default {
           ? place.loai_dia_diem 
           : this.categoryDefaultType;
 
-        await axios.post('http://127.0.0.1:8001/api/serp/import', {
+        await axios.post('http://127.0.0.1:8000/api/serp/import', {
           ...place,
           loai_dia_diem: finalLoai,
           id_danh_muc: this.categoryId

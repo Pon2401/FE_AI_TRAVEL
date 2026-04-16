@@ -134,7 +134,7 @@ export default {
         return this.userAvatar
       }
       const cleanPath = this.userAvatar.startsWith('/') ? this.userAvatar : `/${this.userAvatar}`
-      return `http://127.0.0.1:8001${cleanPath}`
+      return `http://127.0.0.1:8000${cleanPath}`
     }
   },
   mounted() {

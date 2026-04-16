@@ -187,7 +187,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const BASE = 'http://localhost:8001/api';
+const BASE = 'http://localhost:8000/api';
 
 export default {
   name: 'LichTrinhCuaToi',

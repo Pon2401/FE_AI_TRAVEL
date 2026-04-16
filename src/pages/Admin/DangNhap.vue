@@ -127,7 +127,7 @@ export default {
             if (!this.validateAdmin()) return;
 
             this.loading = true;
-            axios.post('http://127.0.0.1:8001/api/admin/dang-nhap', this.thong_tin_dang_nhap)
+            axios.post('http://127.0.0.1:8000/api/admin/dang-nhap', this.thong_tin_dang_nhap)
                 .then((res) => {
                     if (res.data.status) {
                         const adminData = res.data.data || {};

@@ -6,7 +6,7 @@ import { getClientAccessToken } from "../utils/clientAuth";
 
 window.Pusher = Pusher;
 
-const DEFAULT_BACKEND_URL = "http://localhost:8001";
+const DEFAULT_BACKEND_URL = "http://localhost:8000";
 const EVENT_NAME = "nhom-chat.message.sent";
 
 const reverbConfig = {

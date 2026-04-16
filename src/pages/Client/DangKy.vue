@@ -239,7 +239,7 @@ export default {
         password_confirmation: this.user.re_password,
       };
 
-      axios.post('http://localhost:8001/api/client/dang-ky', payload)
+      axios.post('http://localhost:8000/api/client/dang-ky', payload)
         .then((res) => {
           if (res.data.status) {
             this.$toast.success(res.data.message);

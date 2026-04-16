@@ -415,7 +415,7 @@ export default {
         return path;
       }
       const cleanPath = path.startsWith('/') ? path : `/${path}`;
-      return `http://127.0.0.1:8001${cleanPath}`;
+      return `http://127.0.0.1:8000${cleanPath}`;
     },
 
     h() {

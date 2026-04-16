@@ -157,7 +157,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8001/api';
+const BASE = 'http://localhost:8000/api';
 
 export default {
   name: 'YeuThich',

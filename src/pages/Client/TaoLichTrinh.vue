@@ -424,7 +424,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8001/api';
+const BASE = 'http://localhost:8000/api';
 
 export default {
   name: 'TaoLichTrinh',
@@ -581,7 +581,7 @@ export default {
       this.loadingSerp = true;
       this.serpResults = [];
       try {
-        const res = await fetch(`http://127.0.0.1:8001/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
+        const res = await fetch(`http://127.0.0.1:8000/api/serp/search?query=${encodeURIComponent(this.searchQ)}`);
         const json = await res.json();
         if (json.status) {
           this.serpResults = json.data || [];
@@ -612,7 +612,7 @@ export default {
       };
 
       try {
-        const res = await fetch(`http://127.0.0.1:8001/api/serp/import`, {
+        const res = await fetch(`http://127.0.0.1:8000/api/serp/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

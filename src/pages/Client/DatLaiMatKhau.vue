@@ -136,7 +136,7 @@
 <script>
 import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8001/api/client/dat-lai-mat-khau';
+const API_URL = 'http://127.0.0.1:8000/api/client/dat-lai-mat-khau';
 
 export default {
     name: 'DatLaiMatKhau',
