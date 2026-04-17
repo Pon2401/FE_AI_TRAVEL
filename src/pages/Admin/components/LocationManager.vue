@@ -154,6 +154,13 @@
                   </template>
                   <template v-else>
                     <button
+                      class="btn btn-sm btn-outline-info me-2"
+                      title="Quản lý ảnh"
+                      @click="openImageModal(place)"
+                    >
+                      <i class="bi bi-images"></i>
+                    </button>
+                    <button
                       class="btn btn-sm btn-outline-primary me-2"
                       type="button"
                       title="Sửa"
@@ -318,11 +325,62 @@
         </div>
       </div>
     </div>
+    <!-- MODAL QUẢN LÝ ẢNH -->
+    <div id="modalQuanLyAnh" class="modal fade" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content staff-modal">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h5 class="modal-title">Quản lý hình ảnh - <span class="text-primary">{{ selectedPlaceForImages?.ten_dia_diem }}</span></h5>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <div class="mb-4 d-flex gap-2 p-3 bg-light rounded shadow-sm">
+              <input v-model="newImageUrl" type="text" class="form-control" placeholder="Dán link URL ảnh mới vào đây...">
+              <button class="btn btn-primary text-nowrap px-4" @click="addImage" :disabled="!newImageUrl || addingImage">
+                <span v-if="addingImage" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="bi bi-plus-lg me-1"></i> Thêm ảnh
+              </button>
+            </div>
+            <div v-if="loadingImages" class="text-center py-5">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div v-else-if="placeImages.length === 0" class="text-center py-5 text-muted bg-light rounded">
+              <i class="bi bi-image" style="font-size: 2rem; opacity: 0.5;"></i>
+              <p class="mt-2">Chưa có hình ảnh nào cho địa điểm này.</p>
+            </div>
+            <div v-else class="row g-4">
+              <div class="col-xl-3 col-lg-4 col-md-6" v-for="img in placeImages" :key="img.id">
+                <div class="card h-100 position-relative border-0" style="border-radius: 16px; overflow: hidden; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                  <span v-if="img.is_main" class="badge bg-success position-absolute" style="top: 12px; left: 12px; z-index: 2; font-size: 0.8rem; padding: 6px 10px;">
+                     <i class="bi bi-star-fill text-warning me-1"></i> Ảnh chính
+                  </span>
+                  <img :src="img.duong_dan_anh" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Image">
+                  <div class="card-body p-3 bg-white d-flex justify-content-between align-items-center">
+                    <button class="btn btn-sm fw-semibold" :class="img.is_main ? 'btn-light text-success cursor-default' : 'btn-outline-primary'" title="Biến thành ảnh chính" @click="setMainImage(img)" :disabled="img.is_main" style="border-radius: 8px;">
+                      {{ img.is_main ? 'Đang là ảnh chính' : 'Đặt làm ảnh chính' }}
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" style="border-radius: 8px;" title="Xóa ảnh" @click="deleteImage(img)">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+             <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import * as bootstrap from 'bootstrap'
 
 const API_URL = 'http://127.0.0.1:8000/api/dia-diems';
 const SERP_URL_MULTI = 'http://127.0.0.1:8000/api/serp/update-images';
@@ -337,6 +395,7 @@ export default {
   },
   data() {
     return {
+      isEditing: false,
       places: [],
       keyword: '',
       filterCategory: 'Tất cả',
@@ -370,6 +429,13 @@ export default {
       adminMarker: null,
       modalInstance: null,
       deleteModalInstance: null,
+      
+      imageModalInstance: null,
+      selectedPlaceForImages: null,
+      placeImages: [],
+      loadingImages: false,
+      newImageUrl: '',
+      addingImage: false,
     }
   },
   computed: {
@@ -419,21 +485,87 @@ export default {
         id: null, ten_dia_diem: '', loai_dia_diem: '', dia_chi: '',
         vi_do: '', kinh_do: '', gia_ve: '', gio_mo_cua: '', gio_dong_cua: '', image: '', mo_ta: ''
       };
-      if (!this.modalInstance) this.modalInstance = new window.bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
+      if (!this.modalInstance) this.modalInstance = new bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
       this.modalInstance.show();
       this.$nextTick(() => { this.initAdminMap(); });
     },
     openEditModal(place) {
       this.isEditing = true;
       this.form = { ...place };
-      if (!this.modalInstance) this.modalInstance = new window.bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
+      if (!this.modalInstance) this.modalInstance = new bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
       this.modalInstance.show();
       this.$nextTick(() => { this.initAdminMap(); });
     },
     openDeleteModal(place) {
       this.selectedPlace = place;
-      if (!this.deleteModalInstance) this.deleteModalInstance = new window.bootstrap.Modal(document.getElementById('modalXoaDiaDiem'));
+      if (!this.deleteModalInstance) this.deleteModalInstance = new bootstrap.Modal(document.getElementById('modalXoaDiaDiem'));
       this.deleteModalInstance.show();
+    },
+    openImageModal(place) {
+      this.selectedPlaceForImages = place;
+      this.placeImages = [];
+      this.newImageUrl = '';
+      if (!this.imageModalInstance) this.imageModalInstance = new bootstrap.Modal(document.getElementById('modalQuanLyAnh'));
+      this.imageModalInstance.show();
+      this.fetchImages();
+    },
+    async fetchImages() {
+      if (!this.selectedPlaceForImages) return;
+      this.loadingImages = true;
+      try {
+        const res = await axios.get(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/dia-diem/${this.selectedPlaceForImages.id}`, this.authHeader());
+        this.placeImages = res.data.data;
+      } catch (e) {
+        this.$toast.error('Không thể tải hình ảnh.');
+      } finally {
+        this.loadingImages = false;
+      }
+    },
+    async addImage() {
+      if (!this.newImageUrl) return;
+      this.addingImage = true;
+      try {
+        await axios.post('http://127.0.0.1:8000/api/hinh-anh-dia-diems', {
+          id_dia_diem: this.selectedPlaceForImages.id,
+          duong_dan_anh: this.newImageUrl,
+          is_main: this.placeImages.length === 0, // Nếu chưa có ảnh nào thì tự động thành ảnh chính
+          sort_order: 1
+        }, this.authHeader());
+        this.newImageUrl = '';
+        this.$toast.success('Đã thêm ảnh thành công!');
+        await this.fetchImages();
+        this.fetchPlaces(); // Cập nhật lại thumbnail bên ngoài nếu đây là ảnh đầu tiên
+      } catch (e) {
+        this.$toast.error('Không thể thêm ảnh: ' + (e.response?.data?.message || e.message));
+      } finally {
+        this.addingImage = false;
+      }
+    },
+    async setMainImage(img) {
+      try {
+        await axios.post(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/${img.id}/set-main`, {}, this.authHeader());
+        this.$toast.success('Đã thay đổi ảnh chính thành công!');
+        await this.fetchImages();
+        // Cập nhật thủ công ảnh thumbnail ngoài danh sách
+        const place = this.places.find(p => p.id === this.selectedPlaceForImages.id);
+        if (place) place.image = img.duong_dan_anh;
+      } catch (e) {
+        this.$toast.error('Lỗi khi đổi ảnh chính.');
+      }
+    },
+    async deleteImage(img) {
+      if (!confirm('Bạn có chắc chắn muốn xóa ảnh này không?')) return;
+      try {
+        await axios.delete(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/${img.id}`, this.authHeader());
+        this.$toast.success('Đã xóa ảnh.');
+        await this.fetchImages();
+        // Nếu vừa xóa ảnh chính và còn ảnh khác, thì load lại danh sách ngoài kia
+        if (img.is_main) {
+          this.fetchPlaces();
+        }
+      } catch (e) {
+        this.$toast.error('Lỗi khi xóa ảnh.');
+      }
     },
     async savePlace() {
       if (!this.form.ten_dia_diem || !this.form.loai_dia_diem) {
