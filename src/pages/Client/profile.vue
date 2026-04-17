@@ -516,6 +516,7 @@ export default {
             this.$toast.error(err.response.data.message)
           }
           localStorage.removeItem('client_token')
+          localStorage.removeItem('access_token')
           localStorage.removeItem('client_id')
           this.$router.replace('/client/dang-nhap')
         } else {

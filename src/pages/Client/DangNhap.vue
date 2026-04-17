@@ -8,15 +8,10 @@
                         <div class="card-body p-5">
                             <div class="text-center mb-4">
                                 <div class="logo-wrapper mb-3">
-                                    <div
-                                        class="logo-icon bg-gradient-brand text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
-                                        style="width: 60px; height: 60px;"
-                                    >
-                                        <img
-                                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
-                                            alt="Logo"
-                                            class="logo-img"
-                                        />
+                                    <div class="logo-icon bg-gradient-brand text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                                        style="width: 60px; height: 60px;">
+                                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s"
+                                            alt="Logo" class="logo-img" />
                                     </div>
                                 </div>
                                 <h3 class="fw-bold text-uppercase mb-1" style="letter-spacing: 0.5px; color: #2c3e50;">
@@ -26,16 +21,11 @@
                             </div>
 
                             <div class="d-grid mb-4">
-                                <button
-                                    type="button"
+                                <button type="button"
                                     class="btn shadow-sm btn-white border-0 bg-light rounded-3 py-2 hover-lift d-flex justify-content-center align-items-center gap-2"
-                                    @click="dangNhapGoogle"
-                                >
-                                    <img
-                                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png"
-                                        width="18"
-                                        alt="Google"
-                                    >
+                                    @click="dangNhapGoogle">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png"
+                                        width="18" alt="Google">
                                     <span class="text-dark fw-medium small">Tiếp tục với Google</span>
                                 </button>
                             </div>
@@ -43,8 +33,7 @@
                             <div class="login-separater text-center mb-4 position-relative">
                                 <hr class="border-secondary opacity-25">
                                 <span
-                                    class="bg-white px-3 fw-bold text-muted small position-absolute top-50 start-50 translate-middle rounded-pill border"
-                                >
+                                    class="bg-white px-3 fw-bold text-muted small position-absolute top-50 start-50 translate-middle rounded-pill border">
                                     HOẶC
                                 </span>
                             </div>
@@ -52,21 +41,15 @@
                             <div class="form-body">
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Email</label>
-                                    <div
-                                        class="input-group input-group-lg bg-light rounded-3 transition-all"
-                                        :class="{ 'border-danger': errors.email }"
-                                    >
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all"
+                                        :class="{ 'border-danger': errors.email }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-regular fa-envelope"></i>
                                         </span>
-                                        <input
-                                            v-model="thong_tin_dang_nhap.email"
-                                            type="email"
+                                        <input v-model="thong_tin_dang_nhap.email" type="email"
                                             class="form-control border-0 bg-transparent fs-6"
                                             :class="{ 'is-invalid': errors.email }"
-                                            placeholder="Nhập địa chỉ email của bạn"
-                                            @input="errors.email = ''"
-                                        >
+                                            placeholder="Nhập địa chỉ email của bạn" @input="errors.email = ''">
                                     </div>
                                     <div v-if="errors.email" class="text-danger small mt-1 ms-1">
                                         <i class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}
@@ -75,22 +58,15 @@
 
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary small">Mật khẩu</label>
-                                    <div
-                                        class="input-group input-group-lg bg-light rounded-3 transition-all"
-                                        :class="{ 'border-danger': errors.mat_khau }"
-                                    >
+                                    <div class="input-group input-group-lg bg-light rounded-3 transition-all"
+                                        :class="{ 'border-danger': errors.mat_khau }">
                                         <span class="input-group-text border-0 bg-transparent text-primary px-3">
                                             <i class="fa-solid fa-lock-open text-primary opacity-75"></i>
                                         </span>
-                                        <input
-                                            v-model="thong_tin_dang_nhap.mat_khau"
-                                            @keydown.enter="dangNhap()"
-                                            type="password"
-                                            class="form-control border-0 bg-transparent fs-6"
-                                            :class="{ 'is-invalid': errors.mat_khau }"
-                                            placeholder="Nhập mật khẩu"
-                                            @input="errors.mat_khau = ''"
-                                        >
+                                        <input v-model="thong_tin_dang_nhap.mat_khau" @keydown.enter="dangNhap()"
+                                            type="password" class="form-control border-0 bg-transparent fs-6"
+                                            :class="{ 'is-invalid': errors.mat_khau }" placeholder="Nhập mật khẩu"
+                                            @input="errors.mat_khau = ''">
                                     </div>
                                     <div v-if="errors.mat_khau" class="text-danger small mt-1 ms-1">
                                         <i class="bi bi-exclamation-circle me-1"></i>{{ errors.mat_khau }}
@@ -100,24 +76,20 @@
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="rememberMe">
-                                        <label class="form-check-label text-muted small cursor-pointer" for="rememberMe">
+                                        <label class="form-check-label text-muted small cursor-pointer"
+                                            for="rememberMe">
                                             Nhớ tài khoản
                                         </label>
                                     </div>
-                                    <router-link
-                                        to="/client/quen-mat-khau"
-                                        class="text-primary small text-decoration-none fw-medium hover-underline"
-                                    >
+                                    <router-link to="/client/quen-mat-khau"
+                                        class="text-primary small text-decoration-none fw-medium hover-underline">
                                         Quên mật khẩu?
                                     </router-link>
                                 </div>
 
                                 <div class="d-grid mt-4">
-                                    <button
-                                        @click="dangNhap()"
-                                        :disabled="loading"
-                                        class="btn btn-primary btn-lg rounded-3 fw-bold btn-login shadow-sm"
-                                    >
+                                    <button @click="dangNhap()" :disabled="loading"
+                                        class="btn btn-primary btn-lg rounded-3 fw-bold btn-login shadow-sm">
                                         <span v-if="loading">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Đang đăng nhập...
@@ -131,10 +103,8 @@
                                 <div class="text-center mt-4">
                                     <p class="text-muted small mb-0">
                                         Bạn chưa có tài khoản?
-                                        <router-link
-                                            to="/client/dang-ky"
-                                            class="text-primary fw-bold text-decoration-none ms-1 hover-underline"
-                                        >
+                                        <router-link to="/client/dang-ky"
+                                            class="text-primary fw-bold text-decoration-none ms-1 hover-underline">
                                             Đăng ký ngay
                                         </router-link>
                                     </p>
@@ -156,7 +126,7 @@
 import axios from 'axios';
 import { saveClientRedirectPath, saveClientSession } from '../../utils/clientAuth';
 
-const GOOGLE_AUTH_URL = 'http://localhost:8000/auth/google';
+const GOOGLE_AUTH_URL = 'http://127.0.0.1:8000/auth/google';
 const LOGIN_API_URL = 'http://127.0.0.1:8000/api/client/dang-nhap';
 
 export default {
@@ -363,6 +333,7 @@ export default {
 }
 
 @keyframes bounce-soft {
+
     0%,
     100% {
         transform: translateY(0);

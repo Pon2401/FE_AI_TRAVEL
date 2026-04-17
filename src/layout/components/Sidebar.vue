@@ -49,6 +49,14 @@
             </li>
           </ul>
         </li>
+        <!-- Danh mục -->
+        <li class="nav-item">
+          <router-link to="/admin/danh-muc" class="nav-link" :class="{ active: isActive('/admin/danh-muc') }">
+            <i class="bi bi-folder2-open"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý danh mục</span>
+          </router-link>
+        </li>
+
         <!-- Categories with submenu -->
         <li class="nav-item">
           <a
@@ -57,7 +65,7 @@
             :class="{ active: showCategorySubmenu || isCategoryMenuActive() }"
           >
             <i class="bi bi-tags"></i>
-            <span v-if="!isCollapsed" class="nav-label">Quản lý danh mục</span>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý địa điểm</span>
             <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
           </a>
           <ul v-if="showCategorySubmenu && !isCollapsed" class="submenu">

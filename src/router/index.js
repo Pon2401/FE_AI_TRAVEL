@@ -60,6 +60,17 @@ const routes = [
     meta: { layout: "client" },
   },
   {
+
+    path: "/nhom-du-lich/:id/chat",
+    component: () => import("../pages/Client/GroupChatView.vue"),
+    meta: { layout: "client" },
+  },
+  {
+    path: "/yeu-thich",
+    component: () => import("../pages/Client/YeuThich.vue"),
+    meta: { layout: "client" },
+  },
+  {
     path: "/profile",
     component: () => import("../pages/Client/profile.vue"),
     meta: { layout: "client" },
@@ -132,6 +143,12 @@ const routes = [
     component: () => import("../pages/Admin/Checkin.vue"),
     meta: { layout: "default" },
   },
+  {
+    path: "/admin/danh-muc",
+    component: () => import("../pages/Admin/DanhMuc.vue"),
+    meta: { layout: "default" },
+  },
+
 
   {
     path: "/admin/quan-ly-danh-gia-phan-hoi",
