@@ -210,15 +210,13 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Loại địa điểm <span class="text-danger">*</span></label>
-                <input v-model="form.loai_dia_diem" type="text" list="categoryHints" class="form-control modal-input" placeholder="Ví dụ: Quán ăn, Chùa, Điểm check-in...">
-                <datalist id="categoryHints">
-                  <option value="Quán ăn" />
-                  <option value="Cafe" />
-                  <option value="Bãi biển" />
-                  <option value="Công viên" />
-                  <option value="Chùa" />
-                  <option value="Lịch sử" />
-                </datalist>
+                <select v-model="form.loai_dia_diem" class="form-select modal-input">
+                  <option value="" disabled>-- Chọn loại địa điểm --</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.ten_danh_muc">
+                    {{ cat.ten_danh_muc }}
+                  </option>
+                  <option value="Khác">Khác</option>
+                </select>
               </div>
 
               <div class="col-md-12">
@@ -397,6 +395,7 @@ export default {
     return {
       isEditing: false,
       places: [],
+      categories: [],
       keyword: '',
       filterCategory: 'Tất cả',
       loading: false,
@@ -459,11 +458,20 @@ export default {
   },
   mounted() {
     this.fetchPlaces();
+    this.fetchCategories();
   },
   methods: {
     authHeader() {
       const token = localStorage.getItem('key_admin')
       return token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+    },
+    async fetchCategories() {
+      try {
+        const res = await axios.get('http://127.0.0.1:8000/api/danh-mucs', this.authHeader());
+        this.categories = res.data.data || [];
+      } catch (error) {
+        console.error("Lỗi khi tải danh mục:", error);
+      }
     },
     async fetchPlaces() {
       this.loading = true
@@ -492,6 +500,13 @@ export default {
     openEditModal(place) {
       this.isEditing = true;
       this.form = { ...place };
+      // Strip seconds if backend returns HH:MM:SS
+      if (this.form.gio_mo_cua) {
+        this.form.gio_mo_cua = this.form.gio_mo_cua.substring(0, 5);
+      }
+      if (this.form.gio_dong_cua) {
+        this.form.gio_dong_cua = this.form.gio_dong_cua.substring(0, 5);
+      }
       if (!this.modalInstance) this.modalInstance = new bootstrap.Modal(document.getElementById('modalFormDiaDiem'));
       this.modalInstance.show();
       this.$nextTick(() => { this.initAdminMap(); });
@@ -573,11 +588,18 @@ export default {
         return;
       }
       this.saving = true;
+      const payload = { ...this.form };
+      if (!payload.gio_mo_cua) payload.gio_mo_cua = null;
+      else payload.gio_mo_cua = payload.gio_mo_cua.substring(0, 5);
+      
+      if (!payload.gio_dong_cua) payload.gio_dong_cua = null;
+      else payload.gio_dong_cua = payload.gio_dong_cua.substring(0, 5);
+
       try {
         if (this.isEditing) {
-          await axios.put(`${API_URL}/${this.form.id}`, this.form, this.authHeader());
+          await axios.put(`${API_URL}/${this.form.id}`, payload, this.authHeader());
         } else {
-          await axios.post(API_URL, this.form, this.authHeader());
+          await axios.post(API_URL, payload, this.authHeader());
         }
         await this.fetchPlaces();
         this.modalInstance.hide();

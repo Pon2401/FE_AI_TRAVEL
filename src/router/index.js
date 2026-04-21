@@ -55,6 +55,11 @@ const routes = [
     meta: { layout: "client" },
   },
   {
+    path: "/lich-trinh/:id",
+    component: () => import("../pages/Client/ChiTietLichTrinh.vue"),
+    meta: { layout: "client" }
+  },
+  {
     path: "/nhom-du-lich",
     component: () => import("../pages/Client/NhomDuLich.vue"),
     meta: { layout: "client" },

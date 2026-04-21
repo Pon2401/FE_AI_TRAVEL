@@ -52,19 +52,19 @@
           <div class="trip-info-rows">
             <div class="trip-info-row" v-if="trip.ngay_bat_dau">
               <i class="bi bi-calendar3 me-2"></i>
-              <span>{{ formatDate(trip.ngay_bat_dau) }} → {{ formatDate(trip.ngay_ket_thuc) }}</span>
+              <span>{{ formatDate(trip.ngay_bat_dau) }} → {{ getNgayKetThuc(trip.ngay_bat_dau, trip.so_ngay) }}</span>
             </div>
             <div class="trip-info-row">
               <i class="bi bi-sun me-2"></i>
-              <span>{{ calcSoNgay(trip.ngay_bat_dau, trip.ngay_ket_thuc) }}</span>
+              <span>{{ formatDuration(trip.so_ngay) }}</span>
             </div>
             <div class="trip-info-row">
               <i class="bi bi-people me-2"></i>
-              <span>{{ trip.so_luong_thanh_vien || 1 }} thành viên</span>
+              <span>{{ trip.so_nguoi || 1 }} thành viên</span>
             </div>
-            <div class="trip-info-row" v-if="trip.ngan_sach_du_kien > 0">
+            <div class="trip-info-row" v-if="trip.ngan_sach > 0">
               <i class="bi bi-wallet2 me-2"></i>
-              <span>Ngân sách: {{ formatCurrency(trip.ngan_sach_du_kien) }}</span>
+              <span>Ngân sách: {{ formatCurrency(trip.ngan_sach) }}</span>
             </div>
             <div class="trip-info-row" v-if="trip.chu_thich">
               <i class="bi bi-chat-left-text me-2"></i>
@@ -75,8 +75,11 @@
           <div class="trip-card-footer">
             <span class="trip-date-created">Tạo: {{ formatDateFull(trip.created_at) }}</span>
             <div class="trip-footer-actions">
-              <button class="btn-map" @click="openMap(trip)" title="Xem bản đồ">
-                <i class="bi bi-map-fill me-1"></i>Bản đồ
+              <button class="btn-share" @click="openShareModal(trip)" title="Gửi vào nhóm">
+                <i class="bi bi-share-fill"></i>
+              </button>
+              <button class="btn-map" @click="$router.push(`/lich-trinh/${trip.id}`)" title="Xem chi tiết">
+                <i class="bi bi-eye-fill me-1"></i>Chi tiết
               </button>
               <button class="btn-delete" @click="confirmDelete(trip)" title="Xóa chuyến đi">
                 <i class="bi bi-trash3"></i>
@@ -88,79 +91,7 @@
 
     </div>
 
-    <!-- ===================== MAP MODAL ===================== -->
-    <div v-if="mapTrip" class="map-overlay" @click.self="closeMap">
-      <div class="map-modal">
-
-        <!-- Map modal header -->
-        <div class="map-modal-header">
-          <div class="map-modal-title">
-            <i class="bi bi-map-fill me-2 text-brand"></i>
-            <span>{{ mapTrip.ten_chuyen_di }}</span>
-          </div>
-          <button class="map-close-btn" @click="closeMap">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <!-- Map modal body -->
-        <div class="map-modal-body">
-
-          <!-- Sidebar: danh sách địa điểm -->
-          <div class="map-sidebar">
-            <div class="map-sidebar-title">
-              <i class="bi bi-pin-map-fill me-1"></i>
-              Địa điểm tham quan
-              <span class="map-badge">{{ mapPlaces.length }}</span>
-            </div>
-
-            <div v-if="mapLoading" class="map-sidebar-loading">
-              <div class="mini-spinner"></div>
-              <span>Đang tải địa điểm...</span>
-            </div>
-
-            <div v-else-if="mapPlaces.length === 0" class="map-sidebar-empty">
-              <i class="bi bi-geo-alt-fill"></i>
-              <p>Chưa có địa điểm nào trong lịch trình này.</p>
-            </div>
-
-            <div v-else class="map-place-list">
-              <div v-for="(place, idx) in mapPlaces" :key="idx" class="map-place-item"
-                :class="{ active: activeMarkerIdx === idx }" @click="focusMarker(idx)">
-                <div class="place-num">{{ idx + 1 }}</div>
-                <div class="place-info">
-                  <div class="place-name">{{ place.ten_dia_diem }}</div>
-                  <div class="place-addr" v-if="place.dia_chi">
-                    <i class="bi bi-geo-alt me-1"></i>{{ place.dia_chi }}
-                  </div>
-                  <div class="place-meta">
-                    <span v-if="place.thoi_gian_du_kien" class="place-tag">
-                      <i class="bi bi-clock me-1"></i>{{ place.thoi_gian_du_kien }}
-                    </span>
-                    <span v-if="place.chi_phi_du_kien" class="place-tag">
-                      <i class="bi bi-wallet2 me-1"></i>{{ formatCurrency(place.chi_phi_du_kien) }}
-                    </span>
-                    <span v-if="place.danh_gia" class="place-tag rating">
-                      <i class="bi bi-star-fill me-1"></i>{{ place.danh_gia }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Google Map container -->
-          <div class="map-canvas-wrap">
-            <div id="google-map-canvas" class="map-canvas"></div>
-            <div v-if="mapLoading" class="map-canvas-loading">
-              <div class="spinner"></div>
-              <span>Đang tải bản đồ...</span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
+    <!-- Removed map modal -->
 
     <!-- Delete confirm modal -->
     <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
@@ -180,6 +111,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal chọn nhóm chia sẻ -->
+    <div v-if="showShareModal" class="share-modal-overlay d-flex align-items-center justify-content-center" @click.self="closeShareModal">
+      <div class="share-modal-box bg-white p-5 rounded-4 shadow-lg w-100 animate-in position-relative" style="max-width: 440px;">
+        <button class="btn-close position-absolute top-0 end-0 m-4" @click="closeShareModal"></button>
+        <div class="text-center mb-4 mt-2">
+          <div class="share-icon-wrap mb-3 mx-auto shadow-sm">
+             <i class="bi bi-send-check-fill fs-2 text-white"></i>
+          </div>
+          <h4 class="fw-bold mb-1 text-dark">Chia sẻ lịch trình</h4>
+          <p class="text-muted mb-0" style="font-size: 0.95rem;">Chọn nhóm để gửi chuyến đi "{{ tripToShare?.ten_chuyen_di || '' }}"</p>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="fw-bold mb-2 text-dark" style="font-size: 0.95rem;">Bạn muốn gửi vào nhóm nào?</label>
+          <select v-model="selectedGroupToShare" class="form-select border-2 shadow-none modal-select text-dark" style="padding: 0.9rem 1rem; border-radius: 12px; font-weight: 500; cursor: pointer; border-color: #e2e8f0; background-color: #f8fafc;">
+            <option :value="null">-- Click để chọn nhóm --</option>
+            <option v-for="g in myJoinedGroups" :key="g.id" :value="g">{{ g.ten_nhom }}</option>
+          </select>
+        </div>
+
+        <button class="btn w-100 rounded-pill fw-bold text-white shadow-sm mt-3" @click="shareToGroup" :disabled="!selectedGroupToShare || sendingShare" style="background: #10b981; padding: 0.9rem; font-size: 1.05rem; transition: all 0.2s;">
+          <span v-if="sendingShare" class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm me-2"></span> Đang gửi...</span>
+          <span v-else class="d-flex align-items-center justify-content-center"><i class="bi bi-chat-heart-fill me-2 fs-5"></i> Chia sẻ ngay</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -194,19 +152,20 @@ export default {
 
   data() {
     return {
-      token: localStorage.getItem('client_token'),
+      token: localStorage.getItem('DaNangTravel') 
+        ? JSON.parse(localStorage.getItem('DaNangTravel')).client_token 
+        : localStorage.getItem('client_token'),
       chuyenDis: [],
       loading: false,
       deleteTarget: null,
       deleting: false,
 
-      // Map state
-      mapTrip: null,
-      mapPlaces: [],
-      mapLoading: false,
-      activeMarkerIdx: null,
-      leafletMap: null,
-      mapMarkers: [],
+      // Modal chia sẻ
+      showShareModal: false,
+      tripToShare: null,
+      myJoinedGroups: [],
+      selectedGroupToShare: null,
+      sendingShare: false,
     };
   },
 
@@ -230,135 +189,75 @@ export default {
       }
     },
 
-    // ── MẬP ──────────────────────────────────────
-    async openMap(trip) {
-      this.mapTrip = trip;
-      this.mapPlaces = [];
-      this.mapLoading = true;
-      this.activeMarkerIdx = null;
-
-      // Fetch địa điểm
+    async fetchMyGroups() {
+      if(!this.token) return;
       try {
-        const res = await fetch(`${BASE}/chuyen-di/${trip.id}/dia-diems`);
-        const json = await res.json();
-        this.mapPlaces = json.data || [];
-      } catch {
-        this.mapPlaces = [];
-      }
-
-      // Đợi Vue render DOM xong rồi mới init map
-      await this.$nextTick();
-      this.initMap();
-      this.mapLoading = false;
-    },
-
-    closeMap() {
-      this.clearMapObjects();
-      this.mapTrip = null;
-      this.mapPlaces = [];
-      this.activeMarkerIdx = null;
-    },
-
-    clearMapObjects() {
-      if (this.leafletMap) {
-        this.leafletMap.remove();
-        this.leafletMap = null;
-      }
-      this.mapMarkers = [];
-    },
-
-    initMap() {
-      const el = document.getElementById('google-map-canvas');
-      if (!el) return;
-
-      this.clearMapObjects();
-
-      // Trung tâm mặc định: Đà Nẵng
-      const defaultCenter = [16.0544, 108.2022];
-      const hasCoords = this.mapPlaces.some(p => p.vi_do && p.kinh_do);
-      const center = hasCoords
-        ? [this.mapPlaces[0].vi_do, this.mapPlaces[0].kinh_do]
-        : defaultCenter;
-
-      this.leafletMap = L.map(el, {
-        center,
-        zoom: 13,
-        zoomControl: true,
-      });
-
-      // Google Maps – Premium style
-      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Maps',
-        maxZoom: 20
-      }).addTo(this.leafletMap);
-
-      if (hasCoords) {
-        this.placeMarkers();
-        this.fitBounds();
-      }
-    },
-
-    placeMarkers() {
-      this.mapPlaces.forEach((place, idx) => {
-        if (!place.vi_do || !place.kinh_do) return;
-
-        const color = idx === 0 ? '#10b981' : (idx === this.mapPlaces.length - 1 ? '#f97316' : '#0ea5e9');
+        const [joinedRes, ownedRes] = await Promise.all([
+          fetch(`${BASE}/client/nhom-du-lich/get-joined`, { headers: { Authorization: `Bearer ${this.token}` } }),
+          fetch(`${BASE}/client/nhom-du-lich/get-my-groups`, { headers: { Authorization: `Bearer ${this.token}` } })
+        ]);
+        const jData = await joinedRes.json();
+        const oData = await ownedRes.json();
         
-        // Sử dụng DivIcon để tránh lỗi load ảnh marker.png trong môi trường build/Vite
-        const customIcon = L.divIcon({
-          className: 'custom-div-icon',
-          html: `<div style="background-color:${color}; width:30px; height:30px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-size:14px; position:relative; top:-15px; left:-15px;">${idx + 1}</div>`,
-          iconSize: [0, 0],
-          iconAnchor: [15, 15]
+        const groups = [];
+        if (jData.status && jData.data) groups.push(...jData.data);
+        if (oData.status && oData.data) groups.push(...oData.data);
+        
+        this.myJoinedGroups = groups;
+      } catch (e) {
+        console.error("Lỗi lấy danh sách nhóm", e);
+      }
+    },
+
+    openShareModal(trip) {
+      this.tripToShare = trip;
+      this.showShareModal = true;
+      if (this.myJoinedGroups.length === 0) {
+        this.fetchMyGroups();
+      }
+    },
+
+    closeShareModal() {
+      this.showShareModal = false;
+      this.tripToShare = null;
+      this.selectedGroupToShare = '';
+    },
+
+    async shareToGroup() {
+      if (!this.selectedGroupToShare || !this.tripToShare) return;
+      this.sendingShare = true;
+      try {
+        const payload = {
+            id_nhom_du_lich: this.selectedGroupToShare.id,
+            id_chi_tiet_nhom: this.selectedGroupToShare.id_chi_tiet_nhom,
+            message: JSON.stringify({ type: 'itinerary', id: this.tripToShare.id, title: this.tripToShare.ten_chuyen_di })
+        };
+
+        const r = await fetch(`http://localhost:8000/api/nhom-chats`, {
+          method: 'POST', 
+          headers: { 
+            'Content-Type': 'application/json', 
+            Authorization: `Bearer ${this.token}` 
+          },
+          body: JSON.stringify(payload)
         });
-
-        const marker = L.marker([place.vi_do, place.kinh_do], { icon: customIcon })
-          .addTo(this.leafletMap);
-
-        const content = `
-          <div style="font-family:'Inter',sans-serif; min-width:200px; padding:5px;">
-            <div style="font-weight:700; font-size:14px; color:#1e2d44; margin-bottom:4px;">
-              ${idx + 1}. ${place.ten_dia_diem}
-            </div>
-            ${place.dia_chi ? `<div style="font-size:12px; color:#6b7a90; margin-bottom:8px;"><i>📍 ${place.dia_chi}</i></div>` : ''}
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              ${place.thoi_gian_du_kien ? `<span style="background:#dcfce7; color:#15803d; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">⏱ ${place.thoi_gian_du_kien}</span>` : ''}
-              ${place.danh_gia ? `<span style="background:#fef9c3; color:#854d0e; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">⭐ ${place.danh_gia}</span>` : ''}
-              ${place.chi_phi_du_kien ? `<span style="background:#e0f2fe; color:#0369a1; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600;">💰 ${this.formatCurrency(place.chi_phi_du_kien)}</span>` : ''}
-            </div>
-          </div>`;
+        const res = await r.json();
         
-        marker.bindPopup(content);
-
-        marker.on('click', () => {
-          this.activeMarkerIdx = idx;
-        });
-
-        this.mapMarkers.push(marker);
-      });
-    },
-
-    fitBounds() {
-      const latlngs = this.mapPlaces
-        .filter(p => p.vi_do && p.kinh_do)
-        .map(p => [p.vi_do, p.kinh_do]);
-        
-      if (latlngs.length > 0) {
-        this.leafletMap.fitBounds(latlngs, { padding: [50, 50] });
+        if (res.status) {
+          this.$toast.success('Gửi lịch trình thành công!');
+          this.closeShareModal();
+        } else {
+          this.$toast.error('Gửi thất bại: ' + res.message);
+        }
+      } catch (e) {
+        this.$toast.error('Lỗi khi chia sẻ.');
+        console.error(e);
+      } finally {
+        this.sendingShare = false;
       }
     },
 
-    focusMarker(idx) {
-      this.activeMarkerIdx = idx;
-      const place = this.mapPlaces[idx];
-      if (!place || !place.vi_do || !this.leafletMap) return;
-      
-      this.leafletMap.flyTo([place.vi_do, place.kinh_do], 16);
-      
-      if (this.mapMarkers[idx]) {
-        this.mapMarkers[idx].openPopup();
-      }
-    },
+
 
     // ── UTILITIES ────────────────────────────────
     formatDate(dateStr) {
@@ -376,11 +275,16 @@ export default {
       return Number(val).toLocaleString('vi-VN') + 'đ';
     },
 
-    calcSoNgay(start, end) {
-      if (!start || !end) return '?';
-      const ms = new Date(end) - new Date(start);
-      const days = Math.max(1, Math.round(ms / 86400000) + 1);
-      return `${days} ngày ${days - 1} đêm`;
+    getNgayKetThuc(dateStr, soNgay) {
+      if (!dateStr || !soNgay) return '?';
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + (soNgay - 1));
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+
+    formatDuration(soNgay) {
+      if (!soNgay) return '?';
+      return `${soNgay} ngày ${Math.max(0, soNgay - 1)} đêm`;
     },
 
     confirmDelete(trip) {
@@ -635,7 +539,15 @@ export default {
   gap: 0.5rem;
 }
 
-/* Map button */
+/* Map button and Share button */
+.btn-share {
+  display: inline-flex;  align-items: center; justify-content: center;
+  background: #f0fdf4; color: #10b981; border: 1px solid #10b981;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-share:hover { background: #10b981; color: #fff; transform: translateY(-1px); }
+
 .btn-map {
   display: inline-flex;
   align-items: center;
@@ -1065,5 +977,20 @@ export default {
     min-width: 200px;
     margin-bottom: 0;
   }
+}
+
+/* Modal chia sẻ */
+.share-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1050; backdrop-filter: blur(8px);
+}
+.share-icon-wrap {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: #10b981;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-select:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15) !important;
+  background-color: #fff !important;
 }
 </style>

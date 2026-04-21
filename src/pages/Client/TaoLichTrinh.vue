@@ -222,9 +222,19 @@
         <div class="section-head">
           <h2><i class="bi bi-calendar-week me-2 text-brand"></i>Lịch trình gợi ý</h2>
           <p>
-            Hệ thống đã sắp xếp <strong>{{ selectedDiaDiem.length }} địa điểm</strong> vào
-            <strong>{{ soNgay }} ngày</strong>. Bạn có thể điều chỉnh thứ tự và thêm ghi chú.
+            Hệ thống đã sắp xếp <strong>{{ tongSoDiaDiem }} địa điểm</strong> vào
+            <strong>{{ lichTrinhTheoNgay.length }} ngày</strong>. Bạn có thể điều chỉnh thứ tự và thêm ghi chú.
           </p>
+          <div class="alert alert-success d-inline-flex align-items-center py-2 px-3 mt-2 mb-0" v-if="form.ngan_sach_du_kien > 0" style="border-radius: 20px;">
+            <i class="bi bi-piggy-bank me-2 fs-5"></i>
+            <span>
+              Chi phí dự kiến (<i class="bi bi-people-fill mx-1"></i>{{ form.so_luong_thanh_vien }} người):
+              <strong>{{ formatCurrency(tongChiPhiDuKien) }}</strong> / 
+              Ngân sách: <strong>{{ formatCurrency(form.ngan_sach_du_kien) }}</strong> 
+              <span v-if="tongChiPhiDuKien <= form.ngan_sach_du_kien">✅</span>
+              <span v-else class="text-danger">❌</span>
+            </span>
+          </div>
         </div>
 
         <!-- Budget tracker -->
@@ -251,6 +261,9 @@
             @click="activeDayTab = n">
             <span class="day-tab-num">Ngày {{ n }}</span>
             <span class="day-tab-date">{{ formatDate(form.ngay_bat_dau, n - 1) }}</span>
+            <span class="day-tab-cost text-success fw-bold d-block mt-1" style="font-size: 0.8rem;">
+              <i class="bi bi-cash-coin me-1"></i>{{ formatCurrency(chiPhiTheoNgay(n - 1)) }}
+            </span>
           </button>
         </div>
 
@@ -535,6 +548,11 @@ export default {
     tongSoDiaDiem() {
       return this.lichTrinhTheoNgay.flat().length;
     },
+    tongChiPhiDuKien() {
+      return this.lichTrinhTheoNgay.flat().reduce((sum, item) => {
+        return sum + (Number(item.gia_ve) || 0) * (this.form.so_luong_thanh_vien || 1);
+      }, 0);
+    }
   },
 
   watch: {
@@ -550,6 +568,12 @@ export default {
 
   methods: {
     // ─── Utilities ───────────────────────────────
+    chiPhiTheoNgay(dayIndex) {
+      if (!this.lichTrinhTheoNgay[dayIndex]) return 0;
+      return this.lichTrinhTheoNgay[dayIndex].reduce((sum, item) => {
+        return sum + (Number(item.gia_ve) || 0) * (this.form.so_luong_thanh_vien || 1);
+      }, 0);
+    },
     formatCurrency(val) {
       if (!val) return '0đ';
       return Number(val).toLocaleString('vi-VN') + 'đ';
@@ -903,7 +927,7 @@ export default {
           day.map(item => ({
             id_dia_diem: item.id_dia_diem,
             thoi_gian_du_kien: `Ngày ${di + 1} – ${item.gio}`,
-            ghi_chu: item.ghi_chu || '',
+            ghi_chu: (item.ghi_chu || '') + (item.travel_tips ? `|AI_TIPS|${item.travel_tips}` : ''),
           }))
         );
 

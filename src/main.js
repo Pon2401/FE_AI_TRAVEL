@@ -39,9 +39,12 @@ link.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-
 link.rel = 'stylesheet'
 document.head.appendChild(link)
 
+import VueApexCharts from 'vue3-apexcharts'
+
 const app = createApp(App)
 
 app.use(router)
+app.use(VueApexCharts)
 app.use(ToastPlugin, {
     position: 'top-right',
     duration: 3200,

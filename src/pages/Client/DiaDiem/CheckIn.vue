@@ -23,7 +23,7 @@
               class="bi bi-google"></i> Tìm GG Maps</button>
         </div>
         <div class="filter-bar d-flex justify-content-center flex-wrap gap-2">
-          <button v-for="filter in filters" :key="filter"
+          <button v-for="filter in dynamicFilters" :key="filter"
             :class="['btn btn-sm', activeFilter === filter ? 'btn-primary' : 'btn-outline-primary']"
             @click="setFilter(filter)">
             {{ filter }}
@@ -289,7 +289,6 @@ export default {
   data() {
     return {
       activeFilter: 'Tất cả',
-      filters: ['Tất cả', 'Cầu nổi tiếng', 'Bãi biển', 'Ngắm cảnh', 'Lịch sử', 'Phố cổ', 'Tự nhiên'],
       showModal: false, selectedPlace: null,
       modalMapInstance: null,
       searchQuery: '', tempSearchQuery: '',
@@ -312,6 +311,10 @@ export default {
   },
   mounted() { this.fetchData(); },
   computed: {
+    dynamicFilters() {
+      const types = Array.from(new Set(this.places.map(p => p.loai_dia_diem))).filter(Boolean);
+      return ['Tất cả', ...types];
+    },
     filteredPlaces() {
       let f = this.places;
       if (this.activeFilter !== 'Tất cả') f = f.filter(p => p.loai_dia_diem === this.activeFilter);

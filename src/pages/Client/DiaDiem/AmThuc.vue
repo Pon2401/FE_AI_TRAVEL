@@ -29,7 +29,7 @@
 
           <!-- FILTER -->
           <div class="filter-bar d-flex justify-content-center flex-wrap gap-2">
-            <button v-for="filter in filters" :key="filter"
+            <button v-for="filter in dynamicFilters" :key="filter"
               :class="['btn btn-sm', activeFilter === filter ? 'btn-primary' : 'btn-outline-primary']"
               @click="setFilter(filter)">
               {{ filter }}
@@ -366,7 +366,6 @@ export default {
   data() {
     return {
       activeFilter: 'Tất cả',
-      filters: ['Tất cả', 'Quán ăn', 'Street food', 'Hải sản', 'Quán nhậu', 'Ăn vặt'],
       showModal: false,
       selectedPlace: null,
       modalMapInstance: null,
@@ -399,6 +398,10 @@ export default {
   },
 
   computed: {
+    dynamicFilters() {
+      const types = Array.from(new Set(this.places.map(p => p.loai_dia_diem))).filter(Boolean);
+      return ['Tất cả', ...types];
+    },
     filteredPlaces() {
       let filtered = this.places;
       if (this.activeFilter !== 'Tất cả') {

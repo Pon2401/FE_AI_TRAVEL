@@ -89,13 +89,13 @@
             </td>
             <td class="col-rating">
               <div class="stars">
-                <i v-for="n in 5" :key="n" 
-                   :class="n <= review.so_sao ? 'bi bi-star-fill text-warning' : 'bi bi-star text-muted'"></i>
+                <i v-for="n in 5" :key="n"
+                  :class="n <= review.so_sao ? 'bi bi-star-fill text-warning' : 'bi bi-star text-muted'"></i>
               </div>
             </td>
             <td class="col-content">
               <div class="review-text-container custom-scrollbar">
-                 <p class="review-text">{{ review.noi_dung || '(Không có văn bản)' }}</p>
+                <p class="review-text">{{ review.noi_dung || '(Không có văn bản)' }}</p>
               </div>
             </td>
             <td class="col-status">
@@ -107,15 +107,18 @@
             <td class="col-actions">
               <div class="action-buttons">
                 <!-- Nút Duyệt / Ẩn -->
-                <button v-if="review.trang_thai == 0" class="btn-action btn-approve" @click="approveReview(review.id)" title="Duyệt cho phép hiển thị">
+                <button v-if="review.trang_thai == 0" class="btn-action btn-approve" @click="approveReview(review.id)"
+                  title="Duyệt cho phép hiển thị">
                   <i class="bi bi-check-lg"></i>
                 </button>
-                <button v-else class="btn-action btn-hide" @click="hideReview(review.id)" title="Huỷ duyệt/ẩn đánh giá này">
+                <button v-else class="btn-action btn-hide" @click="hideReview(review.id)"
+                  title="Huỷ duyệt/ẩn đánh giá này">
                   <i class="bi bi-eye-slash-fill"></i>
                 </button>
-                
+
                 <!-- Nút Xoá -->
-                <button class="btn-action btn-delete" @click="confirmDelete(review.id)" title="Xóa vĩnh viễn bài đánh giá">
+                <button class="btn-action btn-delete" @click="confirmDelete(review.id)"
+                  title="Xóa vĩnh viễn bài đánh giá">
                   <i class="bi bi-trash3-fill"></i>
                 </button>
               </div>
@@ -242,7 +245,8 @@ export default {
 /* =========== Nền Typography (Premium Feel) =========== */
 .admin-reviews-container {
   padding: 2rem;
-  background-color: #f6f8fa; /* Nền xám nhạt, sang & sạch hơn */
+  background-color: #f6f8fa;
+  /* Nền xám nhạt, sang & sạch hơn */
   min-height: 100vh;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: #334155;
@@ -287,7 +291,7 @@ export default {
   color: #475569;
   outline: none;
   font-size: 0.85rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   cursor: pointer;
   min-width: 170px;
   -webkit-appearance: none;
@@ -300,7 +304,8 @@ export default {
   background-size: 0.9em;
 }
 
-.status-filter:hover, .status-filter:focus {
+.status-filter:hover,
+.status-filter:focus {
   border-color: #94a3b8;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
 }
@@ -320,7 +325,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0,0,0, 0.01);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
   border: 1px solid #f1f5f9;
   transition: all 0.25s ease;
 }
@@ -340,9 +345,20 @@ export default {
   font-size: 1.3rem;
 }
 
-.pending-card .stat-icon-wrapper { background: #fffbeb; color: #d97706; }
-.approved-card .stat-icon-wrapper { background: #f0fdf4; color: #059669; }
-.total-card .stat-icon-wrapper { background: #eff6ff; color: #4f46e5; }
+.pending-card .stat-icon-wrapper {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.approved-card .stat-icon-wrapper {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.total-card .stat-icon-wrapper {
+  background: #eff6ff;
+  color: #4f46e5;
+}
 
 .stat-info h3 {
   font-size: 0.75rem;
@@ -370,7 +386,8 @@ export default {
 .modern-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 0.6rem; /* Khoảng cách row tinh tế hơn */
+  border-spacing: 0 0.6rem;
+  /* Khoảng cách row tinh tế hơn */
   text-align: left;
 }
 
@@ -378,27 +395,30 @@ export default {
   padding: 0 1.25rem 0.6rem 1.25rem;
   font-weight: 600;
   color: #475569;
-  font-size: 0.75rem; /* Header typography nhỏ, pro */
+  font-size: 0.75rem;
+  /* Header typography nhỏ, pro */
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .table-row-card {
   background: white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.2s ease;
 }
 
 .table-row-card:hover {
-  box-shadow: 0 8px 16px rgba(0,0,0,0.04);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.04);
   background-color: #fafbfc;
 }
 
 .table-row-card td {
-  padding: 1.1rem 1.25rem; /* Padding vừa vặn, không quá trống */
+  padding: 1.1rem 1.25rem;
+  /* Padding vừa vặn, không quá trống */
   border-top: 1px solid #f8fafc;
   border-bottom: 1px solid #f8fafc;
-  vertical-align: top; /* Để text content dài hiển thị mượt */
+  vertical-align: top;
+  /* Để text content dài hiển thị mượt */
 }
 
 .table-row-card td:first-child {
@@ -412,12 +432,31 @@ export default {
 }
 
 /* Cột Kích Thước */
-.col-user { width: 18%; }
-.col-place { width: 16%; }
-.col-rating { width: 12%; }
-.col-content { width: 35%; /* Fixed width to limit overflow */ }
-.col-status { width: 10%; }
-.col-actions { width: 9%; text-align: right; }
+.col-user {
+  width: 18%;
+}
+
+.col-place {
+  width: 16%;
+}
+
+.col-rating {
+  width: 12%;
+}
+
+.col-content {
+  width: 35%;
+  /* Fixed width to limit overflow */
+}
+
+.col-status {
+  width: 10%;
+}
+
+.col-actions {
+  width: 9%;
+  text-align: right;
+}
 
 /* Info Người dùng */
 .user-info {
@@ -474,14 +513,22 @@ export default {
   font-size: 0.9rem;
 }
 
-.text-warning { color: #f59e0b; }
-.text-muted { color: #e2e8f0; }
+.text-warning {
+  color: #f59e0b;
+}
+
+.text-muted {
+  color: #e2e8f0;
+}
 
 /* =========== Thiết kế thanh Scroll gọn gàng & Text =========== */
 .review-text-container {
-  max-height: 85px; /* Giới hạn độ giãn nở */
-  overflow-y: auto; /* Cho phép cuộn nếu quá dài */
-  padding-right: 8px; /* Tránh sát mép scrollbar */
+  max-height: 85px;
+  /* Giới hạn độ giãn nở */
+  overflow-y: auto;
+  /* Cho phép cuộn nếu quá dài */
+  padding-right: 8px;
+  /* Tránh sát mép scrollbar */
   margin-top: -0.15rem;
 }
 
@@ -489,13 +536,16 @@ export default {
 .custom-scrollbar::-webkit-scrollbar {
   width: 3px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
@@ -531,13 +581,19 @@ export default {
   background: #fffbeb;
   color: #92400e;
 }
-.status-badge.pending .status-dot { background: #f59e0b; }
+
+.status-badge.pending .status-dot {
+  background: #f59e0b;
+}
 
 .status-badge.approved {
   background: #f0fdf4;
   color: #166534;
 }
-.status-badge.approved .status-dot { background: #10b981; }
+
+.status-badge.approved .status-dot {
+  background: #10b981;
+}
 
 /* Các nút hành động */
 .action-buttons {
@@ -597,10 +653,11 @@ export default {
   text-align: center;
   color: #64748b;
   border: 1px solid #f1f5f9;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -620,8 +677,13 @@ export default {
 }
 
 @keyframes loadspin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-illustration {
@@ -635,6 +697,6 @@ export default {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 </style>

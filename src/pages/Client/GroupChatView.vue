@@ -62,7 +62,18 @@
                   <div class="msg-sender" v-if="!isMine(msg.id_nguoi_gui) && (!processedMessages[idx-1] || processedMessages[idx-1].id_nguoi_gui !== msg.id_nguoi_gui || processedMessages[idx-1].type === 'leave')">
                     {{ msg.ten_nguoi_gui || 'Ẩn danh' }}
                   </div>
-                  <div class="msg-bubble">
+                  <div class="msg-bubble p-0 overflow-hidden" v-if="isItineraryShare(msg.message)" style="cursor:pointer; background: transparent; border: none; box-shadow: none;" @click="openLink(extractItineraryData(msg.message).link)">
+                    <div class="d-flex align-items-center gap-3 p-3 bg-white border rounded-4 shadow-sm iti-card">
+                      <div class="text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:48px;height:48px; background: linear-gradient(135deg, #10b981, #0ea5e9);">
+                        <i class="bi bi-geo-alt-fill fs-5"></i>
+                      </div>
+                      <div>
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem; line-height: 1.2;">{{ extractItineraryData(msg.message).title }}</div>
+                        <div class="text-primary fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết bản đồ</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="msg-bubble" v-else>
                     {{ msg.message }}
                   </div>
                   <div class="msg-time">{{ formatTime(msg.created_at) }}</div>
@@ -248,6 +259,48 @@ const formatTime = (isoString) => {
   if (!isoString) return '';
   const date = new Date(isoString);
   return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+};
+
+const isItineraryShare = (text) => {
+  if (!text) return false;
+  if (typeof text === 'object' && text.type === 'itinerary') return true;
+  if (typeof text === 'string' && text.includes('"type":"itinerary"')) return true;
+  try {
+    const obj = JSON.parse(text);
+    if (obj && obj.type === 'itinerary') return true;
+  } catch (e) {}
+  return /Tôi vừa chia sẻ một lịch trình thú vị: "([^"]+)".*Click vào đây để xem chi tiết: (http\S+)/s.test(String(text));
+};
+
+const extractItineraryData = (text) => {
+  if (!text) return { title: '', link: '' };
+  if (typeof text === 'object' && text.type === 'itinerary') {
+    return { title: text.title || 'Lịch trình', link: `/lich-trinh/${text.id}` };
+  }
+  try {
+    const obj = JSON.parse(text);
+    if (obj && obj.type === 'itinerary') {
+      return { title: obj.title || 'Lịch trình', link: `/lich-trinh/${obj.id}` };
+    }
+  } catch (e) {}
+  
+  if (typeof text === 'string' && text.includes('"type":"itinerary"')) {
+     try {
+         let clean = text.replace(/\\"/g, '"');
+         const obj = JSON.parse(clean);
+         if (obj && obj.type === 'itinerary') return { title: obj.title || 'Lịch trình', link: `/lich-trinh/${obj.id}` };
+     } catch(ex){}
+  }
+
+  const match = String(text).match(/Tôi vừa chia sẻ một lịch trình thú vị: "([^"]+)".*Click vào đây để xem chi tiết: (http\S+)/s);
+  if (match) {
+    return { title: match[1], link: match[2] };
+  }
+  return { title: '', link: '' };
+};
+
+const openLink = (url) => {
+  if(url) window.location.href = url;
 };
 
 const handleSend = async () => {
@@ -643,5 +696,18 @@ onMounted(async () => {
   .chat-body, .chat-footer {
     padding: 1rem;
   }
+}
+
+.iti-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-width: 280px;
+}
+.iti-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+}
+.msg-mine .iti-card {
+  border-color: rgba(255,255,255, 0.2) !important;
+  background: rgba(255,255,255, 0.95) !important;
 }
 </style>

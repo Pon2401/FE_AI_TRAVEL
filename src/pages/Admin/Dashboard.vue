@@ -94,8 +94,12 @@
             <span class="stat-label">Chuyến đi đề xuất</span>
             <div class="stat-value" v-if="stats">{{ formatNumber(stats.total_trips) }}</div>
             <div class="stat-value" v-else>--</div>
-            <div class="stat-trend increasing">
-              <i class="bi bi-arrow-up"></i> 12% tháng này
+            <div class="stat-trend" :class="getTripGrowthClass()" v-if="stats">
+              <i class="bi" :class="getTripGrowthIcon()"></i> 
+              {{ Math.abs(stats.trips_growth_percentage) }}% so với tháng trước
+            </div>
+            <div class="stat-trend increasing" v-else>
+              <i class="bi bi-arrow-up"></i> ...
             </div>
           </div>
         </div>
@@ -140,10 +144,49 @@
           </div>
           <div class="stat-details">
             <span class="stat-label">Đánh giá hệ thống</span>
-            <div class="stat-value">4.8</div>
+            <div class="stat-value" v-if="stats">{{ stats.avg_rating }}</div>
+            <div class="stat-value" v-else>--</div>
             <div class="stat-trend increasing">
-              <i class="bi bi-check-circle-fill me-1"></i> Xuất sắc
+              <i class="bi bi-star-fill text-warning me-1"></i> Trung bình
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOENIX STYLE CHART -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="card card-custom h-100">
+          <div class="card-header border-bottom-0 pb-0">
+            <div class="d-flex justify-content-between align-items-center w-100">
+              <div>
+                <h5 class="mb-0">Thống kê Lịch trình & Tài khoản</h5>
+                <p class="text-muted small mb-0 mt-1" style="font-size: 0.8rem">Lịch trình đề xuất so với Người dùng mới</p>
+              </div>
+              <div>
+                <select v-model="timeFilter" @change="fetchDashboardData" class="form-select form-select-sm border-0 bg-light fw-bold text-secondary" style="cursor: pointer; box-shadow: none;">
+                  <option value="year">Năm nay</option>
+                  <option value="this_month">Tháng này</option>
+                  <option value="last_month">Tháng trước</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="card-body pt-2">
+            <apexchart type="area" height="330" :options="chartOptions" :series="series"></apexchart>
+          </div>
+        </div>
+      </div>
+      <!-- SECOND INDISPUTABLE CHART: DONUT CHART -->
+      <div class="col-lg-4">
+        <div class="card card-custom h-100">
+          <div class="card-header border-bottom-0 pb-0">
+            <h5 class="mb-0">Tỷ trọng Danh mục Địa điểm</h5>
+            <p class="text-muted small mb-0 mt-1" style="font-size: 0.8rem">Phân bổ kho dữ liệu toàn hệ thống</p>
+          </div>
+          <div class="card-body d-flex justify-content-center align-items-center pt-2">
+            <apexchart type="donut" width="310" :options="donutOptions" :series="donutSeries"></apexchart>
           </div>
         </div>
       </div>
@@ -173,9 +216,9 @@
               </div>
 
               <div class="overview-item">
-                <span class="overview-label">Khuyến nghị hiện tại</span>
-                <strong class="overview-value overview-text">
-                  Ưu tiên hoàn thiện các thống kê về lịch trình, ngân sách và địa điểm
+                <span class="overview-label">Thông điệp tự động</span>
+                <strong class="overview-value overview-text" :class="systemRecommendationClass">
+                  {{ systemRecommendation }}
                 </strong>
               </div>
             </div>
@@ -184,17 +227,21 @@
       </div>
 
       <div class="col-lg-5">
-        <div class="card card-custom">
-          <div class="card-header">
-            <h5 class="mb-0">Các hạng mục sẽ làm sau</h5>
+        <div class="card card-custom h-100">
+          <div class="card-header border-bottom-0 pb-0">
+            <h5 class="mb-0">Cộng đồng Mạng lưới</h5>
+            <p class="text-muted small mb-0 mt-1" style="font-size: 0.8rem">Top 5 nhóm du lịch đông thành viên nhất</p>
           </div>
-          <div class="card-body">
-            <div class="todo-list">
-              <div v-for="item in pendingItems" :key="item" class="todo-item">
-                <i class="bi bi-dash-circle"></i>
-                <span>{{ item }}</span>
+          <div class="card-body pt-0 pb-2">
+            <template v-if="stats && stats.top_groups && stats.top_groups.length">
+              <apexchart type="bar" height="280" :options="horizontalBarOptions" :series="horizontalBarSeries"></apexchart>
+            </template>
+            <template v-else>
+              <div class="empty-state py-5 mt-4">
+                <i class="bi bi-inboxes text-muted fs-4"></i>
+                <p class="text-muted small mt-2">Chưa có dữ liệu nhóm du lịch</p>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
@@ -270,15 +317,99 @@ export default {
     return {
       isLoading: false,
       errorMessage: '',
+      timeFilter: 'year',
       users: [],
       admins: [],
       stats: null,
-      pendingItems: [
-        'Phân tích chi tiêu thực tế so với ngân sách dự kiến (ML model)',
-        'Địa đồ nhiệt (Heatmap) các địa điểm được yêu thích nhất',
-        'Dự báo xu hướng du lịch theo mùa tại Đà Nẵng',
-        'Chỉ số đánh giá độ tin cậy của AI trong lập lịch trình',
+      series: [
+        {
+          name: 'Lượt tạo lịch trình (Thực tế)',
+          data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] // Default, updated on load
+        },
+        {
+          name: 'Dự kiến (Projection)',
+          data: [15, 20, 25, 30, 45, 60, 50, 40, 35, 30, 25, 20] // Static mock for Projection
+        }
       ],
+      chartOptions: {
+        chart: {
+          height: 330,
+          type: 'area',
+          fontFamily: 'Inter, sans-serif',
+          toolbar: { show: false },
+          zoom: { enabled: false }
+        },
+        colors: ['#3874ff', '#94a3b8'],
+        dataLabels: { enabled: false },
+        stroke: {
+          curve: 'smooth',
+          width: [3, 2],
+          dashArray: [0, 5]
+        },
+        fill: {
+          type: ['gradient', 'solid'],
+          gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.4,
+            opacityTo: 0.05,
+            stops: [0, 90, 100]
+          },
+          opacity: [1, 0.1]
+        },
+        xaxis: {
+          categories: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: {
+            style: { colors: '#64748b', fontSize: '13px' },
+            hideOverlappingLabels: true
+          }
+        },
+        yaxis: {
+          labels: {
+            style: { colors: '#64748b', fontSize: '13px' },
+            formatter: (val) => { return val }
+          }
+        },
+        grid: {
+          borderColor: '#f1f5f9',
+          strokeDashArray: 4,
+          yaxis: { lines: { show: true } },
+          xaxis: { lines: { show: false } },
+          padding: { top: 0, right: 0, bottom: 0, left: 10 }
+        },
+        legend: {
+          position: 'top',
+          horizontalAlign: 'right',
+          markers: { radius: 12 }
+        },
+        tooltip: {
+          theme: 'light',
+          y: { formatter: function (val) { return val + " lượt" } }
+        }
+      },
+      donutSeries: [44, 55, 41, 15],
+      donutOptions: {
+        chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+        labels: ['Ẩm thực', 'Check-in', 'Giải trí', 'Tâm linh'],
+        colors: ['#3874ff', '#10b981', '#f59e0b', '#0ea5e9', '#ec4899', '#8b5cf6', '#94a3b8'],
+        plotOptions: { pie: { donut: { size: '75%' } } },
+        dataLabels: { enabled: false },
+        stroke: { show: false },
+        legend: { position: 'bottom', markers: { radius: 12 } },
+        tooltip: { theme: 'light', y: { formatter: function (val) { return val + " địa điểm" } } }
+      },
+      horizontalBarSeries: [{ name: 'Thành viên', data: [] }],
+      horizontalBarOptions: {
+        chart: { type: 'bar', fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
+        plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '50%' } },
+        colors: ['#0ea5e9'],
+        dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+        xaxis: { categories: [], labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+        yaxis: { labels: { style: { colors: '#64748b', fontWeight: 600 } } },
+        grid: { show: false },
+        tooltip: { theme: 'light' }
+      }
     }
   },
   computed: {
@@ -304,6 +435,18 @@ export default {
       if (!this.totalAdmins) return 0
       return Math.round((this.activeAdmins / this.totalAdmins) * 100)
     },
+    systemRecommendation() {
+      if (!this.stats) return 'Đang tổng hợp dữ liệu hệ thống...';
+      if (this.activeRate < 50) return 'Cảnh báo: Hơn một nửa tài khoản nhân sự đang bị khóa.';
+      if (this.stats.trips_growth_percentage < 0) return 'Chú ý: Nhu cầu tạo lịch trình đang suy giảm so với tháng trước.';
+      return 'Hệ thống đang tăng trưởng và vận hành rất ổn định.';
+    },
+    systemRecommendationClass() {
+      if (!this.stats) return 'text-muted';
+      if (this.activeRate < 50 || this.stats.trips_growth_percentage < -10) return 'text-danger';
+      if (this.stats.trips_growth_percentage < 0) return 'text-warning';
+      return 'text-success';
+    },
     recentAdmins() {
       return [...this.admins]
         .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
@@ -314,6 +457,16 @@ export default {
     this.fetchDashboardData()
   },
   methods: {
+    getTripGrowthClass() {
+      if (!this.stats) return 'text-muted';
+      const pct = this.stats.trips_growth_percentage;
+      return pct > 0 ? 'increasing' : (pct < 0 ? 'decreasing' : 'text-muted');
+    },
+    getTripGrowthIcon() {
+      if (!this.stats) return 'bi-circle';
+      const pct = this.stats.trips_growth_percentage;
+      return pct > 0 ? 'bi-arrow-up' : (pct < 0 ? 'bi-arrow-down' : 'bi-dash-lg');
+    },
     authHeader() {
       const token = localStorage.getItem('key_admin')
       return token
@@ -329,9 +482,55 @@ export default {
       this.errorMessage = ''
 
       try {
-        const statsRes = await axios.get('http://127.0.0.1:8000/api/admin/statistics', this.authHeader())
+        const statsRes = await axios.get(`http://127.0.0.1:8000/api/admin/statistics?time_filter=${this.timeFilter}`, this.authHeader())
         this.stats = statsRes.data?.data
         
+        // Update Chart Labels dynamically
+        if (this.stats?.chart_labels) {
+          this.chartOptions = {
+            ...this.chartOptions,
+            xaxis: {
+              ...this.chartOptions.xaxis,
+              categories: this.stats.chart_labels
+            }
+          }
+        }
+
+        // Update Actual & Users series using backend data
+        if (this.stats?.monthly_trips) {
+          const newSeries = [...this.series];
+          newSeries[0].data = this.stats.monthly_trips;
+          
+          if (this.stats.monthly_users) {
+            newSeries[1].name = 'Tài khoản đăng ký mới';
+            newSeries[1].data = this.stats.monthly_users;
+          }
+          
+          this.series = newSeries;
+        }
+
+        if (this.stats?.places_by_category && this.stats.places_by_category.length > 0) {
+          this.donutSeries = this.stats.places_by_category.map(item => item.total);
+          this.donutOptions = {
+            ...this.donutOptions,
+            labels: this.stats.places_by_category.map(item => item.ten_danh_muc)
+          };
+        }
+        
+        if (this.stats?.top_groups && this.stats.top_groups.length > 0) {
+          this.horizontalBarSeries = [{
+            name: 'Thành viên',
+            data: this.stats.top_groups.map(group => group.members)
+          }];
+          this.horizontalBarOptions = {
+            ...this.horizontalBarOptions,
+            xaxis: {
+              ...this.horizontalBarOptions.xaxis,
+              categories: this.stats.top_groups.map(group => group.name)
+            }
+          };
+        }
+
         const [usersRes, adminsRes] = await Promise.all([
           axios.get(USERS_API_URL, this.authHeader()),
           axios.get(ADMINS_API_URL, this.authHeader()),

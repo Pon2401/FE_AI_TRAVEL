@@ -114,19 +114,51 @@
 
 
 
-        <!-- Reports -->
+        <!-- Quản lý đánh giá -->
         <li class="nav-item">
-          <router-link to="/admin/quan-ly-danh-gia-phan-hoi" class="nav-link" :class="{ active: isActive('/reports') }">
-            <i class="bi bi-chat-square-text"></i>
-            <span v-if="!isCollapsed" class="nav-label">Quản lý đánh giá & phản hổi </span>
+          <router-link to="/admin/quan-ly-danh-gia-phan-hoi" class="nav-link" :class="{ active: isActive('/admin/quan-ly-danh-gia-phan-hoi') }">
+            <i class="bi bi-star-half"></i>
+            <span v-if="!isCollapsed" class="nav-label">Quản lý đánh giá</span>
           </router-link>
         </li>
-        <!-- Settings -->
+
+        <!-- Reports with submenu -->
         <li class="nav-item">
-          <router-link to="/admin/reports" class="nav-link" :class="{ active: isActive('/settings') }">
+          <a
+            class="nav-link"
+            @click="toggleReportSubmenu"
+            :class="{ active: showReportSubmenu || isReportMenuActive() }"
+          >
             <i class="bi bi-bar-chart-line"></i>
             <span v-if="!isCollapsed" class="nav-label">Báo cáo thống kê</span>
-          </router-link>
+            <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
+          </a>
+          <ul v-if="showReportSubmenu && !isCollapsed" class="submenu">
+            <li>
+              <router-link :to="{ path: '/admin/reports', query: { type: 'overview' } }" class="submenu-link" :class="{ 'router-link-active': isReportActive('overview') }">
+                <i class="bi bi-activity"></i>
+                <span>Báo cáo Hoạt động</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link :to="{ path: '/admin/reports', query: { type: 'trips' } }" class="submenu-link" :class="{ 'router-link-active': isReportActive('trips') }">
+                <i class="bi bi-map"></i>
+                <span>Lịch trình & Ngân sách</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link :to="{ path: '/admin/reports', query: { type: 'users' } }" class="submenu-link" :class="{ 'router-link-active': isReportActive('users') }">
+                <i class="bi bi-person-plus"></i>
+                <span>Người dùng & Nhóm</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link :to="{ path: '/admin/reports', query: { type: 'places' } }" class="submenu-link" :class="{ 'router-link-active': isReportActive('places') }">
+                <i class="bi bi-geo-alt"></i>
+                <span>Địa điểm nổi bật</span>
+              </router-link>
+            </li>
+          </ul>
         </li>
       </ul>
     </nav>
@@ -151,6 +183,7 @@ export default {
     return {
       showSubmenu: false,
       showCategorySubmenu: false,
+      showReportSubmenu: false,
     };
   },
   methods: {
@@ -171,6 +204,16 @@ export default {
     },
     isCategoryMenuActive() {
       return this.$route.path === '/products' && ['am-thuc', 'tam-linh', 'giai-tri', 'check-in'].includes(this.$route.query.category);
+    },
+    toggleReportSubmenu() {
+      this.showReportSubmenu = !this.showReportSubmenu;
+    },
+    isReportActive(type) {
+      if (type === 'overview' && this.$route.path === '/admin/reports' && !this.$route.query.type) return true;
+      return this.$route.path === '/admin/reports' && this.$route.query.type === type;
+    },
+    isReportMenuActive() {
+      return this.$route.path === '/admin/reports';
     },
   },
 };
