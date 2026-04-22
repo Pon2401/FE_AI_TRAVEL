@@ -36,11 +36,6 @@
           <li class="nav-item">
             <router-link to="/nhom-du-lich" class="nav-link">Nhóm du lịch</router-link>
           </li>
-          <!-- <li class="nav-item">
-            <router-link to="/yeu-thich" class="nav-link">
-              <i class="bi bi-heart-fill text-danger me-1"></i> Yêu thích
-            </router-link>
-          </li> -->
         </ul>
 
         <div class="d-flex align-items-center gap-2">

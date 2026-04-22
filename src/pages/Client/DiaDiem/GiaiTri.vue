@@ -232,7 +232,7 @@
                 <div v-for="rv in detailReviews" :key="rv.id" class="review-item border-bottom py-4 last-border-0">
                   <div class="d-flex align-items-center mb-3">
                     <div class="avatar shadow-sm me-3" style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: #6c757d;">
-                      <img v-if="rv.nguoi_dung?.avatar" :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                      <img v-if="rv.nguoi_dung?.anh_dai_dien" :src="getFullAvatar(rv.nguoi_dung.anh_dai_dien)" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;">
                       <img v-else-if="rv.avatar_nguoi_danh_gia" :src="rv.avatar_nguoi_danh_gia" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;" referrerpolicy="no-referrer">
                       <span v-else>{{ (rv.nguoi_dung?.ten || rv.ten_nguoi_danh_gia || '?').charAt(0).toUpperCase() }}</span>
                     </div>
@@ -462,7 +462,11 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`${BASE}/dia-diems/giai-tri`);
+        const headers = {};
+        if (this.token) {
+          headers['Authorization'] = `Bearer ${this.token}`;
+        }
+        const res = await fetch(`${BASE}/dia-diems/giai-tri`, { headers });
         if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
         const json = await res.json();
         const fallbacks = {
