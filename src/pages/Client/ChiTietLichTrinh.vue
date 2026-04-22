@@ -1,3 +1,4 @@
+
 <template>
   <div class="tlt-page">
     <div class="container tlt-body mt-4">
@@ -31,6 +32,15 @@
           </div>
         </div>
 
+        <div class="d-flex mb-4 gap-3 bg-light p-2 rounded-pill d-inline-flex">
+           <button class="btn rounded-pill px-4" :class="activeMainTab === 'lichTrinh' ? 'btn-primary shadow text-white': 'text-muted'" @click="activeMainTab = 'lichTrinh'" style="font-weight: 500;">
+             <i class="bi bi-clock-history me-2"></i>Lịch trình
+           </button>
+           <button class="btn rounded-pill px-4" :class="activeMainTab === 'chiPhi' ? 'btn-primary shadow text-white': 'text-muted'" @click="activeMainTab = 'chiPhi'" style="font-weight: 500;">
+             <i class="bi bi-wallet2 me-2"></i>Quản lý chi phí
+           </button>
+        </div>
+
         <div class="alert alert-success d-inline-flex align-items-center py-2 px-3 mt-2 mb-4" v-if="trip.ngan_sach > 0" style="border-radius: 20px;">
           <i class="bi bi-piggy-bank me-2 fs-5"></i>
           <span>
@@ -45,23 +55,29 @@
         <!-- Budget tracker -->
         <div class="budget-tracker">
           <div class="budget-info">
-            <span>Chi phí vé dự kiến</span>
+            <span>Tổng chi phí (Vé + Phát sinh)</span>
+            <strong>{{ formatCurrency(tongChiPhiDuKien) }}</strong>
+          </div>
+          <div class="budget-info">
+            <span>Giá vé dự kiến</span>
             <strong>{{ formatCurrency(tongGiaVe) }}</strong>
           </div>
           <div v-if="trip.ngan_sach > 0" class="budget-info">
             <span>Ngân sách</span>
-            <strong :class="tongGiaVe > trip.ngan_sach ? 'over' : 'ok'">
+            <strong :class="tongChiPhiDuKien > trip.ngan_sach ? 'over' : 'ok'">
               {{ formatCurrency(trip.ngan_sach) }}
             </strong>
           </div>
           <div v-if="trip.ngan_sach > 0" class="budget-bar-wrap">
-            <div class="budget-bar-fill" :class="tongGiaVe > trip.ngan_sach ? 'over' : ''"
-              :style="{ width: Math.min(100, (tongGiaVe / trip.ngan_sach) * 100) + '%' }"></div>
+            <div class="budget-bar-fill" :class="tongChiPhiDuKien > trip.ngan_sach ? 'over' : ''"
+              :style="{ width: Math.min(100, (tongChiPhiDuKien / trip.ngan_sach) * 100) + '%' }"></div>
           </div>
         </div>
 
-        <!-- Day tabs -->
-        <div class="day-tabs">
+        <!-- SECTION: LỊCH TRÌNH -->
+        <div v-show="activeMainTab === 'lichTrinh'" class="lich-trinh-section">
+          <!-- Day tabs -->
+          <div class="day-tabs">
           <button v-for="n in (trip.so_ngay || 1)" :key="n" class="day-tab" :class="{ active: activeDayTab === n }" @click="activeDayTab = n">
             <span class="day-tab-num">Ngày {{ n }}</span>
             <span class="day-tab-date">{{ formatDateDate(trip.ngay_bat_dau, n - 1) }}</span>
@@ -99,12 +115,14 @@
                   <div v-if="item.ghi_chu" class="tc-note mt-3 p-2 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 0.85rem; color: #475569;">
                     <i class="bi bi-pencil-square me-1"></i><span style="font-style: italic;">{{ item.ghi_chu }}</span>
                   </div>
-                  <div v-if="item.travel_tips" class="tc-tips mt-2 p-2 rounded"
+                  <div class="tc-tips mt-2 p-2 rounded"
                     style="background: #fff8e1; border-left: 3px solid #ffc107;">
                     <small class="d-block mb-1 font-weight-bold" style="color: #856404;">
                       <i class="bi bi-lightbulb-fill me-1"></i>Gợi ý chuyên gia:
                     </small>
-                    <span style="font-size: 0.85rem; color: #555;">{{ item.travel_tips }}</span>
+                    <span style="font-size: 0.85rem; color: #555;">
+                      {{ item.travel_tips || 'Nên mang theo kem chống nắng, nước uống và sạc dự phòng để có trải nghiệm tốt nhất tại đây.' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -125,6 +143,54 @@
                 <i class="bi bi-map me-2"></i>Bản đồ vị trí ngày {{ activeDayTab }}
               </div>
               <div id="trip-map" style="height: 500px"></div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <!-- End Lich Trinh Section -->
+
+        <!-- SECTION: QUẢN LÝ CHI PHÍ -->
+        <div v-show="activeMainTab === 'chiPhi'" class="chi-phi-section animate-in mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">Danh sách phát sinh</h4>
+            <button class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center" @click="openExpenseModal()" style="background: linear-gradient(135deg, #10b981, #0ea5e9); border: none;">
+              <i class="bi bi-plus-circle me-2"></i> Thêm chi phí
+            </button>
+          </div>
+
+          <div v-if="loadingExpenses" class="text-center py-5">
+            <div class="spinner-border text-brand" role="status"></div>
+          </div>
+          <div v-else-if="incurredExpenses.length === 0" class="empty-day-placeholder py-5 text-center rounded-4" style="background: #f8fafc;">
+            <div class="empty-icon-wrap mb-3 mx-auto" style="width: 60px; height: 60px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-receipt text-muted fs-3"></i>
+            </div>
+            <h5 class="text-muted">Chưa có chi phí phát sinh nào</h5>
+            <p class="text-secondary small">Hãy ghi lại các hóa đơn ăn uống, di chuyển để dễ dàng quản lý ngân sách.</p>
+          </div>
+          <div v-else class="expense-list row g-3">
+            <div v-for="exp in incurredExpenses" :key="exp.id" class="col-12 col-md-6">
+              <div class="expense-card p-3 rounded-4 bg-white border shadow-sm position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge" :class="getExpenseBadgeColor(exp.loai_chi_phi)">{{ exp.loai_chi_phi || 'Khác' }}</span>
+                    <span class="text-muted small"><i class="bi bi-calendar-event me-1"></i>{{ formatExpenseDate(exp.ngay_chi) }}</span>
+                  </div>
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-light border-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                      <li><a class="dropdown-item" href="#" @click.prevent="openExpenseModal(exp)"><i class="bi bi-pencil me-2 text-primary"></i>Sửa</a></li>
+                      <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteExpense(exp.id)"><i class="bi bi-trash me-2"></i>Xóa</a></li>
+                    </ul>
+                  </div>
+                </div>
+                <h5 class="fw-bold mb-1 text-dark fs-6">{{ exp.noi_dung }}</h5>
+                <h4 class="text-danger fw-bold mb-3">{{ formatCurrency(exp.tong_chi_phi) }}</h4>
+                <div class="d-flex align-items-center mb-1 bg-light p-2 rounded-3">
+                  <img :src="exp.nguoi_tra?.anh_dai_dien ? getFullAvatar(exp.nguoi_tra.anh_dai_dien) : 'https://ui-avatars.com/api/?name=' + (exp.nguoi_tra?.ten || 'U')" class="rounded-circle me-2 object-fit-cover" width="24" height="24">
+                  <small class="text-muted">Được trả bởi: <strong class="text-dark">{{ exp.nguoi_tra?.ten || 'Không rõ' }}</strong></small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -159,6 +225,41 @@
       </div>
     </div>
 
+    <!-- Modal Form Chi phí -->
+    <div v-if="showExpenseModal" class="share-modal-overlay d-flex align-items-center justify-content-center" @click.self="showExpenseModal = false">
+      <div class="share-modal-box bg-white p-4 rounded-4 shadow-lg w-100 animate-in position-relative" style="max-width: 500px;">
+        <button class="btn-close position-absolute top-0 end-0 m-4" @click="showExpenseModal = false"></button>
+        <h4 class="fw-bold mb-4">{{ expenseForm.id ? 'Sửa chi phí' : 'Thêm chi phí phát sinh' }}</h4>
+        
+        <form @submit.prevent="saveExpense">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Mô tả / Nội dung chi</label>
+            <input type="text" class="form-control rounded-3" v-model="expenseForm.noi_dung" required placeholder="Ví dụ: Ăn hải sản tối, Thuê xe máy...">
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold small">Số tiền (VNĐ)</label>
+              <input type="number" class="form-control rounded-3" v-model="expenseForm.tong_chi_phi" required min="0" placeholder="100000">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold small">Ngày chi</label>
+              <input type="date" class="form-control rounded-3" v-model="expenseForm.ngay_chi">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold small">Loại chi phí</label>
+            <select class="form-select rounded-3" v-model="expenseForm.loai_chi_phi">
+              <option v-for="cat in expenseCategories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+          </div>
+          <button type="submit" class="btn w-100 text-white rounded-pill fw-bold py-2 shadow-sm" style="background: linear-gradient(135deg, #10b981, #0ea5e9);" :disabled="submittingExpense">
+            <span v-if="submittingExpense" class="spinner-border spinner-border-sm me-2"></span>
+            {{ submittingExpense ? 'Đang lưu...' : 'Lưu lại' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -176,6 +277,14 @@ export default {
       rawPlaces: [],
       lichTrinhTheoNgay: [],
       activeDayTab: 1,
+      activeMainTab: 'lichTrinh',
+
+      incurredExpenses: [],
+      loadingExpenses: false,
+      showExpenseModal: false,
+      expenseForm: { id: null, noi_dung: '', tong_chi_phi: '', loai_chi_phi: 'Khác', ngay_chi: '' },
+      submittingExpense: false,
+      expenseCategories: ['Ăn uống', 'Di chuyển', 'Chỗ ở', 'Vé tham quan', 'Mua sắm', 'Khác'],
 
       // Modal chia sẻ
       showShareModal: false,
@@ -193,8 +302,11 @@ export default {
       if (!this.trip) return 0;
       return this.rawPlaces.reduce((sum, item) => sum + (Number(item.gia_ve) || 0) * (this.trip.so_nguoi || 1), 0);
     },
+    tongChiPhiPhatSinh() {
+      return this.incurredExpenses.reduce((sum, exp) => sum + Number(exp.tong_chi_phi), 0);
+    },
     tongChiPhiDuKien() {
-      return this.tongGiaVe;
+      return this.tongGiaVe + this.tongChiPhiPhatSinh;
     }
   },
 
@@ -255,6 +367,9 @@ export default {
           // Parse vào lịch trình theo ngày
           this.buildSchedule();
 
+          // Lấy chi phí phát sinh
+          await this.fetchExpenses();
+
           this.$nextTick(() => {
             this.initMap();
           });
@@ -264,6 +379,122 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+
+    async fetchExpenses() {
+      this.loadingExpenses = true;
+      try {
+        const res = await fetch(`${BASE}/chuyen-dis/${this.tripId}/chi-phis`, {
+          headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.incurredExpenses = json.data || [];
+        }
+      } catch (e) {
+        console.error("Lỗi tải chi phí", e);
+      } finally {
+        this.loadingExpenses = false;
+      }
+    },
+
+    openExpenseModal(exp = null) {
+      if (exp) {
+        this.expenseForm = { ...exp };
+        if (this.expenseForm.ngay_chi) {
+          this.expenseForm.ngay_chi = this.expenseForm.ngay_chi.split('T')[0];
+        }
+      } else {
+        this.expenseForm = { id: null, noi_dung: '', tong_chi_phi: '', loai_chi_phi: 'Khác', ngay_chi: new Date().toISOString().split('T')[0] };
+      }
+      this.showExpenseModal = true;
+    },
+
+    async saveExpense() {
+      if (!this.expenseForm.noi_dung || !this.expenseForm.tong_chi_phi) {
+        this.$toast.warning("Vui lòng nhập đủ thông tin chi phí (Nội dung, Tổng tiền).");
+        return;
+      }
+      
+      this.submittingExpense = true;
+      const isEdit = !!this.expenseForm.id;
+      const url = isEdit ? `${BASE}/chi-phi-phat-sinhs/${this.expenseForm.id}` : `${BASE}/chi-phi-phat-sinhs`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      // Chuyển đổi kiểu dữ liệu đúng để tránh lỗi validation
+      const clientId = parseInt(localStorage.getItem('client_id')) || null;
+      const payload = {
+        id_chuyen_di: parseInt(this.tripId),
+        noi_dung: this.expenseForm.noi_dung,
+        tong_chi_phi: parseFloat(this.expenseForm.tong_chi_phi),
+        loai_chi_phi: this.expenseForm.loai_chi_phi || 'Khác',
+        ngay_chi: this.expenseForm.ngay_chi || null,
+        id_nguoi_tra: clientId,
+      };
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.$toast.success(isEdit ? "Cập nhật chi phí thành công!" : "Thêm chi phí thành công!");
+          this.showExpenseModal = false;
+          await this.fetchExpenses();
+        } else {
+          // Hiển thị lỗi validation chi tiết từ server
+          const errMsg = json.errors ? Object.values(json.errors).flat().join(', ') : (json.message || "Lỗi lưu chi phí");
+          this.$toast.error(errMsg);
+          console.error('Validation errors:', json);
+        }
+      } catch (e) {
+        this.$toast.error("Lỗi kết nối đến máy chủ.");
+        console.error(e);
+      } finally {
+        this.submittingExpense = false;
+      }
+    },
+
+    async deleteExpense(id) {
+      if (!confirm("Bạn có chắc muốn xóa chi phí này?")) return;
+      try {
+        const res = await fetch(`${BASE}/chi-phi-phat-sinhs/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.$toast.success("Xóa thành công");
+          await this.fetchExpenses();
+        } else {
+          this.$toast.error("Xóa thất bại");
+        }
+      } catch (e) {
+        this.$toast.error("Lỗi kết nối");
+      }
+    },
+
+    getExpenseBadgeColor(type) {
+      const colors = {
+        'Ăn uống': 'bg-warning text-dark',
+        'Di chuyển': 'bg-info text-dark',
+        'Chỗ ở': 'bg-primary text-white',
+        'Vé tham quan': 'bg-success text-white',
+        'Mua sắm': 'bg-danger text-white',
+        'Khác': 'bg-secondary text-white'
+      };
+      return colors[type] || colors['Khác'];
+    },
+
+    getFullAvatar(avatar) {
+      if (!avatar) return '';
+      if (avatar.startsWith('http')) return avatar;
+      return `http://localhost:8000/storage/${avatar}`;
     },
 
     buildSchedule() {
@@ -305,6 +536,14 @@ export default {
       return this.lichTrinhTheoNgay[dayIndex].reduce((sum, item) => {
         return sum + (Number(item.gia_ve) || 0) * (this.trip.so_nguoi || 1);
       }, 0);
+    },
+
+    formatExpenseDate(dateStr) {
+      if (!dateStr) return 'Chưa rõ';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      } catch { return dateStr; }
     },
 
     formatCurrency(val) {

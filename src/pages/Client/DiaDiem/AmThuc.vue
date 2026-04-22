@@ -257,7 +257,7 @@
                   <div class="d-flex align-items-center mb-3">
                     <div class="avatar shadow-sm me-3"
                       style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: #6c757d;">
-                      <img v-if="rv.nguoi_dung?.avatar" :src="getFullAvatar(rv.nguoi_dung.avatar)" alt="avatar"
+                      <img v-if="rv.nguoi_dung?.anh_dai_dien" :src="getFullAvatar(rv.nguoi_dung.anh_dai_dien)" alt="avatar"
                         style="width: 100%; height: 100%; object-fit: cover;">
                       <span v-else>{{ (rv.nguoi_dung?.ten || '?').charAt(0).toUpperCase() }}</span>
                     </div>
@@ -497,7 +497,11 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`${BASE}/dia-diems/am-thuc`);
+        const headers = {};
+        if (this.token) {
+          headers['Authorization'] = `Bearer ${this.token}`;
+        }
+        const res = await fetch(`${BASE}/dia-diems/am-thuc`, { headers });
         if (!res.ok) throw new Error('Lỗi kết nối server (' + res.status + ')');
         const json = await res.json();
 

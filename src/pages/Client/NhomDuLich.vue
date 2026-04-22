@@ -25,7 +25,7 @@
         <i class="bi bi-lock-fill"></i>
         <h4>Bạn chưa đăng nhập</h4>
         <p>Vui lòng đăng nhập để sử dụng tính năng nhóm du lịch.</p>
-        <router-link to="/client-login" class="btn-brand-lg">Đăng nhập ngay</router-link>
+        <router-link to="/client/dang-nhap" class="btn-brand-lg">Đăng nhập ngay</router-link>
       </div>
 
       <template v-else>

@@ -18,7 +18,7 @@
         <i class="bi bi-lock-fill"></i>
         <h4>Bạn chưa đăng nhập</h4>
         <p>Vui lòng đăng nhập để xem lịch trình của bạn.</p>
-        <router-link to="/client-login" class="btn-brand-lg">Đăng nhập ngay</router-link>
+        <router-link to="/client/dang-nhap" class="btn-brand-lg">Đăng nhập ngay</router-link>
       </div>
 
       <!-- Loading -->
@@ -152,9 +152,11 @@ export default {
 
   data() {
     return {
-      token: localStorage.getItem('DaNangTravel') 
-        ? JSON.parse(localStorage.getItem('DaNangTravel')).client_token 
-        : localStorage.getItem('client_token'),
+      // Ưu tiên client_token (chuẩn của clientAuth.js), fallback sang DaNangTravel nếu session cũ
+      token: localStorage.getItem('client_token') 
+        || (localStorage.getItem('DaNangTravel') 
+          ? JSON.parse(localStorage.getItem('DaNangTravel')).client_token 
+          : null),
       chuyenDis: [],
       loading: false,
       deleteTarget: null,
@@ -180,6 +182,13 @@ export default {
         const res = await fetch(`${BASE}/client/chuyen-di/get-data`, {
           headers: { Authorization: `Bearer ${this.token}` },
         });
+        if (res.status === 401) {
+          // Token hết hạn hoặc không hợp lệ → xóa và yêu cầu đăng nhập lại
+          localStorage.removeItem('client_token');
+          this.token = null;
+          this.chuyenDis = [];
+          return;
+        }
         const json = await res.json();
         this.chuyenDis = json.data || [];
       } catch {
