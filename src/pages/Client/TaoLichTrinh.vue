@@ -914,13 +914,8 @@ export default {
         const j1 = await r1.json();
         if (!j1.status) throw new Error(j1.message || 'Lỗi tạo chuyến đi');
 
-        // 2. Lấy id chuyến đi vừa tạo (lấy cái mới nhất của user)
-        const r2 = await fetch(`${BASE}/client/chuyen-di/get-data`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const j2 = await r2.json();
-        const newestTrip = j2.data && j2.data[0];
-        if (!newestTrip) throw new Error('Không lấy được ID chuyến đi.');
+        const newTripId = j1.data?.id;
+        if (!newTripId) throw new Error('Không lấy được ID chuyến đi mới.');
 
         // 3. Bulk create chi tiết
         const items = this.lichTrinhTheoNgay.flatMap((day, di) =>
@@ -934,7 +929,7 @@ export default {
         const r3 = await fetch(`${BASE}/client/chi-tiet-chuyen-di/bulk-create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id_chuyen_di: newestTrip.id, items }),
+          body: JSON.stringify({ id_chuyen_di: newTripId, items }),
         });
         const j3 = await r3.json();
         if (!j3.status) throw new Error(j3.message || 'Lỗi lưu chi tiết');
