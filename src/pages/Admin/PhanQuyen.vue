@@ -52,15 +52,24 @@
               <i class="bi bi-ui-checks text-success me-2"></i>Bảng Phân quyền 
               <span v-if="selectedRole" class="text-primary">- {{ selectedRole.ten_chuc_vu }}</span>
             </h5>
-            <button 
-              v-if="selectedRole && selectedRole.id !== 1" 
-              class="btn btn-sm btn-success px-3 fw-semibold"
-              :disabled="savingPermissions"
-              @click="savePermissions"
-            >
-              <span v-if="savingPermissions" class="spinner-border spinner-border-sm me-2" role="status"></span>
-              <i v-else class="bi bi-save me-2"></i>Lưu phân quyền
-            </button>
+            <div class="d-flex gap-2">
+              <button 
+                v-if="selectedRole && selectedRole.id !== 1" 
+                class="btn btn-sm btn-outline-danger px-3 fw-semibold action-btn-sm"
+                @click="openDeleteRoleModal"
+              >
+                <i class="bi bi-trash3 me-2"></i>Xóa
+              </button>
+              <button 
+                v-if="selectedRole && selectedRole.id !== 1" 
+                class="btn btn-sm btn-success px-3 fw-semibold action-btn-sm"
+                :disabled="savingPermissions"
+                @click="savePermissions"
+              >
+                <span v-if="savingPermissions" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <i v-else class="bi bi-save me-2"></i>Lưu phân quyền
+              </button>
+            </div>
           </div>
           <div class="card-body">
             <div v-if="!selectedRole" class="empty-state py-5 mt-4 text-center">
@@ -79,16 +88,17 @@
                 <div v-for="(group, groupName) in groupedPermissions" :key="groupName" class="col-md-6">
                   <div class="permission-group-card">
                     <h6 class="group-title">{{ groupName }}</h6>
-                    <div class="permission-list">
-                      <div class="form-check custom-checkbox mb-2" v-for="perm in group" :key="perm.id">
+                    <div class="permission-list mt-3">
+                      <div class="form-check form-switch custom-switch mb-3" v-for="perm in group" :key="perm.id">
                         <input 
                           class="form-check-input" 
                           type="checkbox" 
+                          role="switch"
                           :value="perm.ma_chuc_nang" 
                           :id="'perm_' + perm.id"
                           v-model="selectedPermissions"
                         >
-                        <label class="form-check-label" :for="'perm_' + perm.id">
+                        <label class="form-check-label ms-2" :for="'perm_' + perm.id">
                           {{ perm.ten_chuc_nang }}
                         </label>
                       </div>
@@ -133,6 +143,30 @@
       </div>
     </div>
 
+    <!-- Modal Delete Role -->
+    <div id="modalDeleteRole" class="modal fade" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0 pb-0 justify-content-center mt-3">
+            <div class="delete-icon-wrapper">
+              <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+            </div>
+          </div>
+          <div class="modal-body text-center pt-3 pb-4">
+            <h4 class="fw-bold mb-2">Xóa vai trò?</h4>
+            <p class="text-muted mb-0">Bạn có chắc chắn muốn xóa vai trò <strong class="text-dark">{{ selectedRole?.ten_chuc_vu }}</strong>?</p>
+            <p class="text-muted small mt-1">Hành động này không thể hoàn tác.</p>
+          </div>
+          <div class="modal-footer border-0 pt-0 justify-content-center gap-2 mb-3">
+            <button type="button" class="btn btn-light px-4 fw-semibold" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" class="btn btn-danger px-4 fw-semibold" :disabled="isDeleting" @click="deleteRole">
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2"></span>Xóa vai trò
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -149,8 +183,10 @@ export default {
       selectedRole: null,
       selectedPermissions: [], // Mảng chứa ma_chuc_nang
       loading: true,
+      loading: true,
       savingPermissions: false,
       isSubmitting: false,
+      isDeleting: false,
       formRole: {
         ten_chuc_vu: '',
         mo_ta: ''
@@ -223,6 +259,26 @@ export default {
         this.isSubmitting = false;
       }
     },
+    openDeleteRoleModal() {
+      if (!this.selectedRole || this.selectedRole.id === 1) return;
+      const m = Modal.getOrCreateInstance(document.getElementById('modalDeleteRole'));
+      m.show();
+    },
+    async deleteRole() {
+      if (!this.selectedRole || this.selectedRole.id === 1) return;
+      this.isDeleting = true;
+      try {
+        await axios.delete(`http://127.0.0.1:8000/api/chuc-vus/${this.selectedRole.id}`, this.authHeader());
+        this.$toast?.success('Đã xóa chức vụ thành công');
+        Modal.getInstance(document.getElementById('modalDeleteRole'))?.hide();
+        this.selectedRole = null;
+        await this.fetchData();
+      } catch (e) {
+        this.$toast?.error('Không thể xóa chức vụ. Có thể chức vụ này đang được sử dụng.');
+      } finally {
+        this.isDeleting = false;
+      }
+    },
     async savePermissions() {
       if (!this.selectedRole) return;
       this.savingPermissions = true;
@@ -251,11 +307,11 @@ export default {
 
 <style scoped>
 .role-page {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -287,66 +343,157 @@ export default {
 }
 
 .role-item {
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid #edf2f7;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  position: relative;
 }
 
 .role-item:hover {
   border-color: #cbd5e1;
-  background: #f1f5f9;
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
 }
 
 .role-item.active {
-  border-color: #5a67d8;
-  background: #eef2ff;
-  box-shadow: inset 4px 0 0 #5a67d8;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  border-color: transparent;
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+}
+
+.role-item.active .text-dark {
+  color: #ffffff !important;
+}
+
+.role-item.active .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.role-item.active .badge.bg-primary {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .custom-badge {
-  font-size: 0.75rem;
-  padding: 4px 10px;
+  font-size: 0.72rem;
+  padding: 5px 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.action-btn-sm {
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.action-btn-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
 .permission-group-card {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 24px;
   height: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+}
+
+.permission-group-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
 }
 
 .group-title {
-  font-weight: 700;
-  color: #334155;
-  margin-bottom: 14px;
-  border-bottom: 1px dashed #cbd5e1;
-  padding-bottom: 8px;
-}
-
-.custom-checkbox .form-check-input {
-  width: 1.25em;
-  height: 1.25em;
-  margin-top: 0.15em;
-  border-color: #cbd5e1;
-}
-
-.custom-checkbox .form-check-input:checked {
-  background-color: #5a67d8;
-  border-color: #5a67d8;
-}
-
-.custom-checkbox .form-check-label {
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  margin-left: 6px;
-}
-
-.custom-checkbox:hover .form-check-label {
+  font-weight: 800;
   color: #1e293b;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.group-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: #6366f1;
+  border-radius: 3px;
+}
+
+.custom-switch .form-check-input {
+  width: 2.8em;
+  height: 1.4em;
+  margin-top: 0;
+  margin-left: -3rem;
+  cursor: pointer;
+  background-color: #cbd5e1;
+  border: none;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.custom-switch .form-check-input:focus {
+  box-shadow: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 1%29'/%3e%3c/svg%3e");
+}
+
+.custom-switch .form-check-input:checked {
+  background-color: #10b981; /* Emerald green */
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.custom-switch .form-check-label {
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  padding-top: 0;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.custom-switch:hover .form-check-label {
+  color: #0f172a;
+}
+
+.custom-switch {
+  padding: 8px 12px;
+  padding-left: 3.5rem;
+  border-radius: 10px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.custom-switch:hover {
+  background: #f8fafc;
+}
+
+.delete-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fef2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }
 </style>

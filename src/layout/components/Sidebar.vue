@@ -12,7 +12,7 @@
     <nav class="sidebar-nav">
       <ul class="nav-menu">
         <!-- Dashboard -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('dashboard_view')">
           <router-link to="/admin/dashboard" class="nav-link" :class="{ active: isActive('/dashboard') }">
             <i class="bi bi-house-door"></i>
             <span v-if="!isCollapsed" class="nav-label">Dashboard</span>
@@ -20,7 +20,7 @@
         </li>
 
         <!-- Users -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('user_manage')">
           <router-link to="/admin/users" class="nav-link" :class="{ active: isActive('/users') }">
             <i class="bi bi-people"></i>
             <span v-if="!isCollapsed" class="nav-label">Quản lý người dùng</span>
@@ -50,7 +50,7 @@
           </ul>
         </li>
         <!-- Danh mục -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('category_manage')">
           <router-link to="/admin/danh-muc" class="nav-link" :class="{ active: isActive('/admin/danh-muc') }">
             <i class="bi bi-folder2-open"></i>
             <span v-if="!isCollapsed" class="nav-label">Quản lý danh mục</span>
@@ -58,7 +58,7 @@
         </li>
 
         <!-- Categories with submenu -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('place_amthuc_manage') || hasPermission('place_tamlinh_manage') || hasPermission('place_giaitri_manage') || hasPermission('place_checkin_manage')">
           <a
             class="nav-link"
             @click="toggleCategorySubmenu"
@@ -69,7 +69,7 @@
             <i v-if="!isCollapsed" class="bi bi-chevron-down ms-auto chevron"></i>
           </a>
           <ul v-if="showCategorySubmenu && !isCollapsed" class="submenu">
-            <li>
+            <li v-if="hasPermission('place_amthuc_manage')">
               <router-link
                 :to="{ path: '/admin/am-thuc', query: { category: 'am-thuc' } }"
                 class="submenu-link"
@@ -79,7 +79,7 @@
                 <span>Ẩm thực</span>
               </router-link>
             </li>
-            <li>
+            <li v-if="hasPermission('place_tamlinh_manage')">
               <router-link
                 :to="{ path: '/admin/tam-linh', query: { category: 'tam-linh' } }"
                 class="submenu-link"
@@ -89,7 +89,7 @@
                 <span>Tâm linh</span>
               </router-link>
             </li>
-            <li>
+            <li v-if="hasPermission('place_giaitri_manage')">
               <router-link
                 :to="{ path: '/admin/giai-tri', query: { category: 'giai-tri' } }"
                 class="submenu-link"
@@ -99,7 +99,7 @@
                 <span>Giải trí</span>
               </router-link>
             </li>
-            <li>
+            <li v-if="hasPermission('place_checkin_manage')">
               <router-link
                 :to="{ path: '/admin/check-in', query: { category: 'check-in' } }"
                 class="submenu-link"
@@ -115,7 +115,7 @@
 
 
         <!-- Quản lý đánh giá -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('review_manage')">
           <router-link to="/admin/quan-ly-danh-gia-phan-hoi" class="nav-link" :class="{ active: isActive('/admin/quan-ly-danh-gia-phan-hoi') }">
             <i class="bi bi-star-half"></i>
             <span v-if="!isCollapsed" class="nav-label">Quản lý đánh giá</span>
@@ -123,7 +123,7 @@
         </li>
 
         <!-- Reports with submenu -->
-        <li class="nav-item">
+        <li class="nav-item" v-if="hasPermission('report_view')">
           <a
             class="nav-link"
             @click="toggleReportSubmenu"
@@ -203,6 +203,11 @@ export default {
         if (raw) this.adminData = JSON.parse(raw) || {};
       } catch (e) { }
     },
+    hasPermission(code) {
+      if (this.isSuperAdmin) return true;
+      const chucNangs = this.adminData?.chuc_vu?.chuc_nangs || this.adminData?.chucVu?.chucNangs || [];
+      return chucNangs.some(p => p.ma_chuc_nang === code);
+    },
     toggleSidebar() {
       this.$emit('toggle-collapse');
     },
@@ -239,7 +244,7 @@ export default {
 .sidebar {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: calc(100vh - 70px);
   width: 260px;
   position: fixed;
   top: 70px;
@@ -317,9 +322,24 @@ export default {
 }
 
 .sidebar-nav {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 8px;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .nav-menu {

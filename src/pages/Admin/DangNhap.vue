@@ -136,7 +136,28 @@ export default {
                         localStorage.setItem('admin_data', JSON.stringify(adminData));
                         localStorage.setItem('admin_ten', adminData.ho_ten || adminData.ten || adminData.email || 'Admin');
                         this.$toast.success(res.data.message);
-                        this.$router.push('/admin/dashboard');
+                        
+                        // Xác định trang đích dựa trên quyền
+                        const isSuperAdmin = Number(adminData?.id_chuc_vu || adminData?.chuc_vu) === 1;
+                        let targetRoute = '/admin/dashboard';
+                        
+                        if (!isSuperAdmin) {
+                            const chucNangs = adminData?.chuc_vu?.chuc_nangs || adminData?.chucVu?.chucNangs || [];
+                            const perms = chucNangs.map(p => p.ma_chuc_nang);
+                            
+                            if (perms.includes('dashboard_view')) targetRoute = '/admin/dashboard';
+                            else if (perms.includes('user_manage')) targetRoute = '/admin/users';
+                            else if (perms.includes('category_manage')) targetRoute = '/admin/danh-muc';
+                            else if (perms.includes('place_amthuc_manage')) targetRoute = '/admin/am-thuc';
+                            else if (perms.includes('place_tamlinh_manage')) targetRoute = '/admin/tam-linh';
+                            else if (perms.includes('place_giaitri_manage')) targetRoute = '/admin/giai-tri';
+                            else if (perms.includes('place_checkin_manage')) targetRoute = '/admin/check-in';
+                            else if (perms.includes('review_manage')) targetRoute = '/admin/quan-ly-danh-gia-phan-hoi';
+                            else if (perms.includes('report_view')) targetRoute = '/admin/reports';
+                            // Nếu không có quyền nào, cho ở lại hoặc sang dashboard để bị báo lỗi
+                        }
+
+                        this.$router.push(targetRoute);
                         return;
                     }
 

@@ -172,4 +172,63 @@ const router = createRouter({
   routes: routes,
 });
 
+router.beforeEach((to, from, next) => {
+  // Chỉ kiểm tra các route trong khu vực Admin (ngoại trừ trang đăng nhập)
+  if (to.path.startsWith('/admin') && to.path !== '/admin/dang-nhap') {
+    const raw = localStorage.getItem('admin_data');
+    if (!raw) {
+      return next('/admin/dang-nhap');
+    }
+
+    try {
+      const adminData = JSON.parse(raw);
+      const isSuperAdmin = Number(adminData?.id_chuc_vu || adminData?.chuc_vu) === 1;
+      
+      // Nếu là super admin thì qua thoải mái
+      if (isSuperAdmin) {
+        return next();
+      }
+
+      // Logic ánh xạ: Path -> Mã quyền cần thiết
+      const routePermissions = {
+        '/admin/dashboard': 'dashboard_view',
+        '/admin/users': 'user_manage',
+        '/admin/danh-muc': 'category_manage',
+        '/admin/am-thuc': 'place_amthuc_manage',
+        '/admin/tam-linh': 'place_tamlinh_manage',
+        '/admin/giai-tri': 'place_giaitri_manage',
+        '/admin/check-in': 'place_checkin_manage',
+        '/admin/quan-ly-danh-gia-phan-hoi': 'review_manage',
+        '/admin/reports': 'report_view'
+      };
+
+      const requiredPermission = Object.keys(routePermissions).find(path => to.path.startsWith(path)) 
+                                 ? routePermissions[Object.keys(routePermissions).find(path => to.path.startsWith(path))] 
+                                 : null;
+
+      if (requiredPermission) {
+        const chucNangs = adminData?.chuc_vu?.chuc_nangs || adminData?.chucVu?.chucNangs || [];
+        const hasPerm = chucNangs.some(p => p.ma_chuc_nang === requiredPermission);
+        
+        if (!hasPerm) {
+          // Ngăn chặn truy cập nếu không có quyền
+          console.warn(`Truy cập bị từ chối: Cần quyền ${requiredPermission} cho đường dẫn ${to.path}`);
+          
+          // Redirect về một trang khác an toàn nếu có thể (Ví dụ: login hoặc trang báo lỗi)
+          // Để đơn giản, cho fallback về login và thông báo
+          alert('Bạn không có quyền truy cập trang này!');
+          if (from.path && from.path !== '/') {
+             return next(false);
+          }
+          return next('/admin/dang-nhap');
+        }
+      }
+    } catch(e) {
+      return next('/admin/dang-nhap');
+    }
+  }
+  
+  next();
+});
+
 export default router;

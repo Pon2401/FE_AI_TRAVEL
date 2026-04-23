@@ -5,8 +5,8 @@
         <!-- Left: Logo & Brand -->
         <div class="d-flex align-items-center gap-3">
           <div class="logo-brand">
-            <i class="bi bi-speedometer2 me-2"></i>
-            <span class="fw-bold">MatDash</span>
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3H7FDGtE7IOwPdIbFilEYiOmUAI9w-x1U6A&s" alt="">
+            <span class="fw-bold">ADMIN HUB</span>
           </div>
         </div>
 
@@ -158,6 +158,14 @@ export default {
   font-weight: 700;
   cursor: pointer;
   letter-spacing: -0.3px;
+}
+
+.logo-brand img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  margin-right: 8px;
 }
 
 .logo-brand i {
