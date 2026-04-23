@@ -433,6 +433,81 @@
       </div>
 
     </div>
+
+    <!-- ═══════════════════════════════════════════
+         MODAL ĐÁNH GIÁ MỨC ĐỘ HÀI LÒNG
+         ═══════════════════════════════════════════ -->
+    <transition name="rating-modal">
+      <div v-if="showRatingModal" class="rating-modal-overlay" @click.self="skipRating">
+        <div class="rating-modal-box">
+          <!-- Confetti particles -->
+          <div class="confetti-wrap">
+            <span v-for="n in 12" :key="n" class="confetti-dot" :style="confettiStyle(n)"></span>
+          </div>
+
+          <!-- Header -->
+          <div class="rm-header">
+            <div class="rm-success-icon">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h2 class="rm-title">🎉 Lịch trình đã được lưu!</h2>
+            <p class="rm-subtitle">Bạn cảm thấy thế nào về hệ thống lập lịch trình của chúng tôi?</p>
+          </div>
+
+          <!-- Face rating icons -->
+          <div class="rm-faces">
+            <button
+              v-for="face in ratingFaces"
+              :key="face.value"
+              class="rm-face-btn"
+              :class="{ selected: selectedRating === face.value }"
+              @click="selectedRating = face.value"
+              :title="face.label"
+            >
+              <span class="rm-face-emoji"></span>
+              <span class="rm-face-icon">{{ face.icon }}</span>
+              <span class="rm-face-label">{{ face.label }}</span>
+            </button>
+          </div>
+
+          <!-- Selected rating feedback text -->
+          <transition name="fade-slide">
+            <p v-if="selectedRating" class="rm-selected-text">
+              {{ ratingFaces.find(f => f.value === selectedRating)?.feedback }}
+            </p>
+          </transition>
+
+          <!-- Feedback textarea -->
+          <div class="rm-feedback-wrap">
+            <label class="rm-feedback-label">
+              <i class="bi bi-chat-heart me-1"></i>Để lại đóng góp của bạn (không bắt buộc)
+            </label>
+            <textarea
+              v-model="ratingFeedback"
+              class="rm-textarea"
+              rows="3"
+              placeholder="Ví dụ: Giao diện dễ dùng, AI gợi ý rất hữu ích..."
+            ></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div class="rm-actions">
+            <button class="rm-btn-skip" @click="skipRating">
+              Bỏ qua
+            </button>
+            <button
+              class="rm-btn-submit"
+              :disabled="!selectedRating || submittingRating"
+              @click="submitRating"
+            >
+              <span v-if="submittingRating"><i class="bi bi-hourglass-split me-1"></i>Đang gửi...</span>
+              <span v-else><i class="bi bi-send-fill me-1"></i>Gửi đánh giá</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -490,6 +565,19 @@ export default {
       loadingAI: false,
       aiStage: 0, // 0: Idle, 1: Filtering, 2: Scheduling, 3: AI Refinement
       generationLog: [],
+
+      // ── Rating Modal ──
+      showRatingModal: false,
+      selectedRating: null,
+      ratingFeedback: '',
+      submittingRating: false,
+      ratingFaces: [
+        { value: 1, icon: '😞', label: 'Rất tệ',    feedback: 'Rất tiếc khi nghe điều này. Chúng tôi sẽ cố gắng cải thiện!' },
+        { value: 2, icon: '😕', label: 'Tệ',        feedback: 'Cảm ơn bạn đã phản hồi. Ý kiến của bạn rất có giá trị!' },
+        { value: 3, icon: '😐', label: 'Bình thường', feedback: 'Cảm ơn! Chúng tôi đang nỗ lực để làm tốt hơn.' },
+        { value: 4, icon: '😊', label: 'Tốt',       feedback: 'Tuyệt vời! Rất vui vì bạn hài lòng với trải nghiệm.' },
+        { value: 5, icon: '🤩', label: 'Rất tốt',   feedback: 'Cảm ơn bạn rất nhiều! Điều này thật sự truyền cảm hứng cho chúng tôi! 🚀' },
+      ],
     };
   },
 
@@ -935,12 +1023,13 @@ export default {
         if (!j3.status) throw new Error(j3.message || 'Lỗi lưu chi tiết');
 
         this.saveSuccess = true;
-        this.saveMsg = '🎉 Lịch trình đã được lưu thành công! Chuyển sang trang lịch trình của bạn...';
+        this.saveMsg = '🎉 Lịch trình đã được lưu thành công!';
         this.saveMsgType = 'success';
 
+        // Show rating modal after short delay
         setTimeout(() => {
-          this.$router.push('/lich-trinh-cua-toi');
-        }, 2000);
+          this.showRatingModal = true;
+        }, 800);
       } catch (err) {
         this.saveMsg = err.message || 'Có lỗi xảy ra. Vui lòng thử lại.';
         this.saveMsgType = 'error';
@@ -1026,6 +1115,53 @@ export default {
       if (bounds.length > 0) {
         this.mapInstance.fitBounds(bounds, { padding: [40, 40] });
       }
+    },
+
+    // ─── Rating Modal Methods ─────────────────────
+    confettiStyle(n) {
+      const colors = ['#10b981','#0ea5e9','#f59e0b','#f43f5e','#8b5cf6','#ec4899'];
+      const left = ((n - 1) * (100 / 12)) + '%';
+      const delay = (n * 0.15) + 's';
+      const color = colors[n % colors.length];
+      const size = (8 + (n % 4) * 4) + 'px';
+      return {
+        left,
+        animationDelay: delay,
+        background: color,
+        width: size,
+        height: size,
+        borderRadius: n % 2 === 0 ? '50%' : '3px',
+      };
+    },
+
+    async submitRating() {
+      if (!this.selectedRating) return;
+      this.submittingRating = true;
+
+      try {
+        const token = localStorage.getItem('client_token');
+        // Attempt to save rating to backend (non-blocking – ignore errors gracefully)
+        await fetch(`${BASE}/client/danh-gia-he-thong`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            muc_do_hai_long: this.selectedRating,
+            noi_dung: this.ratingFeedback,
+          }),
+        }).catch(() => {}); // Silently ignore if endpoint doesn't exist yet
+      } finally {
+        this.submittingRating = false;
+        this.showRatingModal = false;
+        this.$router.push('/lich-trinh-cua-toi');
+      }
+    },
+
+    skipRating() {
+      this.showRatingModal = false;
+      this.$router.push('/lich-trinh-cua-toi');
     },
   },
 };
@@ -2091,5 +2227,263 @@ label {
   height: 500px;
   width: 100%;
   z-index: 0;
+}
+
+/* ══════════════════════════════════════════
+   Rating Modal
+   ══════════════════════════════════════════ */
+.rating-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 40, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.rating-modal-box {
+  background: #fff;
+  border-radius: 2rem;
+  padding: 2.5rem 2.2rem 2rem;
+  max-width: 540px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(10, 20, 60, 0.28);
+  animation: modalBounceIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes modalBounceIn {
+  from { opacity: 0; transform: scale(0.82) translateY(30px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+/* Confetti */
+.confetti-wrap {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-dot {
+  position: absolute;
+  top: 0;
+  opacity: 0;
+  animation: confettiFall 1.4s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0%   { opacity: 0; transform: translateY(-10px) rotate(0deg); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(72px) rotate(180deg); }
+}
+
+/* Header */
+.rm-header {
+  text-align: center;
+  margin-bottom: 1.8rem;
+}
+
+.rm-success-icon {
+  font-size: 3rem;
+  color: #10b981;
+  margin-bottom: 0.6rem;
+  animation: bounceScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes bounceScale {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+.rm-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #1e2d44;
+  margin-bottom: 0.35rem;
+}
+
+.rm-subtitle {
+  font-size: 0.97rem;
+  color: #627289;
+  margin: 0;
+}
+
+/* Face buttons */
+.rm-faces {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.rm-face-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.9rem;
+  border: 2.5px solid #e2e8f0;
+  border-radius: 1.1rem;
+  background: #f8faff;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-width: 72px;
+}
+
+.rm-face-btn:hover {
+  border-color: #10b981;
+  background: #f0fdf8;
+  transform: translateY(-4px) scale(1.07);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.18);
+}
+
+.rm-face-btn.selected {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5, #e0f2fe);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
+  transform: translateY(-4px) scale(1.1);
+}
+
+.rm-face-icon {
+  font-size: 2rem;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.rm-face-btn:hover .rm-face-icon,
+.rm-face-btn.selected .rm-face-icon {
+  transform: scale(1.18);
+}
+
+.rm-face-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #5a7080;
+  white-space: nowrap;
+}
+
+.rm-face-btn.selected .rm-face-label {
+  color: #065f46;
+}
+
+/* Selected rating feedback text */
+.rm-selected-text {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #065f46;
+  background: #d1fae5;
+  border-radius: 0.7rem;
+  padding: 0.55rem 1rem;
+  margin: 0 0 1.2rem;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* Feedback textarea */
+.rm-feedback-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.rm-feedback-label {
+  display: block;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: #3d5166;
+  margin-bottom: 0.4rem;
+}
+
+.rm-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #dbe3f0;
+  border-radius: 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1e2d44;
+  background: #f8fbff;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.rm-textarea:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+/* Actions */
+.rm-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+}
+
+.rm-btn-skip {
+  padding: 0.65rem 1.4rem;
+  border: 1.5px solid #dbe3f0;
+  border-radius: 0.9rem;
+  background: #fff;
+  color: #627289;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rm-btn-skip:hover {
+  background: #f0f4f8;
+  border-color: #b0bec9;
+}
+
+.rm-btn-submit {
+  padding: 0.65rem 1.6rem;
+  border: none;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, #10b981, #0ea5e9);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.rm-btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.38);
+}
+
+.rm-btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Transitions */
+.rating-modal-enter-active,
+.rating-modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+.rating-modal-enter-from,
+.rating-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
