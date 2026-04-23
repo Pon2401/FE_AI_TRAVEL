@@ -216,10 +216,10 @@ export default {
       return this.$route.path === path;
     },
     isCategoryActive(category) {
-      return this.$route.path === '/products' && this.$route.query.category === category;
+      return this.$route.path.startsWith('/admin') && this.$route.query.category === category;
     },
     isCategoryMenuActive() {
-      return this.$route.path === '/products' && ['am-thuc', 'tam-linh', 'giai-tri', 'check-in'].includes(this.$route.query.category);
+      return this.$route.path.startsWith('/admin') && ['am-thuc', 'tam-linh', 'giai-tri', 'check-in'].includes(this.$route.query.category);
     },
     toggleReportSubmenu() {
       this.showReportSubmenu = !this.showReportSubmenu;
