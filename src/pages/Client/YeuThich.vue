@@ -302,117 +302,77 @@ export default {
 </script>
 
 <style scoped>
-.favorites-page {
-  background: #f8fafc;
-  min-height: 100vh;
-}
-
 .hero-section {
-  background: white;
-  border-bottom: 1px solid #eef2f6;
+  position: relative;
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+  padding: 4rem 0 3rem;
+  border-bottom: 1px solid rgba(220, 38, 38, 0.05);
 }
-
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #0f172a;
 }
-
-.search-bar .form-control {
+.search-bar input {
+  border: 2px solid #fee2e2;
   border-radius: 12px;
   padding: 0.75rem 1.2rem;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
 }
-
-.search-bar .form-control:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+.search-bar input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.1);
 }
-
 .place-card {
   border-radius: 20px;
-  transition: all 0.3s ease;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.05);
 }
-
 .place-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;
 }
-
 .place-image {
   height: 220px;
   background-size: cover;
   background-position: center;
   position: relative;
 }
-
 .place-badge {
-  position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.5); 
-  backdrop-filter: blur(8px); color: white; padding: 6px 14px; 
-  border-radius: 30px; font-size: 0.75rem; font-weight: 600;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 5px 15px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ef4444;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 .favorite-btn {
-  position: absolute; top: 15px; right: 15px; width: 40px; height: 40px;
-  background: white; color: #ef4444; border: none; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
-  cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
-.favorite-btn:hover {
-  transform: scale(1.1);
-  background: #ef4444;
-  color: white;
-}
-
-.price-text {
-  color: #059669; font-weight: 800; font-size: 1.2rem;
-}
-
 .bg-success-soft {
-  background-color: #ecfdf5;
+  background-color: #f0fdf4;
 }
-
-/* Modal & Carousel logic reuse */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(4px); display: flex; justify-content: center;
-  align-items: center; z-index: 9999;
-}
-
-.modal-content {
-  width: min(96%, 700px); background: white; border-radius: 24px;
-  max-height: 90vh; overflow-y: auto; position: relative;
-}
-
-.btn-close {
-  position: absolute; top: 15px; right: 15px; width: 32px; height: 32px;
-  border-radius: 50%; border: none; background: white; font-size: 20px; z-index: 10;
-}
-
-.carousel-container { position: relative; width: 100%; height: 350px; border-radius: 20px; overflow: hidden; }
-.carousel-slide { width: 100%; height: 100%; background-size: cover; background-position: center; }
-.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; }
-.carousel-nav.prev { left: 10px; }
-.carousel-nav.next { right: 10px; }
-.carousel-indicators { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
-.carousel-indicators span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; }
-.carousel-indicators span.active { background: white; width: 24px; border-radius: 4px; }
-
-/* Thumbnails */
-.carousel-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; scrollbar-width: thin; }
-.carousel-thumbnails::-webkit-scrollbar { height: 4px; }
-.carousel-thumbnails::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-.thumb-item { width: 70px; height: 50px; border-radius: 8px; background-size: cover; background-position: center; cursor: pointer; opacity: 0.6; transition: all 0.3s ease; border: 2px solid transparent; flex-shrink: 0; }
-.thumb-item:hover { opacity: 0.9; }
-.thumb-item.active { opacity: 1; border-color: #3b82f6; transform: scale(1.05); }
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.price-text {
+  color: #ef4444;
+  font-size: 1.1rem;
 }
 </style>
