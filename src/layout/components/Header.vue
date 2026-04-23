@@ -56,8 +56,8 @@
             </div>
 
             <!-- User Profile -->
-            <div class="dropdown ms-3 ps-3 border-start">
-              <button class="btn-profile d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+            <div class="dropdown ms-3 ps-3 border-start" @click.stop="toggleProfile">
+              <button class="btn-profile d-flex align-items-center gap-2">
                 <img 
                   :src="avatarUrl" 
                   alt="User" 
@@ -68,12 +68,12 @@
                 <span class="d-none d-md-inline small fw-500">{{ adminDisplayName }}</span>
                 <i class="bi bi-chevron-down"></i>
               </button>
-              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
+              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom" :class="{ 'show': showProfile }">
                 <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>My Profile</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><button class="dropdown-item text-danger" @click="dangXuat"><i class="bi bi-box-arrow-right me-2"></i>Logout</button></li>
+                <li><button class="dropdown-item text-danger" @click.stop="dangXuat"><i class="bi bi-box-arrow-right me-2"></i>Logout</button></li>
               </ul>
             </div>
           </div>
@@ -89,6 +89,9 @@ export default {
   data() {
     return {
       admin: {},
+      showNotif: false,
+      showMsg: false,
+      showProfile: false,
     };
   },
   computed: {
@@ -102,8 +105,20 @@ export default {
   },
   mounted() {
     this.loadAdminData();
+    document.addEventListener('click', this.closeAllDropdowns);
+  },
+  unmounted() {
+    document.removeEventListener('click', this.closeAllDropdowns);
   },
   methods: {
+    toggleNotif() { this.showNotif = !this.showNotif; this.showMsg = false; this.showProfile = false; },
+    toggleMsg() { this.showMsg = !this.showMsg; this.showNotif = false; this.showProfile = false; },
+    toggleProfile() { this.showProfile = !this.showProfile; this.showNotif = false; this.showMsg = false; },
+    closeAllDropdowns() {
+      this.showNotif = false;
+      this.showMsg = false;
+      this.showProfile = false;
+    },
     loadAdminData() {
       const adminData = localStorage.getItem('admin_data');
       if (!adminData) return;

@@ -27,8 +27,8 @@
           </router-link>
         </li>
 
-        <!-- Orders with submenu -->
-        <li class="nav-item">
+        <!-- Orders with submenu (Chỉ Super Admin mới xem được) -->
+        <li class="nav-item" v-if="isSuperAdmin">
           <a class="nav-link" @click="toggleSubmenu" :class="{ active: showSubmenu }">
             <i class="bi bi-person-badge"></i>
             <span v-if="!isCollapsed" class="nav-label">Quản lý nhân viên</span>
@@ -184,9 +184,25 @@ export default {
       showSubmenu: false,
       showCategorySubmenu: false,
       showReportSubmenu: false,
+      adminData: {}
     };
   },
+  computed: {
+    isSuperAdmin() {
+      // id_chuc_vu == 1 hoặc chuc_vu == 1 (Tuỳ cách lưu)
+      return Number(this.adminData?.id_chuc_vu || this.adminData?.chuc_vu) === 1;
+    }
+  },
+  mounted() {
+    this.loadAdminData();
+  },
   methods: {
+    loadAdminData() {
+      try {
+        const raw = localStorage.getItem('admin_data');
+        if (raw) this.adminData = JSON.parse(raw) || {};
+      } catch (e) { }
+    },
     toggleSidebar() {
       this.$emit('toggle-collapse');
     },
