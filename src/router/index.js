@@ -161,6 +161,11 @@ const routes = [
     meta: { layout: "default" },
   },
   {
+    path: "/admin/danh-gia-hai-long",
+    component: () => import("../pages/Admin/DanhGiaHaiLong.vue"),
+    meta: { layout: "default" },
+  },
+  {
     path: "/admin/reports",
     component: () => import("../pages/Admin/Reports.vue"),
     meta: { layout: "default" },
@@ -199,6 +204,7 @@ router.beforeEach((to, from, next) => {
         '/admin/giai-tri': 'place_giaitri_manage',
         '/admin/check-in': 'place_checkin_manage',
         '/admin/quan-ly-danh-gia-phan-hoi': 'review_manage',
+        '/admin/danh-gia-hai-long': 'report_view',
         '/admin/reports': 'report_view'
       };
 

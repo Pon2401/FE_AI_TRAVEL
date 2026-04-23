@@ -158,6 +158,12 @@
                 <span>Địa điểm nổi bật</span>
               </router-link>
             </li>
+            <li>
+              <router-link to="/admin/danh-gia-hai-long" class="submenu-link" :class="{ 'router-link-active': $route.path === '/admin/danh-gia-hai-long' }">
+                <i class="bi bi-emoji-smile"></i>
+                <span>Mức độ hài lòng</span>
+              </router-link>
+            </li>
           </ul>
         </li>
       </ul>
@@ -234,7 +240,7 @@ export default {
       return this.$route.path === '/admin/reports' && this.$route.query.type === type;
     },
     isReportMenuActive() {
-      return this.$route.path === '/admin/reports';
+      return this.$route.path === '/admin/reports' || this.$route.path === '/admin/danh-gia-hai-long';
     },
   },
 };
