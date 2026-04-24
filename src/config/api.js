@@ -5,6 +5,6 @@
 export const API_PORT = 8000;
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || `http://localhost:${API_PORT}`;
 export const BASE = `${BACKEND_URL}/api`;
-export const BASE_SERP = `${BACKEND_URL}/api/serp`;
 
-export default { BACKEND_URL, BASE, BASE_SERP };
+
+export default { BACKEND_URL, BASE };

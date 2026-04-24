@@ -94,7 +94,9 @@
             <div class="timeline" v-if="lichTrinhTheoNgay[activeDayTab - 1] && lichTrinhTheoNgay[activeDayTab - 1].length > 0">
               <div v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]" :key="idx" class="timeline-item">
                 <div class="timeline-time">
-                  <span class="time-badge">{{ extractTime(item.thoi_gian_du_kien) || '08:00' }}</span>
+                  <span class="time-badge">{{ item.gio_bat_dau || item.gio || '08:00' }}</span>
+                  <span v-if="item.gio_ket_thuc" class="time-end-badge">{{ item.gio_ket_thuc }}</span>
+                  <span v-if="item.thoi_luong_phut" class="duration-badge">{{ item.thoi_luong_phut }}p</span>
                   <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
                 </div>
                 <div class="timeline-card">
@@ -503,32 +505,45 @@ export default {
 
       this.rawPlaces.forEach(item => {
         let dayIdx = 0;
-        let t = String(item.thoi_gian_du_kien || '');
-        let m = t.match(/Ngày (\d+)/i);
-        if (m && m[1]) {
-          dayIdx = parseInt(m[1]) - 1;
+        // thu_tu_tham_quan = dayIndex * 100 + posInDay + 1
+        if (item.thu_tu_tham_quan && item.thu_tu_tham_quan > 0) {
+          dayIdx = Math.floor((item.thu_tu_tham_quan - 1) / 100);
         }
         if (dayIdx < 0) dayIdx = 0;
         if (dayIdx >= soNgay) dayIdx = soNgay - 1;
 
+        // Bóc tách AI tips từ ghi_chu nếu có
         if (item.ghi_chu && item.ghi_chu.includes('|AI_TIPS|')) {
-            const parts = item.ghi_chu.split('|AI_TIPS|');
-            item.ghi_chu = parts[0];
-            item.travel_tips = parts[1];
+          const parts = item.ghi_chu.split('|AI_TIPS|');
+          item.ghi_chu = parts[0];
+          item.travel_tips = parts[1];
         }
 
-        // Bóc tách ghi chú và gợi ý AI vào đây nếu backend trả về, hiện map có `ghi_chu`.
         schedule[dayIdx].push(item);
+      });
+
+      // Sắp xếp từng ngày theo vị trí trong ngày (thu_tu_tham_quan % 100)
+      schedule.forEach(day => {
+        day.sort((a, b) => {
+          const posA = a.thu_tu_tham_quan ? (a.thu_tu_tham_quan - 1) % 100 : 0;
+          const posB = b.thu_tu_tham_quan ? (b.thu_tu_tham_quan - 1) % 100 : 0;
+          // Fallback: sort theo gio_bat_dau nếu cùng vị trí
+          if (posA !== posB) return posA - posB;
+          return (a.gio_bat_dau || a.gio || '').localeCompare(b.gio_bat_dau || b.gio || '');
+        });
       });
 
       this.lichTrinhTheoNgay = schedule;
     },
 
     extractTime(t) {
-        if(!t) return '';
-        let parts = String(t).split(/[-–]/);
-        if(parts.length > 1) return parts[1].trim();
-        return String(t).replace(/Ngày \d+\s*[-–]\s*/i, '').trim();
+        if (!t) return '';
+        // Nếu t là HH:MM trực tiếp, trả về luôn
+        if (/^\d{1,2}:\d{2}$/.test(String(t).trim())) return String(t).trim();
+        // Fallback: parse chuỗi cũ "Ngày X – HH:MM"
+        let parts = String(t).split(/[-\u2013]/);
+        if (parts.length > 1) return parts[1].trim();
+        return String(t).replace(/Ngày \d+\s*[-\u2013]\s*/i, '').trim();
     },
 
     chiPhiTheoNgay(dayIndex) {
@@ -698,7 +713,7 @@ export default {
               <div style="min-width:180px; font-family: 'Inter', sans-serif;">
                 <strong style="font-size:15px; color: #1e293b;">${item.ten_dia_diem}</strong><br>
                 <small style="color:#64748b"><i class="bi bi-geo-alt me-1"></i>${item.dia_chi || 'Đà Nẵng'}</small><br>
-                <div class="mt-2 text-primary fw-bold"><i class="bi bi-clock me-1"></i>${this.extractTime(item.thoi_gian_du_kien)}</div>
+                 <div class="mt-2 text-primary fw-bold"><i class="bi bi-clock me-1"></i>${item.gio_bat_dau || ''}</div>
               </div>
             `, { maxWidth: 220 })
             .addTo(this.mapInstance);
@@ -786,9 +801,11 @@ export default {
 .step3-left { padding-right: 1rem; }
 .timeline { display: flex; flex-direction: column; gap: 0; }
 .timeline-item { display: flex; gap: 1rem; }
-.timeline-time { width: 62px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 0.2rem; }
-.time-badge { background: linear-gradient(135deg, #10b981, #0ea5e9); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.28rem 0.5rem; border-radius: 0.6rem; white-space: nowrap; }
-.timeline-line { flex: 1; width: 3px; background: linear-gradient(to bottom, #10b981, #0ea5e9, transparent); margin: 0.4rem 0; min-height: 40px; border-radius: 99px; opacity: 0.4; }
+.timeline-time { width: 72px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 0.2rem; gap: 0.2rem; }
+.time-badge { background: linear-gradient(135deg, #10b981, #0ea5e9); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.45rem; border-radius: 0.55rem; white-space: nowrap; }
+.time-end-badge { background: #e0f2fe; color: #0369a1; font-size: 0.65rem; font-weight: 600; padding: 0.18rem 0.4rem; border-radius: 0.45rem; white-space: nowrap; }
+.duration-badge { background: #fef9c3; color: #854d0e; font-size: 0.62rem; font-weight: 700; padding: 0.15rem 0.38rem; border-radius: 0.45rem; white-space: nowrap; }
+.timeline-line { flex: 1; width: 3px; background: linear-gradient(to bottom, #10b981, #0ea5e9, transparent); margin: 0.3rem 0; min-height: 40px; border-radius: 99px; opacity: 0.4; }
 
 .timeline-card { flex: 1; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border-radius: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.5); padding: 1.2rem; margin-bottom: 1.2rem; box-shadow: 0 10px 30px rgba(30, 45, 68, 0.08); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .timeline-card:hover { transform: translateX(8px); box-shadow: 0 15px 40px rgba(30, 45, 68, 0.12); border-color: #10b981; }

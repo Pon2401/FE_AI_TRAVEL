@@ -16,15 +16,8 @@
 
             <div class="search-container">
               <div class="search-glass">
-                <input v-model="tempSearchQuery" type="text" class="form-control"
-                  placeholder="Tìm địa điểm, món ăn, trải nghiệm..." @keyup.enter="performSearch">
-                <button @click="performSearch" class="btn btn-wow">Tìm kiếm</button>
-                <button class="btn btn-outline-light ms-2 d-none d-md-flex align-items-center rounded-pill px-3"
-                  v-if="tempSearchQuery.length >= 2" @click="searchGoogle" :disabled="loadingSerp"
-                  style="border-color: #e2e8f0; color: #64748b;">
-                  <span v-if="loadingSerp" class="spinner-border spinner-border-sm me-2"></span>
-                  <i v-else class="bi bi-google me-2"></i> Maps
-                </button>
+                <input v-model="searchQuery" type="text" class="form-control"
+                  placeholder="Tìm địa điểm, món ăn, trải nghiệm...">
               </div>
 
               <!-- FILTER -->
@@ -41,41 +34,7 @@
       </section>
 
 
-      <!-- Googles Maps Serp API Results -->
-      <section class="serp-results-section py-4" v-if="serpResults.length > 0">
-        <div class="container">
-          <div class="glass-panel p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <h3 class="results-title mb-0">
-                <i class="bi bi-google me-2 text-primary"></i>Kết quả từ Google Maps
-              </h3>
-              <button class="btn btn-sm btn-outline-danger" @click="serpResults = []">Đóng kết quả</button>
-            </div>
-            <div class="row g-3">
-              <div v-for="(res, index) in serpResults" :key="index" class="col-12 col-lg-6">
-                <div class="serp-item d-flex align-items-start gap-3 p-3 rounded-4 transition-all">
-                  <div class="serp-item-img flex-shrink-0" :style="{ backgroundImage: `url(${res.image})` }"></div>
-                  <div class="serp-item-content flex-grow-1">
-                    <h6 class="mb-1 text-truncate">{{ res.ten_dia_diem }}</h6>
-                    <p class="text-muted small mb-2 text-truncate-2">{{ res.dia_chi }}</p>
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                      <span class="badge bg-light text-dark border"><i
-                          class="bi bi-geo-alt-fill text-danger me-1"></i>{{ res.vi_do }}, {{ res.kinh_do }}</span>
-                      <span class="badge bg-warning text-dark" v-if="res.danh_gia_trung_binh"><i
-                          class="bi bi-star-fill me-1"></i>{{ res.danh_gia_trung_binh }}</span>
-                    </div>
-                    <button class="btn btn-sm btn-primary w-100 rounded-3" @click="importAndShow(res, index)"
-                      :disabled="importingId === index">
-                      <span v-if="importingId === index" class="spinner-border spinner-border-sm me-1"></span>
-                      <i v-else class="bi bi-plus-circle me-1"></i>Lưu vào hệ thống
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       <!-- LIST -->
       <section class="places-section py-4">
@@ -309,12 +268,46 @@
                 @click="alert('Chức năng thêm vào lịch trình đang phát triển')">
                 <i class="bi bi-calendar-plus me-2 fs-5"></i> Thêm vào lịch trình
               </button>
+              <button
+                class="btn w-100 py-3 rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center mt-3 text-white"
+                style="background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%); border: none;"
+                @click="openShareModal">
+                <i class="bi bi-send-fill me-2 fs-5"></i> Gửi địa điểm vào nhóm
+              </button>
+
             </div>
           </div>
         </div>
       </div>
     </div>
 
+
+    <!-- Modal chọn nhóm chia sẻ -->
+    <div v-if="showShareModal" class="share-modal-overlay d-flex align-items-center justify-content-center" @click.self="showShareModal = false" style="position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 9999;">
+      <div class="share-modal-box bg-white p-5 rounded-4 shadow-lg w-100 animate-in position-relative" style="max-width: 440px;">
+        <button class="btn-close position-absolute top-0 end-0 m-4" @click="showShareModal = false"></button>
+        <div class="text-center mb-4 mt-2">
+          <div class="share-icon-wrap mb-3 mx-auto shadow-sm">
+             <i class="bi bi-send-check-fill fs-2 text-primary"></i>
+          </div>
+          <h4 class="fw-bold mb-1 text-dark">Chia sẻ địa điểm</h4>
+          <p class="text-muted mb-0" style="font-size: 0.95rem;">Chọn nhóm để gửi địa điểm này nhé!</p>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="fw-bold mb-2 text-dark" style="font-size: 0.95rem;">Bạn muốn gửi vào nhóm nào?</label>
+          <select v-model="selectedGroupToShare" class="form-select border-2 shadow-none modal-select text-dark" style="padding: 0.9rem 1rem; border-radius: 12px; font-weight: 500; cursor: pointer; border-color: #e2e8f0; background-color: #f8fafc;">
+            <option :value="null">-- Click để chọn nhóm --</option>
+            <option v-for="g in myJoinedGroups" :key="g.id" :value="g">{{ g.ten_nhom }}</option>
+          </select>
+        </div>
+
+        <button class="btn w-100 rounded-pill fw-bold text-white shadow-sm mt-3" @click="shareToGroup" :disabled="!selectedGroupToShare || sendingShare" style="background: #10b981; padding: 0.9rem; font-size: 1.05rem; transition: all 0.2s;">
+          <span v-if="sendingShare" class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm me-2"></span> Đang gửi...</span>
+          <span v-else class="d-flex align-items-center justify-content-center"><i class="bi bi-chat-heart-fill me-2 fs-5"></i> Chia sẻ ngay</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -331,9 +324,7 @@ export default {
       modalMapInstance: null,
       searchQuery: '',
       tempSearchQuery: '',
-      loadingSerp: false,
-      serpResults: [],
-      importingId: null,
+
       places: [],
       loading: false,
       error: null,
@@ -348,6 +339,12 @@ export default {
       detailReviews: [],
       newReview: { so_sao: 5, noi_dung: '' },
       submittingReview: false,
+
+      showShareModal: false,
+      myJoinedGroups: [],
+      selectedGroupToShare: null,
+      sendingShare: false,
+
     }
   },
 
@@ -383,73 +380,70 @@ export default {
   },
 
   methods: {
-    async searchGoogle() {
-      if (!this.tempSearchQuery.trim()) return;
-      this.loadingSerp = true;
-      this.serpResults = [];
-      try {
-        const res = await fetch(`http://localhost:8000/api/serp/search?query=${encodeURIComponent(this.tempSearchQuery)}`);
-        const json = await res.json();
-        if (json.status) {
-          this.serpResults = json.data || [];
-          if (this.serpResults.length === 0) this.$toast.info('Không tìm thấy kết quả nào mới trên Google Maps.');
-        }
-      } catch (e) {
-        this.$toast.error('Lỗi Google Maps: ' + e.message);
-      } finally {
-        this.loadingSerp = false;
+
+    openShareModal() {
+      if (!this.isLoggedIn) {
+        this.$toast.warning('Vui lòng đăng nhập để chia sẻ!');
+        return;
+      }
+      this.showShareModal = true;
+      if (this.myJoinedGroups.length === 0) {
+        this.fetchMyGroups();
       }
     },
-
-    async importAndShow(googlePlace, index) {
-      this.importingId = index;
-      const typeMap = {
-        'AmThuc': ['Quán ăn', 1],
-        'CheckIn': ['Điểm check-in', 2],
-        'GiaiTri': ['Khu vui chơi', 3],
-        'TamLinh': ['Chùa', 4],
-      };
-      let compName = this.$options.name || 'CheckIn';
-      let loai = typeMap[compName] ? typeMap[compName][0] : 'Điểm check-in';
-      let dm = typeMap[compName] ? typeMap[compName][1] : 2;
-
-      const payload = {
-        ten_dia_diem: googlePlace.ten_dia_diem,
-        dia_chi: googlePlace.dia_chi,
-        vi_do: googlePlace.vi_do,
-        kinh_do: googlePlace.kinh_do,
-        danh_gia_trung_binh: googlePlace.danh_gia_trung_binh,
-        image: googlePlace.image,
-        mo_ta: googlePlace.mo_ta || 'Được thêm chi tiết từ Google Maps.',
-        loai_dia_diem: loai,
-        id_danh_muc: dm,
-      };
-
+    async fetchMyGroups() {
       try {
-        const res = await fetch(`http://localhost:8000/api/serp/import`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const [joinedRes, ownedRes] = await Promise.all([
+          fetch(`${BASE}/client/nhom-du-lich/get-joined`, { headers: { Authorization: `Bearer ${this.token}` } }),
+          fetch(`${BASE}/client/nhom-du-lich/get-my-groups`, { headers: { Authorization: `Bearer ${this.token}` } })
+        ]);
+        const jData = await joinedRes.json();
+        const oData = await ownedRes.json();
+        
+        const groups = [];
+        if (jData.status && jData.data) groups.push(...jData.data);
+        if (oData.status && oData.data) groups.push(...oData.data);
+        
+        this.myJoinedGroups = groups;
+      } catch (e) {
+        console.error("Lỗi lấy danh sách nhóm", e);
+      }
+    },
+    async shareToGroup() {
+      if (!this.selectedGroupToShare) return;
+      this.sendingShare = true;
+      try {
+        const payload = {
+            id_nhom_du_lich: this.selectedGroupToShare.id,
+            id_chi_tiet_nhom: this.selectedGroupToShare.id_chi_tiet_nhom,
+            message: JSON.stringify({ type: 'place', id: this.selectedPlace.id, title: this.selectedPlace.ten_dia_diem, image: this.selectedPlace.image })
+        };
+
+        const r = await fetch(`${BASE}/nhom-chats`, {
+          method: 'POST', 
+          headers: { 
+            'Content-Type': 'application/json', 
+            Authorization: `Bearer ${this.token}` 
+          },
           body: JSON.stringify(payload)
         });
-        const json = await res.json();
-
-        if (!json.status && json.message === 'Địa điểm này đã tồn tại trong hệ thống.') {
-          this.$toast.warning('Địa điểm này đã có trong hệ thống nội bộ, bạn có thể tìm thấy ngay bên dưới!');
-          return;
-        }
-
-        if (json.status && json.data) {
-          this.$toast.success('Đã lưu địa điểm và crawl ảnh + đánh giá từ Google!');
-          this.places.unshift(json.data);
-          this.serpResults.splice(index, 1);
-          this.viewDetail(json.data);
+        const res = await r.json();
+        
+        if (res.status) {
+          this.$toast.success('Gửi địa điểm thành công!');
+          this.showShareModal = false;
+        } else {
+          this.$toast.error('Gửi thất bại: ' + res.message);
         }
       } catch (e) {
-        this.$toast.error('Lỗi khi tải địa điểm: ' + e.message);
+        this.$toast.error('Lỗi khi chia sẻ.');
+        console.error(e);
       } finally {
-        this.importingId = null;
+        this.sendingShare = false;
       }
     },
+
+
 
     async fetchData() {
       this.loading = true;

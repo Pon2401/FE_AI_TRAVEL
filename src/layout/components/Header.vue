@@ -69,7 +69,11 @@
                 <i class="bi bi-chevron-down"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom" :class="{ 'show': showProfile }">
-                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                <li>
+                  <router-link to="/admin/profile" class="dropdown-item">
+                    <i class="bi bi-person me-2"></i>My Profile
+                  </router-link>
+                </li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
                 <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
                 <li><hr class="dropdown-divider"></li>

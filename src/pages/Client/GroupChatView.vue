@@ -73,6 +73,17 @@
                       </div>
                     </div>
                   </div>
+                  <div class="msg-bubble p-0 overflow-hidden" v-else-if="isPlaceShare(msg.message)" style="cursor:pointer; background: transparent; border: none; box-shadow: none;" @click="$router.push('/chi-tiet-dia-diem/' + extractPlaceData(msg.message).id)">
+                    <div class="d-flex align-items-center gap-3 p-3 bg-white border rounded-4 shadow-sm iti-card">
+                      <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:60px;height:60px; overflow: hidden; background: #eee;">
+                        <img :src="extractPlaceData(msg.message).image || 'https://via.placeholder.com/60'" style="width: 100%; height: 100%; object-fit: cover;" />
+                      </div>
+                      <div>
+                        <div class="fw-bold text-dark mb-1" style="font-size: 0.95rem; line-height: 1.2;">{{ extractPlaceData(msg.message).title }}</div>
+                        <div class="text-success fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-geo-alt-fill me-1"></i>Địa điểm gợi ý</div>
+                      </div>
+                    </div>
+                  </div>
                   <div class="msg-bubble" v-else>
                     {{ msg.message }}
                   </div>
@@ -270,6 +281,35 @@ const isItineraryShare = (text) => {
     if (obj && obj.type === 'itinerary') return true;
   } catch (e) {}
   return /Tôi vừa chia sẻ một lịch trình thú vị: "([^"]+)".*Click vào đây để xem chi tiết: (http\S+)/s.test(String(text));
+};
+
+const isPlaceShare = (text) => {
+  if (!text) return false;
+  if (typeof text === 'object' && text.type === 'place') return true;
+  if (typeof text === 'string' && text.includes('"type":"place"')) return true;
+  try {
+    const obj = JSON.parse(text);
+    if (obj && obj.type === 'place') return true;
+  } catch (e) {}
+  return false;
+};
+
+const extractPlaceData = (text) => {
+  if (!text) return { title: '', image: '', id: '' };
+  if (typeof text === 'object' && text.type === 'place') return text;
+  try {
+    const obj = JSON.parse(text);
+    if (obj && obj.type === 'place') return obj;
+  } catch (e) {}
+  
+  if (typeof text === 'string' && text.includes('"type":"place"')) {
+     try {
+         let clean = text.replace(/\\"/g, '"');
+         const obj = JSON.parse(clean);
+         if (obj && obj.type === 'place') return obj;
+     } catch(ex){}
+  }
+  return { title: '', image: '', id: '' };
 };
 
 const extractItineraryData = (text) => {

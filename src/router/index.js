@@ -60,6 +60,11 @@ const routes = [
     meta: { layout: "client" }
   },
   {
+    path: "/chi-tiet-dia-diem/:id",
+    component: () => import("../pages/Client/DiaDiem/ChiTietDiaDiem.vue"),
+    meta: { layout: "client" }
+  },
+  {
     path: "/nhom-du-lich",
     component: () => import("../pages/Client/NhomDuLich.vue"),
     meta: { layout: "client" },
@@ -111,6 +116,11 @@ const routes = [
   {
     path: "/admin/dashboard",
     component: () => import("../pages/Admin/Dashboard.vue"),
+    meta: { layout: "default" },
+  },
+  {
+    path: "/admin/profile",
+    component: () => import("../pages/Admin/Profile.vue"),
     meta: { layout: "default" },
   },
   {
