@@ -79,6 +79,25 @@
           </span>
         </div>
 
+        <!-- Weather Forecast Widget -->
+        <div v-if="weatherForecast.length > 0 || loadingWeather" class="weather-widget animate-in">
+          <div class="weather-header">
+            <i class="bi bi-cloud-sun me-2"></i>
+            <span>Dự báo thời tiết Đà Nẵng</span>
+            <span v-if="loadingWeather" class="spinner-border spinner-border-sm ms-2"></span>
+          </div>
+          <div class="weather-days">
+            <div v-for="(w, i) in weatherForecast" :key="i" class="weather-day-card"
+              :class="'weather-' + w.condition">
+              <div class="weather-date">{{ formatWeatherDate(w.date) }}</div>
+              <div class="weather-icon">{{ weatherIcon(w.condition) }}</div>
+              <div class="weather-temp">{{ w.temp_max }}°C</div>
+              <div class="weather-label">{{ weatherLabel(w.condition) }}</div>
+              <div class="weather-tip">{{ weatherTip(w.condition, w.temp_max) }}</div>
+            </div>
+          </div>
+        </div>
+
         <div class="tlt-actions d-flex flex-column gap-3">
           <button class="btn-brand-lg w-100" @click="goStep2">
             Tiếp tục – Chọn địa điểm tự túc <i class="bi bi-arrow-right ms-2"></i>
@@ -277,7 +296,9 @@
               <div v-for="(item, idx) in lichTrinhTheoNgay[activeDayTab - 1]" :key="item.id_dia_diem + '-' + idx"
                 class="timeline-item">
                 <div class="timeline-time">
-                  <span class="time-badge">{{ item.gio }}</span>
+                  <span class="time-badge">{{ item.gio_bat_dau || item.gio }}</span>
+                  <span v-if="item.gio_ket_thuc" class="time-end-badge">{{ item.gio_ket_thuc }}</span>
+                  <span v-if="item.thoi_luong_phut" class="duration-badge">{{ item.thoi_luong_phut }}p</span>
                   <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
                 </div>
                 <div class="timeline-card">
@@ -293,6 +314,12 @@
                       <p v-if="item.gia_ve > 0">
                         <i class="bi bi-ticket-perforated me-1"></i>{{ formatCurrency(item.gia_ve) }} / người
                       </p>
+                      <!-- Weather badge theo giờ -->
+                      <div v-if="getWeatherAtTime(activeDayTab - 1, item.gio_bat_dau || item.gio)" class="weather-inline-badge">
+                        <span class="wib-icon">{{ getWeatherAtTime(activeDayTab - 1, item.gio_bat_dau || item.gio).icon }}</span>
+                        <span class="wib-temp">{{ getWeatherAtTime(activeDayTab - 1, item.gio_bat_dau || item.gio).temp }}°C</span>
+                        <span class="wib-label">{{ getWeatherAtTime(activeDayTab - 1, item.gio_bat_dau || item.gio).label }}</span>
+                      </div>
                     </div>
                     <div class="tc-order-btns">
                       <button @click="moveItem(activeDayTab - 1, idx, -1)" :disabled="idx === 0" title="Lên">
@@ -566,6 +593,11 @@ export default {
       aiStage: 0, // 0: Idle, 1: Filtering, 2: Scheduling, 3: AI Refinement
       generationLog: [],
 
+      // ── Thời tiết ──
+      weatherForecast: [],
+      weatherHourly: {}, // { 'YYYY-MM-DD': { '09': { temp, icon, label }, ... } }
+      loadingWeather: false,
+
       // ── Rating Modal ──
       showRatingModal: false,
       selectedRating: null,
@@ -652,6 +684,9 @@ export default {
         });
       }
     },
+    // Auto-fetch thời tiết khi user thay đổi ngày
+    'form.ngay_bat_dau'() { this.autoLoadWeather(); },
+    'form.ngay_ket_thuc'() { this.autoLoadWeather(); },
   },
 
   methods: {
@@ -665,6 +700,46 @@ export default {
     formatCurrency(val) {
       if (!val) return '0đ';
       return Number(val).toLocaleString('vi-VN') + 'đ';
+    },
+
+    formatWeatherDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    },
+    weatherIcon(condition) {
+      const map = { sunny: '☀️', partly_cloudy: '⛅', rain: '🌧️', cloudy: '☁️' };
+      return map[condition] || '🌤';
+    },
+    weatherLabel(condition) {
+      const map = { sunny: 'Nắng đẹp', partly_cloudy: 'Ít mây', rain: 'Có mưa', cloudy: 'Nhiều mây' };
+      return map[condition] || 'Không rõ';
+    },
+    weatherTip(condition, temp) {
+      if (condition === 'rain') return 'Ưu tiên cafe, bảo tàng';
+      if (condition === 'sunny' && temp >= 35) return 'Tránh biển trưa, mang kem chống nắng';
+      if (condition === 'sunny') return 'Tuyệt vời cho biển & check-in';
+      if (condition === 'partly_cloudy') return 'Thời tiết dễ chịu';
+      return 'Mang áo khoác nhẹ';
+    },
+
+    async autoLoadWeather() {
+      if (!this.form.ngay_bat_dau || !this.form.ngay_ket_thuc) return;
+      if (this.form.ngay_ket_thuc < this.form.ngay_bat_dau) return;
+      this.loadingWeather = true;
+      const result = await this.fetchWeatherData();
+      this.weatherForecast = result.daily;
+      this.weatherHourly   = result.hourly;
+      this.loadingWeather = false;
+    },
+
+    // Trả về thời tiết tại khung giờ cụ thể của ngày trong lịch trình
+    getWeatherAtTime(dayIndex, timeStr) {
+      if (!timeStr || !this.form.ngay_bat_dau) return null;
+      const d = new Date(this.form.ngay_bat_dau);
+      d.setDate(d.getDate() + dayIndex);
+      const dateKey = d.toISOString().split('T')[0];
+      const hourKey = (timeStr || '').substring(0, 2); // Lấy 2 chữ số giờ
+      return this.weatherHourly?.[dateKey]?.[hourKey] || null;
     },
 
     formatDate(baseDate, addDays) {
@@ -849,6 +924,64 @@ export default {
       this.activeDayTab = 1;
     },
 
+    // ─── Fetch thời tiết từ Open-Meteo (miễn phí, không cần API key) ──────
+    async fetchWeatherData() {
+      if (!this.form.ngay_bat_dau || !this.form.ngay_ket_thuc) return { daily: [], hourly: {} };
+      try {
+        // Đà Nẵng: lat=16.0544, lon=108.2022
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=16.0544&longitude=108.2022`
+          + `&daily=weathercode,temperature_2m_max,precipitation_sum`
+          + `&hourly=temperature_2m,weathercode`
+          + `&timezone=Asia%2FHo_Chi_Minh`
+          + `&start_date=${this.form.ngay_bat_dau}&end_date=${this.form.ngay_ket_thuc}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (!json.daily) return { daily: [], hourly: {} };
+
+        // WMO Weather Code → condition
+        const getCondition = (code) => {
+          if (code === 0 || code === 1) return 'sunny';
+          if (code <= 3) return 'partly_cloudy';
+          if (code <= 67) return 'rain';
+          return 'cloudy';
+        };
+
+        // — Daily (cho weather widget) —
+        const daily = json.daily.time.map((date, i) => ({
+          date,
+          condition: getCondition(json.daily.weathercode[i]),
+          temp_max: json.daily.temperature_2m_max[i],
+          precipitation: json.daily.precipitation_sum[i],
+          weathercode: json.daily.weathercode[i],
+        }));
+
+        // — Hourly (cho badge trong card) —
+        // Cấu trúc: { 'YYYY-MM-DD': { '06': { icon, temp, label }, '07': ... } }
+        const hourly = {};
+        if (json.hourly) {
+          json.hourly.time.forEach((isoTime, i) => {
+            const [dateStr, timeStr] = isoTime.split('T');
+            const hourKey = timeStr.substring(0, 2);
+            if (!hourly[dateStr]) hourly[dateStr] = {};
+            const condition = getCondition(json.hourly.weathercode[i]);
+            const iconMap  = { sunny: '☀️', partly_cloudy: '⛅', rain: '🌧️', cloudy: '☁️' };
+            const labelMap = { sunny: 'Nắng', partly_cloudy: 'Ít mây', rain: 'Mưa', cloudy: 'Nhiều mây' };
+            hourly[dateStr][hourKey] = {
+              icon : iconMap[condition]  || '🌤',
+              label: labelMap[condition] || '',
+              temp : Math.round(json.hourly.temperature_2m[i]),
+              condition,
+            };
+          });
+        }
+
+        return { daily, hourly };
+      } catch (e) {
+        console.warn('Không lấy được dữ liệu thời tiết:', e.message);
+        return { daily: [], hourly: {} };
+      }
+    },
+
     async generateByAI() {
       if (!this.validateStep1()) return;
 
@@ -863,10 +996,30 @@ export default {
       this.generationLog = ['Đang khởi tạo thuật toán...'];
 
       try {
-        // Stage 1: Content-based (Technical)
+        // Lấy dữ liệu thời tiết (dùng lại nếu đã có, nếu không thì fetch mới)
+        this.generationLog.push('🌤 Đang tải dự báo thời tiết Đà Nẵng...');
+        const result = this.weatherForecast.length > 0
+          ? { daily: this.weatherForecast, hourly: this.weatherHourly }
+          : await this.fetchWeatherData();
+        if (!this.weatherForecast.length) {
+          this.weatherForecast = result.daily;
+          this.weatherHourly   = result.hourly;
+        }
+        const weatherData = result.daily;
+        if (weatherData.length > 0) {
+          const summary = weatherData.map(w => `${w.date}: ${w.condition}, ${w.temp_max}°C`).join(' | ');
+          this.generationLog.push(`✅ Thời tiết: ${summary}`);
+        }
+
+        // Stage 2
         await new Promise(r => setTimeout(r, 600));
         this.aiStage = 2;
         this.generationLog.push('Đang tối ưu quãng đường di chuyển (Haversine)...');
+
+        const payload = {
+          ...this.form,
+          weather_data: weatherData,  // ← Gửi kèm thời tiết cho AI
+        };
 
         const res = await fetch(`${BASE}/client/ai/generate-itinerary`, {
           method: 'POST',
@@ -874,7 +1027,7 @@ export default {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(this.form)
+          body: JSON.stringify(payload)
         });
         const json = await res.json();
 
@@ -1007,9 +1160,12 @@ export default {
 
         // 3. Bulk create chi tiết
         const items = this.lichTrinhTheoNgay.flatMap((day, di) =>
-          day.map(item => ({
-            id_dia_diem: item.id_dia_diem,
-            thoi_gian_du_kien: `Ngày ${di + 1} – ${item.gio}`,
+          day.map((item, idx) => ({
+            id_dia_diem:      item.id_dia_diem,
+            thu_tu_tham_quan: di * 100 + idx + 1,
+            gio_bat_dau:      item.gio_bat_dau || item.gio || null,
+            gio_ket_thuc:     item.gio_ket_thuc     || null,
+            thoi_luong_phut:  item.thoi_luong_phut  || null,
             ghi_chu: (item.ghi_chu || '') + (item.travel_tips ? `|AI_TIPS|${item.travel_tips}` : ''),
           }))
         );
@@ -1168,6 +1324,70 @@ export default {
 </script>
 
 <style scoped>
+/* ──────────── Weather Widget ──────────── */
+.weather-widget {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e0eaff;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.08);
+}
+
+.weather-header {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0369a1;
+  margin-bottom: 1rem;
+}
+
+.weather-days {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.weather-day-card {
+  min-width: 110px;
+  border-radius: 14px;
+  padding: 0.9rem 0.75rem;
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  cursor: default;
+}
+.weather-day-card:hover { transform: translateY(-3px); }
+
+.weather-sunny    { background: linear-gradient(135deg, #fff7e6, #ffe4a0); border: 1px solid #fbbf24; }
+.weather-partly_cloudy { background: linear-gradient(135deg, #f0f9ff, #bae6fd); border: 1px solid #7dd3fc; }
+.weather-rain     { background: linear-gradient(135deg, #eff6ff, #bfdbfe); border: 1px solid #60a5fa; }
+.weather-cloudy   { background: linear-gradient(135deg, #f8fafc, #e2e8f0); border: 1px solid #94a3b8; }
+
+.weather-date  { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-bottom: 0.4rem; }
+.weather-icon  { font-size: 2rem; margin-bottom: 0.3rem; line-height: 1; }
+.weather-temp  { font-size: 1.3rem; font-weight: 800; color: #1e2d44; }
+.weather-label { font-size: 0.75rem; font-weight: 600; margin-top: 0.25rem; color: #475569; }
+.weather-tip   { font-size: 0.68rem; color: #64748b; margin-top: 0.4rem; line-height: 1.3; }
+
+/* ──────────── Weather Inline Badge (trong card địa điểm) ──────────── */
+.weather-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  font-size: 0.78rem;
+}
+.wib-icon  { font-size: 1rem; line-height: 1; }
+.wib-temp  { font-weight: 700; color: #0369a1; }
+.wib-label { color: #64748b; font-size: 0.72rem; }
+
 /* ──────────── Base ──────────── */
 .tlt-page {
   min-height: 100vh;
@@ -1786,21 +2006,42 @@ label {
 }
 
 .timeline-time {
-  width: 62px;
+  width: 72px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 0.2rem;
+  gap: 0.2rem;
 }
 
 .time-badge {
   background: linear-gradient(135deg, #10b981, #0ea5e9);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.28rem 0.5rem;
-  border-radius: 0.6rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.55rem;
+  white-space: nowrap;
+}
+
+.time-end-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.18rem 0.4rem;
+  border-radius: 0.45rem;
+  white-space: nowrap;
+}
+
+.duration-badge {
+  background: #fef9c3;
+  color: #854d0e;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.15rem 0.38rem;
+  border-radius: 0.45rem;
   white-space: nowrap;
 }
 

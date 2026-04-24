@@ -23,19 +23,15 @@
             <div v-if="loading" class="text-center py-4">
               <div class="spinner-border text-primary" role="status"></div>
             </div>
-            
+
             <div v-else class="role-list">
-              <div 
-                v-for="role in roles" 
-                :key="role.id" 
-                class="role-item"
-                :class="{ 'active': selectedRole && selectedRole.id === role.id }"
-                @click="selectRole(role)"
-              >
+              <div v-for="role in roles" :key="role.id" class="role-item"
+                :class="{ 'active': selectedRole && selectedRole.id === role.id }" @click="selectRole(role)">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <strong class="text-dark">{{ role.ten_chuc_vu }}</strong>
                   <span v-if="role.id === 1" class="badge bg-danger rounded-pill custom-badge">Toàn quyền</span>
-                  <span v-else class="badge bg-primary rounded-pill custom-badge">{{ role.chuc_nangs?.length || 0 }} quyền</span>
+                  <span v-else class="badge bg-primary rounded-pill custom-badge">{{ role.chuc_nangs?.length || 0 }}
+                    quyền</span>
                 </div>
                 <div class="text-muted small">{{ role.mo_ta || 'Không có mô tả' }}</div>
               </div>
@@ -49,23 +45,17 @@
         <div class="card card-custom h-100">
           <div class="card-header border-bottom-0 pb-0 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">
-              <i class="bi bi-ui-checks text-success me-2"></i>Bảng Phân quyền 
+              <i class="bi bi-ui-checks text-success me-2"></i>Bảng Phân quyền
               <span v-if="selectedRole" class="text-primary">- {{ selectedRole.ten_chuc_vu }}</span>
             </h5>
             <div class="d-flex gap-2">
-              <button 
-                v-if="selectedRole && selectedRole.id !== 1" 
-                class="btn btn-sm btn-outline-danger px-3 fw-semibold action-btn-sm"
-                @click="openDeleteRoleModal"
-              >
+              <button v-if="selectedRole && selectedRole.id !== 1"
+                class="btn btn-sm btn-outline-danger px-3 fw-semibold action-btn-sm" @click="openDeleteRoleModal">
                 <i class="bi bi-trash3 me-2"></i>Xóa
               </button>
-              <button 
-                v-if="selectedRole && selectedRole.id !== 1" 
-                class="btn btn-sm btn-success px-3 fw-semibold action-btn-sm"
-                :disabled="savingPermissions"
-                @click="savePermissions"
-              >
+              <button v-if="selectedRole && selectedRole.id !== 1"
+                class="btn btn-sm btn-success px-3 fw-semibold action-btn-sm" :disabled="savingPermissions"
+                @click="savePermissions">
                 <span v-if="savingPermissions" class="spinner-border spinner-border-sm me-2" role="status"></span>
                 <i v-else class="bi bi-save me-2"></i>Lưu phân quyền
               </button>
@@ -79,7 +69,8 @@
 
             <div v-else-if="selectedRole.id === 1" class="empty-state py-5 mt-4 text-center">
               <i class="bi bi-shield-fill-check text-danger" style="font-size: 3rem;"></i>
-              <p class="text-muted mt-3">Vai trò <strong>Super Admin</strong> có toàn quyền truy cập toàn bộ hệ thống.<br> Không thể điều chỉnh quyền của vai trò này.</p>
+              <p class="text-muted mt-3">Vai trò <strong>Super Admin</strong> có toàn quyền truy cập toàn bộ hệ
+                thống.<br> Không thể điều chỉnh quyền của vai trò này.</p>
             </div>
 
             <div v-else class="permissions-container mt-3">
@@ -90,14 +81,8 @@
                     <h6 class="group-title">{{ groupName }}</h6>
                     <div class="permission-list mt-3">
                       <div class="form-check form-switch custom-switch mb-3" v-for="perm in group" :key="perm.id">
-                        <input 
-                          class="form-check-input" 
-                          type="checkbox" 
-                          role="switch"
-                          :value="perm.ma_chuc_nang" 
-                          :id="'perm_' + perm.id"
-                          v-model="selectedPermissions"
-                        >
+                        <input class="form-check-input" type="checkbox" role="switch" :value="perm.ma_chuc_nang"
+                          :id="'perm_' + perm.id" v-model="selectedPermissions">
                         <label class="form-check-label ms-2" :for="'perm_' + perm.id">
                           {{ perm.ten_chuc_nang }}
                         </label>
@@ -125,11 +110,13 @@
             <div class="modal-body pt-4">
               <div class="mb-3">
                 <label class="form-label">Tên chức vụ</label>
-                <input v-model="formRole.ten_chuc_vu" type="text" class="form-control" required placeholder="Ví dụ: Kế toán">
+                <input v-model="formRole.ten_chuc_vu" type="text" class="form-control" required
+                  placeholder="Ví dụ: Kế toán">
               </div>
               <div class="mb-3">
                 <label class="form-label">Mô tả vai trò</label>
-                <textarea v-model="formRole.mo_ta" class="form-control" rows="3" placeholder="Mô tả công việc của chức vụ này..."></textarea>
+                <textarea v-model="formRole.mo_ta" class="form-control" rows="3"
+                  placeholder="Mô tả công việc của chức vụ này..."></textarea>
               </div>
             </div>
             <div class="modal-footer border-0 pt-0">
@@ -154,7 +141,8 @@
           </div>
           <div class="modal-body text-center pt-3 pb-4">
             <h4 class="fw-bold mb-2">Xóa vai trò?</h4>
-            <p class="text-muted mb-0">Bạn có chắc chắn muốn xóa vai trò <strong class="text-dark">{{ selectedRole?.ten_chuc_vu }}</strong>?</p>
+            <p class="text-muted mb-0">Bạn có chắc chắn muốn xóa vai trò <strong class="text-dark">{{
+              selectedRole?.ten_chuc_vu }}</strong>?</p>
             <p class="text-muted small mt-1">Hành động này không thể hoàn tác.</p>
           </div>
           <div class="modal-footer border-0 pt-0 justify-content-center gap-2 mb-3">
@@ -182,7 +170,6 @@ export default {
       permissions: [],
       selectedRole: null,
       selectedPermissions: [], // Mảng chứa ma_chuc_nang
-      loading: true,
       loading: true,
       savingPermissions: false,
       isSubmitting: false,
@@ -219,10 +206,10 @@ export default {
           axios.get('http://127.0.0.1:8000/api/chuc-vus', this.authHeader()),
           axios.get('http://127.0.0.1:8000/api/chuc-nangs', this.authHeader())
         ]);
-        
+
         this.roles = rolesRes.data?.data || [];
         this.permissions = permsRes.data?.data || [];
-        
+
         if (this.roles.length > 0 && !this.selectedRole) {
           this.selectRole(this.roles[0]);
         }
@@ -288,7 +275,7 @@ export default {
         };
         const url = `http://127.0.0.1:8000/api/chuc-vus/${this.selectedRole.id}`;
         await axios.put(url, payload, this.authHeader());
-        
+
         this.$toast?.success('Cập nhật phân quyền thành công');
         await this.fetchData();
         // Re-select proper role
@@ -311,8 +298,15 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header {
@@ -397,7 +391,7 @@ export default {
 
 .action-btn-sm:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .permission-group-card {
@@ -455,7 +449,8 @@ export default {
 }
 
 .custom-switch .form-check-input:checked {
-  background-color: #10b981; /* Emerald green */
+  background-color: #10b981;
+  /* Emerald green */
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
 }
 
