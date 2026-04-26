@@ -63,9 +63,17 @@
           </div>
 
           <div class="form-group full-col">
-            <label>Ghi chú</label>
-            <textarea v-model="form.chu_thich" class="tlt-input" rows="3"
-              placeholder="Sở thích, yêu cầu đặc biệt..."></textarea>
+            <label>Sở thích & Yêu cầu đặc biệt</label>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <span v-for="tag in noteSuggestionTags" :key="tag" 
+                    @click="toggleNoteTag(tag)" 
+                    class="note-tag badge rounded-pill px-3 py-2"
+                    :class="{ 'selected': selectedNoteTags.includes(tag) }">
+                {{ tag }}
+              </span>
+            </div>
+            <textarea v-model="chu_thich_custom" class="tlt-input" rows="2"
+              placeholder="Hoặc nhập yêu cầu khác của bạn tại đây..."></textarea>
           </div>
         </div>
 
@@ -87,7 +95,7 @@
           <div class="ai-gen-wrapper">
             <button class="btn-outline-brand-lg w-100" @click="generateByAI" :disabled="loadingAI">
               <span v-if="loadingAI" class="spinner-border spinner-border-sm me-2"></span>
-              <i v-else class="bi bi-magic me-2"></i> Tạo lịch trình thông minh (Algorithm + AI)
+              <i v-else class="bi bi-magic me-2"></i> Tạo lịch trình thông minh
             </button>
             <div v-if="loadingAI" class="ai-progress-status mt-3 p-3 rounded"
               style="background: #f0f7ff; border: 1px solid #cce5ff;">
@@ -268,13 +276,6 @@
                       </div>
                     </div>
                     <div class="tc-order-btns">
-                      <button @click="moveItem(activeDayTab - 1, idx, -1)" :disabled="idx === 0" title="Lên">
-                        <i class="bi bi-arrow-up"></i>
-                      </button>
-                      <button @click="moveItem(activeDayTab - 1, idx, 1)"
-                        :disabled="idx === lichTrinhTheoNgay[activeDayTab - 1].length - 1" title="Xuống">
-                        <i class="bi bi-arrow-down"></i>
-                      </button>
                       <button class="btn-remove" @click="removeItem(activeDayTab - 1, idx)" title="Xóa">
                         <i class="bi bi-trash3"></i>
                       </button>
@@ -324,6 +325,9 @@
           <div></div>
           <div class="tlt-actions-row">
             <button class="btn-ghost" @click="step = 2"><i class="bi bi-arrow-left me-1"></i>Quay lại</button>
+            <button class="btn btn-outline-primary fw-bold px-4" style="border-radius: 99px; height: 3.2rem" @click="openShareModal">
+               <i class="bi bi-share-fill me-1"></i> Chia sẻ nhóm
+            </button>
             <button class="btn-brand-lg" @click="step = 4">
               Xem tóm tắt &amp; Lưu <i class="bi bi-check2-circle ms-2"></i>
             </button>
@@ -408,6 +412,35 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
+         MODAL CHIA SẺ VÀO NHÓM
+         ═══════════════════════════════════════════ -->
+    <div v-if="showShareModal" class="rating-modal-overlay d-flex align-items-center justify-content-center" @click.self="showShareModal = false" style="z-index: 1000">
+      <div class="bg-white p-4 rounded-4 shadow-lg w-100 animate-in position-relative" style="max-width: 440px;">
+        <button class="btn-close position-absolute top-0 end-0 m-4" @click="showShareModal = false"></button>
+        <div class="text-center mb-4 mt-2">
+          <div class="mb-3 mx-auto shadow-sm" style="width:55px; height:55px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+             <i class="bi bi-send-check-fill fs-3 text-white"></i>
+          </div>
+          <h5 class="fw-bold mb-1 text-dark">Lưu & Chia sẻ lịch trình</h5>
+          <p class="text-muted mb-0" style="font-size: 0.9rem;">Chọn nhóm để gửi chuyến đi này nhé!</p>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="fw-bold mb-2 text-dark" style="font-size: 0.9rem;">Bạn muốn gửi vào nhóm nào?</label>
+          <select v-model="form.id_nhom_du_lich" class="form-select border-2 shadow-none modal-select text-dark" style="padding: 0.8rem 1rem; border-radius: 12px; font-weight: 500; cursor: pointer; border-color: #e2e8f0; background-color: #f8fafc;">
+            <option :value="null">-- Click để chọn nhóm --</option>
+            <option v-for="g in myJoinedGroups" :key="g.id" :value="g">{{ g.ten_nhom }}</option>
+          </select>
+        </div>
+
+        <button class="btn w-100 rounded-pill fw-bold text-white shadow-sm mt-2" @click="confirmShare" :disabled="!form.id_nhom_du_lich || saving" style="background: #10b981; padding: 0.8rem; font-size: 1rem; transition: all 0.2s;">
+          <span v-if="saving" class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm me-2"></span> Đang lưu và gửi...</span>
+          <span v-else class="d-flex align-items-center justify-content-center"><i class="bi bi-chat-heart-fill me-2 fs-5"></i> Chia sẻ ngay</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
          MODAL ĐÁNH GIÁ MỨC ĐỘ HÀI LÒNG
          ═══════════════════════════════════════════ -->
     <transition name="rating-modal">
@@ -485,7 +518,6 @@ export default {
 
       today: new Date().toISOString().split('T')[0],
 
-      // ── Form bước 1 ──
       form: {
         ten_chuyen_di: '',
         ngay_bat_dau: '',
@@ -493,8 +525,11 @@ export default {
         so_luong_thanh_vien: 2,
         ngan_sach_du_kien: 0,
         chu_thich: '',
+        id_nhom_du_lich: null,
       },
       errors: {},
+
+      myJoinedGroups: [],
 
       // ── Địa điểm ──
       allDiaDiem: [],
@@ -528,6 +563,8 @@ export default {
       weatherHourly: {}, // { 'YYYY-MM-DD': { '09': { temp, icon, label }, ... } }
       loadingWeather: false,
 
+      showShareModal: false,
+
       // ── Rating Modal ──
       showRatingModal: false,
       selectedRating: null,
@@ -540,6 +577,16 @@ export default {
         { value: 4, icon: '😊', label: 'Tốt', feedback: 'Tuyệt vời! Rất vui vì bạn hài lòng với trải nghiệm.' },
         { value: 5, icon: '🤩', label: 'Rất tốt', feedback: 'Cảm ơn bạn rất nhiều! Điều này thật sự truyền cảm hứng cho chúng tôi! 🚀' },
       ],
+
+      // Tags gợi ý
+      noteSuggestionTags: [
+        'Âm nhạc', 'Streetfood', 'Quán ăn ngon', 'Thích không gian yên tĩnh', 
+        'Đi cùng người cao tuổi', 'Có trẻ nhỏ', 'Ưu tiên tiết kiệm', 
+        'Di chuyển bằng taxi', 'Thích chụp ảnh sống ảo', 'Đam mê hải sản', 
+        'Khám phá văn hóa lịch sử', 'Du lịch nghỉ dưỡng'
+      ],
+      selectedNoteTags: [],
+      chu_thich_custom: '',
     };
   },
 
@@ -564,6 +611,7 @@ export default {
       script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js';
       document.head.appendChild(script);
     }
+    this.fetchMyGroups();
   },
 
   computed: {
@@ -606,6 +654,11 @@ export default {
   },
 
   watch: {
+    selectedNoteTags: {
+      handler() { this.updateChuThich(); },
+      deep: true
+    },
+    chu_thich_custom() { this.updateChuThich(); },
     activeDayTab(newVal) {
       if (this.step === 3) {
         this.$nextTick(() => {
@@ -620,6 +673,37 @@ export default {
   },
 
   methods: {
+    toggleNoteTag(tag) {
+      if (this.selectedNoteTags.includes(tag)) {
+        this.selectedNoteTags = this.selectedNoteTags.filter(t => t !== tag);
+      } else {
+        this.selectedNoteTags.push(tag);
+      }
+    },
+    
+    updateChuThich() {
+      this.form.chu_thich = [...this.selectedNoteTags, this.chu_thich_custom].filter(Boolean).join('. ');
+    },
+    async fetchMyGroups() {
+      const token = localStorage.getItem('client_token');
+      if (!token) return;
+      try {
+        const [joinedRes, ownedRes] = await Promise.all([
+          fetch(`${BASE}/client/nhom-du-lich/get-joined`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${BASE}/client/nhom-du-lich/get-my-groups`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        const jData = await joinedRes.json();
+        const oData = await ownedRes.json();
+        
+        const groups = [];
+        if (jData.status && jData.data) groups.push(...jData.data);
+        if (oData.status && oData.data) groups.push(...oData.data);
+        
+        this.myJoinedGroups = groups;
+      } catch (e) {
+        console.error("Lỗi lấy danh sách nhóm", e);
+      }
+    },
     // ─── Utilities ───────────────────────────────
     chiPhiTheoNgay(dayIndex) {
       if (!this.lichTrinhTheoNgay[dayIndex]) return 0;
@@ -969,7 +1053,7 @@ export default {
         if (res.status === 401) {
           localStorage.removeItem('client_token');
           localStorage.removeItem('client_user');
-          this.$toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+          this.$toast.error('Phiên đăng nhập đã hết hạn. V vui lòng đăng nhập lại.');
           this.loadingAI = false;
           this.aiStage = 0;
           return;
@@ -1090,22 +1174,13 @@ export default {
       });
     },
 
-    // ─── Di chuyển & xóa item trong lịch trình ──
-    moveItem(dayIdx, itemIdx, direction) {
-      const day = this.lichTrinhTheoNgay[dayIdx];
-      const target = itemIdx + direction;
-      if (target < 0 || target >= day.length) return;
-      const tmp = day[target];
-      day[target] = day[itemIdx];
-      day[itemIdx] = tmp;
-    },
-
+    // ─── Xóa item trong lịch trình ──
     removeItem(dayIdx, itemIdx) {
       this.lichTrinhTheoNgay[dayIdx].splice(itemIdx, 1);
     },
 
     // ─── Lưu lịch trình ─────────────────────────
-    async saveLichTrinh() {
+    async saveLichTrinh(skipRating = false) {
       const token = localStorage.getItem('client_token');
       if (!token) {
         this.saveMsg = 'Bạn cần đăng nhập để lưu lịch trình!';
@@ -1118,10 +1193,11 @@ export default {
 
       try {
         // 1. Tạo chuyến đi
+        const payload = { ...this.form, id_nhom_du_lich: this.form.id_nhom_du_lich?.id || null };
         const r1 = await fetch(`${BASE}/client/chuyen-di/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(this.form),
+          body: JSON.stringify(payload),
         });
         const j1 = await r1.json();
         if (!j1.status) throw new Error(j1.message || 'Lỗi tạo chuyến đi');
@@ -1153,16 +1229,51 @@ export default {
         this.saveMsg = '🎉 Lịch trình đã được lưu thành công!';
         this.saveMsgType = 'success';
 
-        // Show rating modal after short delay
-        setTimeout(() => {
-          this.showRatingModal = true;
-        }, 800);
+        if (this.form.id_nhom_du_lich) {
+           await this.shareToGroup(newTripId);
+        }
+
+        if (skipRating) {
+           this.$router.push('/nhom-du-lich');
+        } else {
+           // Show rating modal after short delay
+           setTimeout(() => {
+             this.showRatingModal = true;
+           }, 800);
+        }
       } catch (err) {
         this.saveMsg = err.message || 'Có lỗi xảy ra. Vui lòng thử lại.';
         this.saveMsgType = 'error';
       } finally {
         this.saving = false;
       }
+    },
+
+    openShareModal() {
+      this.showShareModal = true;
+    },
+    async confirmShare() {
+      if (!this.form.id_nhom_du_lich) return;
+      await this.saveLichTrinh(true);
+      this.showShareModal = false;
+    },
+    async shareToGroup(tripId) {
+       const group = this.form.id_nhom_du_lich;
+       if (!group) return;
+       try {
+           const payload = {
+               id_nhom_du_lich: group.id,
+               id_chi_tiet_nhom: group.id_chi_tiet_nhom,
+               message: JSON.stringify({ type: 'itinerary', id: tripId, title: this.form.ten_chuyen_di })
+           };
+           await fetch(`${BASE}/nhom-chats`, {
+               method: 'POST', 
+               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('client_token')}` },
+               body: JSON.stringify(payload)
+           });
+       } catch (e) {
+           console.error('Lỗi khi chia sẻ.', e);
+       }
     },
 
     // ─── Map Methods ───────────────────────────────────────────
@@ -2721,5 +2832,31 @@ label {
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+/* Note Tags Styling */
+.note-tag {
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.note-tag:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.note-tag.selected {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25) !important;
+  transform: translateY(-2px) scale(1.05) !important;
 }
 </style>

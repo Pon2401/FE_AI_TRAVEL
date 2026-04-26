@@ -26,6 +26,24 @@
             <button class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-bold d-flex align-items-center" @click="$router.push('/lich-trinh-cua-toi')">
               <i class="bi bi-arrow-left me-2"></i>Quay lại
             </button>
+            <button v-if="trip.is_leader && !isFinalized" class="btn btn-danger rounded-pill px-4 py-2 border-0 fw-bold shadow-sm d-flex align-items-center" @click="openFinalizeModal">
+              <i class="bi bi-lock-fill me-2"></i> Lưu & kết thúc
+            </button>
+            <button v-if="trip.is_leader && isFinalized" class="btn btn-warning rounded-pill px-4 py-2 border-0 fw-bold shadow-sm d-flex align-items-center" @click="openUnfinalizeModal">
+              <i class="bi bi-unlock-fill me-2"></i> Mở lại để sửa
+            </button>
+            <button class="btn btn-outline-primary rounded-pill px-3 py-2 fw-bold d-flex align-items-center" @click="exportPDF">
+              <i class="bi bi-file-earmark-pdf-fill me-2"></i> Xuất PDF
+            </button>
+            <!-- AI Optimization Button -->
+            <button v-if="!isFinalized && (trip.is_member || trip.is_owner)" 
+              class="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold d-flex align-items-center" 
+              @click="reorderWithAi" 
+              :disabled="loadingAI">
+              <i v-if="loadingAI" class="spinner-border spinner-border-sm me-2"></i>
+              <i v-else class="bi bi-robot me-2 text-primary"></i>
+              AI Tối ưu lại
+            </button>
             <button class="btn btn-primary rounded-pill px-4 py-2 border-0 fw-bold shadow-sm d-flex align-items-center position-relative overflow-hidden share-btn" @click="showShareModal = true" style="background: linear-gradient(135deg, #10b981, #0ea5e9);">
               <i class="bi bi-share-fill me-2"></i> Gửi vào nhóm
             </button>
@@ -41,15 +59,27 @@
            </button>
         </div>
 
-        <div class="alert alert-success d-inline-flex align-items-center py-2 px-3 mt-2 mb-4" v-if="trip.ngan_sach > 0" style="border-radius: 20px;">
-          <i class="bi bi-piggy-bank me-2 fs-5"></i>
-          <span>
-            Chi phí dự kiến (<i class="bi bi-people-fill mx-1"></i>{{ trip.so_nguoi || 1 }} người):
-            <strong>{{ formatCurrency(tongChiPhiDuKien) }}</strong> / 
-            Ngân sách: <strong>{{ formatCurrency(trip.ngan_sach) }}</strong> 
-            <span v-if="tongChiPhiDuKien <= trip.ngan_sach">✅</span>
-            <span v-else class="text-danger">❌</span>
-          </span>
+        <div v-if="isFinalized" class="alert alert-warning d-flex align-items-center mb-4 shadow-sm" role="alert" style="border-radius: 12px; background: #fffbeb; border-color: #fde68a; color: #92400e;">
+            <i class="bi bi-lock-fill fs-4 me-3 text-warning"></i>
+            <div>
+                <strong>Lịch trình đã được chốt!</strong> Trưởng nhóm đã khóa lịch trình này, không ai có thể chỉnh sửa thêm.
+            </div>
+        </div>
+
+        <div v-if="tongChiPhiDuKien > trip.ngan_sach && trip.ngan_sach > 0" class="alert alert-danger d-flex align-items-center mb-4 shadow-sm" role="alert" style="border-radius: 12px;">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+            <div>
+                <strong class="text-danger">Cảnh báo ngân sách!</strong> Lịch trình hiện tại và chi phí phát sinh đã vượt quá ngân sách dự kiến của bạn.
+                <br/>
+                <span>Số tiền vượt: <b>{{ formatCurrency(tongChiPhiDuKien - trip.ngan_sach) }}</b></span>
+            </div>
+        </div>
+
+        <div v-else-if="trip.ngan_sach > 0" class="alert alert-success d-flex align-items-center mb-4 shadow-sm" role="alert" style="border-radius: 12px;">
+            <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+            <div>
+                <strong class="text-success">Ngân sách an toàn!</strong> Lịch trình hiện tại đang nằm trong phạm vi ngân sách của bạn.
+            </div>
         </div>
 
         <!-- Budget tracker -->
@@ -99,7 +129,7 @@
                   <span v-if="item.thoi_luong_phut" class="duration-badge">{{ item.thoi_luong_phut }}p</span>
                   <div class="timeline-line" v-if="idx < lichTrinhTheoNgay[activeDayTab - 1].length - 1"></div>
                 </div>
-                <div class="timeline-card">
+                <div class="timeline-card" :style="(!isFinalized && (trip.is_member || trip.is_owner)) ? 'cursor: grab;' : ''" :title="(!isFinalized && (trip.is_member || trip.is_owner)) ? 'Kéo thả để thay đổi thứ tự' : ''">
                   <div class="tc-header">
                     <div class="tc-img-wrap">
                       <img
@@ -112,6 +142,11 @@
                       <p v-if="item.gia_ve > 0">
                         <i class="bi bi-ticket-perforated me-1"></i>{{ formatCurrency(item.gia_ve) }} / người
                       </p>
+                    </div>
+                    <div v-if="item.id_dia_diem && !isFinalized && (trip.is_member || trip.is_owner)" class="ms-auto align-self-start">
+                        <button class="btn btn-sm btn-outline-primary rounded-circle shadow-sm" @click="swapPlace(item)" title="Đổi địa điểm khác" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
                     </div>
                   </div>
                   <div v-if="item.ghi_chu" class="tc-note mt-3 p-2 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 0.85rem; color: #475569;">
@@ -153,9 +188,19 @@
 
         <!-- SECTION: QUẢN LÝ CHI PHÍ -->
         <div v-show="activeMainTab === 'chiPhi'" class="chi-phi-section animate-in mt-4">
+          
+          <!-- Banner khóa khi đã chốt -->
+          <div v-if="isFinalized" class="alert d-flex align-items-center mb-4 shadow-sm" role="alert"
+            style="border-radius: 12px; background: #fefce8; border: 1px solid #fde047; color: #92400e;">
+            <i class="bi bi-lock-fill fs-4 me-3 text-warning"></i>
+            <div>
+              <strong>Tính năng đã bị khóa.</strong> Lịch trình đã được chốt, không thể thêm/sửa/xóa chi phí phát sinh.
+            </div>
+          </div>
+
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="fw-bold mb-0">Danh sách phát sinh</h4>
-            <button class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center" @click="openExpenseModal()" style="background: linear-gradient(135deg, #10b981, #0ea5e9); border: none;">
+            <button v-if="!isFinalized" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center" @click="openExpenseModal()" style="background: linear-gradient(135deg, #10b981, #0ea5e9); border: none;">
               <i class="bi bi-plus-circle me-2"></i> Thêm chi phí
             </button>
           </div>
@@ -178,7 +223,7 @@
                     <span class="badge" :class="getExpenseBadgeColor(exp.loai_chi_phi)">{{ exp.loai_chi_phi || 'Khác' }}</span>
                     <span class="text-muted small"><i class="bi bi-calendar-event me-1"></i>{{ formatExpenseDate(exp.ngay_chi) }}</span>
                   </div>
-                  <div class="dropdown">
+                  <div v-if="!isFinalized" class="dropdown">
                     <button class="btn btn-sm btn-light border-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                       <li><a class="dropdown-item" href="#" @click.prevent="openExpenseModal(exp)"><i class="bi bi-pencil me-2 text-primary"></i>Sửa</a></li>
@@ -201,6 +246,31 @@
     </div>
 
     <!-- Modal chọn nhóm chia sẻ -->
+    <div
+      v-if="scheduleConfirmModal.show"
+      class="schedule-confirm-overlay"
+      @click.self="closeScheduleConfirmModal"
+    >
+      <div class="schedule-confirm-box">
+        <button class="btn-close position-absolute top-0 end-0 m-4" @click="closeScheduleConfirmModal"></button>
+        <div class="schedule-confirm-icon" :class="scheduleConfirmModal.variant">
+          <i :class="scheduleConfirmModal.icon"></i>
+        </div>
+        <h4 class="schedule-confirm-title">{{ scheduleConfirmModal.title }}</h4>
+        <p class="schedule-confirm-message">{{ scheduleConfirmModal.message }}</p>
+        <div class="schedule-confirm-actions">
+          <button class="schedule-confirm-cancel" @click="closeScheduleConfirmModal">Hủy</button>
+          <button
+            class="schedule-confirm-submit"
+            :class="scheduleConfirmModal.variant"
+            @click="confirmScheduleAction"
+          >
+            {{ scheduleConfirmModal.confirmText }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showShareModal" class="share-modal-overlay d-flex align-items-center justify-content-center" @click.self="showShareModal = false">
       <div class="share-modal-box bg-white p-5 rounded-4 shadow-lg w-100 animate-in position-relative" style="max-width: 440px;">
         <button class="btn-close position-absolute top-0 end-0 m-4" @click="showShareModal = false"></button>
@@ -262,6 +332,90 @@
       </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════
+         MODAL ĐÁNH GIÁ MỨC ĐỘ HÀI LÒNG
+         ═══════════════════════════════════════════ -->
+    <transition name="rating-modal">
+      <div v-if="showRatingModal" class="rating-modal-overlay" @click.self="skipRating">
+        <div class="rating-modal-box">
+          <div class="confetti-wrap">
+            <span v-for="n in 12" :key="n" class="confetti-dot" :style="confettiStyle(n)"></span>
+          </div>
+          <div class="rm-header">
+            <div class="rm-success-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <h2 class="rm-title">🎉 Lịch trình đã được chốt!</h2>
+            <p class="rm-subtitle">Bạn cảm thấy thế nào về hệ thống lập lịch trình của chúng tôi?</p>
+          </div>
+          <div class="rm-faces">
+            <button v-for="face in ratingFaces" :key="face.value" class="rm-face-btn"
+              :class="{ selected: selectedRating === face.value }" @click="selectedRating = face.value"
+              :title="face.label">
+              <span class="rm-face-emoji"></span>
+              <span class="rm-face-icon">{{ face.icon }}</span>
+              <span class="rm-face-label">{{ face.label }}</span>
+            </button>
+          </div>
+          <transition name="fade-slide">
+            <p v-if="selectedRating" class="rm-selected-text">
+              {{ratingFaces.find(f => f.value === selectedRating)?.feedback}}
+            </p>
+          </transition>
+          <div class="rm-feedback-wrap">
+            <label class="rm-feedback-label"><i class="bi bi-chat-heart me-1"></i>Để lại đóng góp của bạn (không bắt buộc)</label>
+            <textarea v-model="ratingFeedback" class="rm-textarea" rows="3" placeholder="Ví dụ: Giao diện dễ dùng, AI gợi ý rất hữu ích..."></textarea>
+          </div>
+          <div class="rm-actions">
+            <button class="rm-btn-skip" @click="skipRating">Bỏ qua</button>
+            <button class="rm-btn-submit" :disabled="!selectedRating || submittingRating" @click="submitRating">
+              <span v-if="submittingRating"><i class="bi bi-hourglass-split me-1"></i>Đang gửi...</span>
+              <span v-else><i class="bi bi-send-fill me-1"></i>Gửi đánh giá</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+    <!-- ═══════════════════════════════════════════
+         HIDDEN PDF TEMPLATE (Chỉ dùng để render file PDF)
+         ═══════════════════════════════════════════ -->
+    <div v-if="trip" id="pdf-summary-content" style="display: none;">
+       <div style="padding: 20px 30px; font-family: 'Inter', sans-serif; color: #1e2d44; background: #fff;">
+          <h1 style="color: #10b981; text-align: center; margin-bottom: 5px; font-size: 26px;">{{ trip.ten_chuyen_di }}</h1>
+          <p style="text-align: center; color: #64748b; margin-bottom: 25px; font-size: 14px;">
+             Từ {{ formatDateFull(trip.ngay_bat_dau) }} &nbsp;•&nbsp; {{ trip.so_nguoi || 1 }} thành viên &nbsp;•&nbsp; {{ formatDuration(trip.so_ngay) }}
+          </p>
+          
+          <div style="display: flex; justify-content: space-between; margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+             <div><strong style="color: #475569;">Ngân sách: </strong> <span style="font-weight: bold; color: #10b981;">{{ formatCurrency(trip.ngan_sach) }}</span></div>
+             <div><strong style="color: #475569;">Dự kiến: </strong> <span style="font-weight: bold; color: #f59e0b;">{{ formatCurrency(tongChiPhiDuKien) }}</span></div>
+          </div>
+
+          <h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; font-size: 18px; color: #0f172a;">Lịch trình chi tiết</h3>
+          
+          <div v-for="(day, di) in lichTrinhTheoNgay" :key="'pdf-day-'+di" style="margin-bottom: 25px; page-break-inside: avoid;">
+             <div style="background: #e0f2fe; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: bold; color: #0369a1; font-size: 15px;">
+                Ngày {{ di + 1 }} - {{ formatDateDate(trip.ngay_bat_dau, di) }}
+             </div>
+             <div style="border: 1px solid #e0f2fe; border-top: none; padding: 15px; border-radius: 0 0 8px 8px; background: #fff;">
+                <table style="width: 100%; border-collapse: collapse;">
+                   <tr v-for="(item, idx) in day" :key="'pdf-item-'+idx">
+                      <td style="width: 75px; padding: 10px 0; font-weight: 600; color: #475569; vertical-align: top; font-size: 14px; border-bottom: 1px dashed #e2e8f0;">
+                         {{ item.gio_bat_dau || item.gio || '08:00' }}
+                      </td>
+                      <td style="padding: 10px 0; vertical-align: top; border-bottom: 1px dashed #e2e8f0;">
+                         <div style="font-weight: 600; color: #0f172a; font-size: 15px; margin-bottom: 3px;">{{ item.ten_dia_diem }}</div>
+                         <div style="font-size: 13px; color: #64748b;"><i class="bi bi-geo-alt me-1"></i>{{ item.dia_chi }}</div>
+                         <div v-if="item.ghi_chu" style="font-size: 13px; color: #059669; margin-top: 5px; background: #ecfdf5; padding: 4px 8px; border-radius: 4px; display: inline-block;"><i>Ghi chú: {{ item.ghi_chu }}</i></div>
+                      </td>
+                   </tr>
+                   <tr v-if="!day || day.length === 0">
+                      <td colspan="2" style="padding: 10px 0; color: #94a3b8; font-style: italic;">Chưa có hoạt động nào trong ngày này.</td>
+                   </tr>
+                </table>
+             </div>
+          </div>
+       </div>
+    </div>
+
   </div>
 </template>
 
@@ -293,9 +447,32 @@ export default {
       myJoinedGroups: [],
       selectedGroupToShare: null,
       sendingShare: false,
+      scheduleConfirmModal: {
+        show: false,
+        action: null,
+        title: '',
+        message: '',
+        confirmText: '',
+        icon: '',
+        variant: 'danger',
+      },
+      
+      showRatingModal: false,
+      selectedRating: null,
+      ratingFeedback: '',
+      submittingRating: false,
+      ratingFaces: [
+        { value: 1, icon: '😞', label: 'Rất tệ', feedback: 'Rất tiếc khi nghe điều này. Chúng tôi sẽ cố gắng cải thiện!' },
+        { value: 2, icon: '😕', label: 'Tệ', feedback: 'Cảm ơn bạn đã phản hồi. Ý kiến của bạn rất có giá trị!' },
+        { value: 3, icon: '😐', label: 'Bình thường', feedback: 'Cảm ơn! Chúng tôi đang nỗ lực để làm tốt hơn.' },
+        { value: 4, icon: '😊', label: 'Tốt', feedback: 'Tuyệt vời! Rất vui vì bạn hài lòng với trải nghiệm.' },
+        { value: 5, icon: '🤩', label: 'Rất tốt', feedback: 'Cảm ơn bạn rất nhiều! Điều này thật sự truyền cảm hứng cho chúng tôi! 🚀' },
+      ],
 
       mapInstance: null,
       mapLayers: [],
+      loadingAI: false,
+      socketChannel: null,
     };
   },
 
@@ -309,6 +486,9 @@ export default {
     },
     tongChiPhiDuKien() {
       return this.tongGiaVe + this.tongChiPhiPhatSinh;
+    },
+    isFinalized() {
+      return this.trip && this.trip.trang_thai === 2;
     }
   },
 
@@ -317,6 +497,7 @@ export default {
       if (this.trip) {
         this.$nextTick(() => {
           this.renderMapForDay(newVal - 1);
+          this.waitAndInitSortable();
         });
       }
     },
@@ -340,6 +521,17 @@ export default {
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
       document.head.appendChild(script);
     }
+    if (!window.Sortable) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js';
+      script.id = 'sortable-js';
+      document.head.appendChild(script);
+    }
+    if (!window.html2pdf) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      document.head.appendChild(script);
+    }
 
     if (!this.token) {
       this.$toast.warning("Vui lòng đăng nhập để xem lịch trình.");
@@ -347,14 +539,59 @@ export default {
       return;
     }
     await this.fetchTripData();
+    this.initSocket();
+  },
+  beforeUnmount() {
+    if (this.socketChannel) {
+        import('../../composables/useNhomChatSocket').then(({ getEcho }) => {
+            getEcho().leave(this.socketChannel);
+        });
+    }
   },
 
   methods: {
+    openFinalizeModal() {
+      this.scheduleConfirmModal = {
+        show: true,
+        action: 'finalize',
+        title: 'Chốt lịch trình',
+        message: 'Bạn có chắc chắn muốn chốt lịch trình này? Các thành viên sẽ không thể chỉnh sửa sau khi chốt.',
+        confirmText: 'Chốt lịch trình',
+        icon: 'bi bi-lock-fill',
+        variant: 'danger',
+      };
+    },
+
+    openUnfinalizeModal() {
+      this.scheduleConfirmModal = {
+        show: true,
+        action: 'unfinalize',
+        title: 'Mở lại lịch trình',
+        message: 'Bạn có muốn mở lại lịch trình để chỉnh sửa?',
+        confirmText: 'Mở lại',
+        icon: 'bi bi-unlock-fill',
+        variant: 'warning',
+      };
+    },
+
+    closeScheduleConfirmModal() {
+      this.scheduleConfirmModal.show = false;
+    },
+
+    confirmScheduleAction() {
+      const action = this.scheduleConfirmModal.action;
+      this.closeScheduleConfirmModal();
+      if (action === 'finalize') this.finalizeTrip();
+      if (action === 'unfinalize') this.unfinalizeTrip();
+    },
+
     async fetchTripData() {
       this.loading = true;
       try {
         // Lấy chi tiết chuyến đi
-        const res = await fetch(`${BASE}/chuyen-dis/${this.tripId}`);
+        const res = await fetch(`${BASE}/chuyen-dis/${this.tripId}`, {
+          headers: { Authorization: `Bearer ${this.token}` }
+        });
         const json = await res.json();
         
         if (json.status === 'success' && json.data) {
@@ -362,7 +599,9 @@ export default {
           if(!this.trip.so_ngay) this.trip.so_ngay = 1;
 
           // Lấy danh sách địa điểm theo chuyến đi
-          const res2 = await fetch(`${BASE}/chuyen-di/${this.tripId}/dia-diems`);
+          const res2 = await fetch(`${BASE}/chuyen-di/${this.tripId}/dia-diems`, {
+            headers: { Authorization: `Bearer ${this.token}` }
+          });
           const json2 = await res2.json();
           this.rawPlaces = json2.data || [];
 
@@ -371,15 +610,37 @@ export default {
 
           // Lấy chi phí phát sinh
           await this.fetchExpenses();
-
-          this.$nextTick(() => {
-            this.initMap();
-          });
         }
       } catch (e) {
         console.error("Lỗi khi tải chuyến đi:", e);
       } finally {
         this.loading = false;
+        this.$nextTick(() => {
+          this.initMap();
+          this.renderMapForDay(this.activeDayTab - 1);
+          this.waitAndInitSortable();
+        });
+      }
+    },
+
+    initSocket() {
+      if (!this.trip?.id_nhom_du_lich) return;
+      try {
+          // Import dynamic to avoid SSR/Initial load issues
+          import('../../composables/useNhomChatSocket').then(({ getEcho }) => {
+              const echo = getEcho();
+              const channelName = `nhom-chat.${this.trip.id_nhom_du_lich}`;
+              if (this.socketChannel) echo.leave(this.socketChannel);
+              
+              this.socketChannel = channelName;
+              echo.private(channelName).listen('.itinerary.reordered', (e) => {
+                  console.log('📡 Itinerary updated via socket:', e);
+                  this.$toast.info('Lịch trình đã được cập nhật bởi thành viên khác.');
+                  this.fetchTripData(); // Reload data
+              });
+          });
+      } catch(err) {
+          console.warn('Realtime socket not available');
       }
     },
 
@@ -586,6 +847,107 @@ export default {
     },
 
     // ─── Modal & Chia sẻ ────────────────────────────────
+    async finalizeTrip() {
+        try {
+            const res = await fetch(`${BASE}/client/chuyen-di/${this.tripId}/chot-lich-trinh`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const data = await res.json();
+            if (data.status) {
+                this.$toast.success('Đã chốt lịch trình thành công!');
+                this.trip.trang_thai = 2; // update local state
+                setTimeout(() => {
+                    this.showRatingModal = true;
+                }, 800);
+            } else {
+                this.$toast.error(data.message || 'Lỗi chốt lịch trình');
+            }
+        } catch (e) {
+            this.$toast.error('Lỗi kết nối khi chốt lịch trình.');
+        }
+    },
+
+    async unfinalizeTrip() {
+        try {
+            const res = await fetch(`${BASE}/client/chuyen-di/${this.tripId}/mo-lich-trinh`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const data = await res.json();
+            if (data.status) {
+                this.$toast.success('Đã mở lại lịch trình. Các thành viên có thể tiếp tục chỉnh sửa.');
+                this.trip.trang_thai = 1; // update local state
+                // Re-init sortable since it might have been disabled
+                this.$nextTick(() => {
+                    this.waitAndInitSortable();
+                });
+            } else {
+                this.$toast.error(data.message || 'Lỗi mở lại lịch trình');
+            }
+        } catch (e) {
+            this.$toast.error('Lỗi kết nối khi mở lại lịch trình.');
+        }
+    },
+
+    async reorderWithAi() {
+      if (this.loadingAI) return;
+      this.loadingAI = true;
+      this.$toast.info('AI đang phân tích và tối ưu lại lịch trình của bạn...');
+
+      try {
+        const res = await fetch(`${BASE}/client/ai/reorder-itinerary/${this.tripId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          }
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.$toast.success('AI đã tối ưu lại lịch trình thành công!');
+          await this.fetchTripData(); // Reload UI
+        } else {
+          this.$toast.error(json.message || 'Lỗi khi gọi AI');
+        }
+      } catch (err) {
+        this.$toast.error('Lỗi kết nối máy chủ.');
+      } finally {
+        this.loadingAI = false;
+      }
+    },
+
+    async swapPlace(item) {
+        if (!item.id) {
+            this.$toast.error('Không thể đổi địa điểm này.');
+            return;
+        }
+        
+        try {
+            const btn = document.activeElement;
+            const originalHTML = btn ? btn.innerHTML : '';
+            if(btn && btn.tagName === 'BUTTON') btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            
+            const res = await fetch(`${BASE}/lich-trinh-dia-diems/${item.id}/swap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+            const json = await res.json();
+            if (json.status) {
+                this.$toast.success('Đã thay đổi địa điểm mới!');
+                await this.fetchTripData(); // Tải lại chuyến đi
+            } else {
+                this.$toast.error(json.message || 'Không tìm thấy địa điểm thay thế!');
+                if(btn && btn.tagName === 'BUTTON') btn.innerHTML = originalHTML;
+            }
+        } catch (error) {
+            this.$toast.error('Lỗi khi đổi địa điểm!');
+            console.error(error);
+        }
+    },
     async fetchMyGroups() {
       try {
         const [joinedRes, ownedRes] = await Promise.all([
@@ -639,6 +1001,81 @@ export default {
       }
     },
 
+    exportPDF() {
+      if (!window.html2pdf) {
+        this.$toast.warning('Tính năng xuất PDF đang tải, vui lòng thử lại sau vài giây.');
+        return;
+      }
+      const hiddenEl = document.getElementById('pdf-summary-content');
+      if (!hiddenEl) return;
+      
+      // Clone element và hiển thị nó ra một div ảo ngoài màn hình để render PDF
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '0';
+      wrapper.style.width = '800px';
+      wrapper.style.background = '#fff';
+      document.body.appendChild(wrapper);
+      
+      const element = hiddenEl.cloneNode(true);
+      element.style.display = 'block';
+      wrapper.appendChild(element);
+      
+      this.$toast.info('Đang tạo file PDF tóm tắt, vui lòng đợi...', { timeout: 3000 });
+      
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Tom-Tat-Lich-Trinh-${this.trip.ten_chuyen_di}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      window.html2pdf().set(opt).from(element).save().then(() => {
+          document.body.removeChild(wrapper);
+      });
+    },
+
+    confettiStyle(n) {
+      const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa'];
+      return {
+        left: `${Math.random() * 100}%`,
+        backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+        width: `${Math.random() * 8 + 4}px`,
+        height: `${Math.random() * 8 + 4}px`,
+        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+        animationDelay: `${Math.random() * 0.4}s`
+      };
+    },
+    skipRating() {
+      this.showRatingModal = false;
+    },
+    async submitRating() {
+      if (!this.selectedRating) return;
+      this.submittingRating = true;
+      try {
+        await fetch(`${BASE}/client/danh-gia-he-thong`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+          },
+          body: JSON.stringify({
+            muc_do_hai_long: this.selectedRating,
+            dong_gop: this.ratingFeedback
+          })
+        });
+        this.$toast.success('Cảm ơn bạn đã để lại đánh giá!');
+      } catch (err) {
+        console.error(err);
+        this.$toast.error('Lỗi khi gửi đánh giá');
+      } finally {
+        this.submittingRating = false;
+        this.showRatingModal = false;
+      }
+    },
+
     // ─── Map Methods ───────────────────────────────────────────
     initMap() {
       if (this.mapInstance) {
@@ -670,6 +1107,10 @@ export default {
       if (!this.mapInstance) return;
       this.mapLayers.forEach(layer => this.mapInstance.removeLayer(layer));
       this.mapLayers = [];
+      if (this.mapRouteLine) {
+        this.mapInstance.removeLayer(this.mapRouteLine);
+        this.mapRouteLine = null;
+      }
     },
 
     async renderMapForDay(dayIndex) {
@@ -724,12 +1165,126 @@ export default {
         if (bounds.length > 0) {
           this.mapInstance.fitBounds(bounds, { padding: [50, 50] });
         }
+        
+        // Vẽ đường polyline nối các điểm
+        if (bounds.length > 1) {
+            this.mapRouteLine = L.polyline(bounds, {
+                color: '#0ea5e9',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 10',
+                lineJoin: 'round'
+            }).addTo(this.mapInstance);
+        }
       };
 
       if (!this.mapInstance) {
         this.initMap();
       }
       waitForMap();
+    },
+
+    initSortable() {
+      // Allow drag for members/owners as long as not finalized
+      const canEdit = !this.isFinalized && (this.trip.is_member || this.trip.is_owner);
+      if (!canEdit) return;
+      const el = document.querySelector('.timeline');
+      if (!el) return;
+      if (!window.Sortable) {
+        // Sortable not yet loaded, retry after a delay
+        setTimeout(() => this.initSortable(), 300);
+        return;
+      }
+
+      if (this.sortableInstance) this.sortableInstance.destroy();
+
+      this.sortableInstance = new window.Sortable(el, {
+        animation: 150,
+        handle: '.timeline-card',
+        ghostClass: 'sortable-ghost',
+        onEnd: async (evt) => {
+          if (evt.oldIndex === evt.newIndex) return;
+
+          const dayIdx = this.activeDayTab - 1;
+          const dayItems = [...this.lichTrinhTheoNgay[dayIdx]];
+          const movedItem = dayItems.splice(evt.oldIndex, 1)[0];
+          dayItems.splice(evt.newIndex, 0, movedItem);
+
+          // Tính lại giờ dựa trên Haversine (giống bên Tạo lịch trình)
+          const haversine = (lat1, lon1, lat2, lon2) => {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return 5;
+            const R = 6371, dL = (lat2 - lat1) * Math.PI / 180, dN = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dL/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dN/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          };
+          const fmt = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+
+          let curMin = 6*60+30; // Mặc định bắt đầu từ 6:30 sáng
+          let prevLat = null, prevLng = null;
+          
+          dayItems.forEach((it, idx) => {
+            const dur = it.thoi_luong_phut || 60;
+            let travelMin = 12;
+            if (prevLat !== null && it.vi_do && it.kinh_do) {
+              const dist = haversine(prevLat, prevLng, parseFloat(it.vi_do), parseFloat(it.kinh_do));
+              travelMin = Math.max(5, Math.min(40, Math.ceil(dist / 20 * 60) + 5));
+            }
+            const startMin = curMin + (prevLat !== null ? travelMin : 0);
+            const endMin = startMin + dur;
+            
+            it.gio_bat_dau = fmt(startMin);
+            it.gio_ket_thuc = fmt(endMin);
+            it.thu_tu_tham_quan = dayIdx * 100 + idx + 1;
+            
+            curMin = endMin;
+            prevLat = parseFloat(it.vi_do) || prevLat;
+            prevLng = parseFloat(it.kinh_do) || prevLng;
+          });
+
+          this.lichTrinhTheoNgay.splice(dayIdx, 1, dayItems);
+          this.$nextTick(() => { this.renderMapForDay(dayIdx); });
+          
+          // Save to DB
+          const apiPayload = dayItems.map(it => ({
+              id: it.id,
+              thu_tu: it.thu_tu_tham_quan,
+              gio_bat_dau: it.gio_bat_dau,
+              gio_ket_thuc: it.gio_ket_thuc
+          }));
+
+          try {
+              this.$toast.info('Đang cập nhật thứ tự...');
+              await fetch(`${BASE}/lich-trinh-dia-diems/reorder`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${this.token}`
+                  },
+                  body: JSON.stringify({ items: apiPayload })
+              });
+              
+              // AI tối ưu lại sau khi di chuyển
+              this.$toast.info('AI đang tối ưu lại lịch trình chuyên sâu...');
+              this.reorderWithAi(); 
+              
+          } catch(err) {
+              this.$toast.error('Lỗi khi lưu lịch trình');
+          }
+        }
+      });
+    },
+
+    waitAndInitSortable() {
+      // Poll until Sortable.js is available AND .timeline is in DOM
+      const attempt = (tries = 0) => {
+        const el = document.querySelector('.timeline');
+        if (window.Sortable && el) {
+          this.initSortable();
+        } else if (tries < 30) {
+          setTimeout(() => attempt(tries + 1), 200);
+        }
+      };
+      attempt();
     },
   },
 };
@@ -838,6 +1393,93 @@ export default {
 }
 
 /* Modal chia sẻ */
+.schedule-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.schedule-confirm-box {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border-radius: 1.5rem;
+  padding: 2rem 1.75rem 1.5rem;
+  position: relative;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+  animation: modalBounceIn 0.35s ease both;
+}
+.schedule-confirm-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.schedule-confirm-icon.danger {
+  color: #b91c1c;
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+}
+.schedule-confirm-icon.warning {
+  color: #a16207;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+.schedule-confirm-title {
+  margin-bottom: 0.65rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.schedule-confirm-message {
+  margin: 0;
+  text-align: center;
+  color: #475569;
+  font-size: 0.97rem;
+  line-height: 1.6;
+}
+.schedule-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+.schedule-confirm-cancel,
+.schedule-confirm-submit {
+  border: none;
+  border-radius: 999px;
+  padding: 0.78rem 1.2rem;
+  font-weight: 700;
+  font-size: 0.93rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.schedule-confirm-cancel {
+  background: #f1f5f9;
+  color: #334155;
+}
+.schedule-confirm-submit {
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+}
+.schedule-confirm-submit.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+.schedule-confirm-submit.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.schedule-confirm-cancel:hover,
+.schedule-confirm-submit:hover {
+  transform: translateY(-1px);
+}
+
 .share-modal-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1050; backdrop-filter: blur(8px);
 }
@@ -851,4 +1493,57 @@ export default {
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15) !important;
   background-color: #fff !important;
 }
+
+/* ══════════════════════════════════════════
+   Rating Modal Styles
+   ══════════════════════════════════════════ */
+.rating-modal-overlay {
+  position: fixed; inset: 0; background: rgba(10, 20, 40, 0.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1rem;
+}
+.rating-modal-box {
+  background: #fff; border-radius: 2rem; padding: 2.5rem 2.2rem 2rem; max-width: 540px; width: 100%;
+  position: relative; overflow: hidden; box-shadow: 0 32px 80px rgba(10, 20, 60, 0.28);
+  animation: modalBounceIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes modalBounceIn {
+  from { opacity: 0; transform: scale(0.82) translateY(30px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.confetti-wrap { position: absolute; top: -6px; left: 0; width: 100%; height: 60px; overflow: hidden; pointer-events: none; }
+.confetti-dot { position: absolute; top: 0; opacity: 0; animation: confettiFall 1.4s ease-out forwards; }
+@keyframes confettiFall {
+  0% { opacity: 0; transform: translateY(-10px) rotate(0deg); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(72px) rotate(180deg); }
+}
+.rm-header { text-align: center; margin-bottom: 1.8rem; }
+.rm-success-icon { font-size: 3rem; color: #10b981; margin-bottom: 0.6rem; animation: bounceScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both; }
+@keyframes bounceScale { from { transform: scale(0); } to { transform: scale(1); } }
+.rm-title { font-size: 1.55rem; font-weight: 800; color: #1e2d44; margin-bottom: 0.35rem; }
+.rm-subtitle { font-size: 0.97rem; color: #627289; margin: 0; }
+.rm-faces { display: flex; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.rm-face-btn { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem 0.9rem; border: 2.5px solid #e2e8f0; border-radius: 1.1rem; background: #f8faff; cursor: pointer; transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); min-width: 72px; }
+.rm-face-btn:hover { border-color: #10b981; background: #f0fdf8; transform: translateY(-4px) scale(1.07); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.18); }
+.rm-face-btn.selected { border-color: #10b981; background: linear-gradient(135deg, #d1fae5, #e0f2fe); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25); transform: translateY(-4px) scale(1.1); }
+.rm-face-icon { font-size: 2rem; line-height: 1; transition: transform 0.2s; }
+.rm-face-btn:hover .rm-face-icon, .rm-face-btn.selected .rm-face-icon { transform: scale(1.18); }
+.rm-face-label { font-size: 0.72rem; font-weight: 600; color: #5a7080; white-space: nowrap; }
+.rm-face-btn.selected .rm-face-label { color: #065f46; }
+.rm-selected-text { text-align: center; font-size: 0.9rem; font-weight: 500; color: #065f46; background: #d1fae5; border-radius: 0.7rem; padding: 0.55rem 1rem; margin: 0 0 1.2rem; animation: fadeUp 0.3s ease both; }
+.rm-feedback-wrap { margin-bottom: 1.5rem; }
+.rm-feedback-label { display: block; font-size: 0.87rem; font-weight: 600; color: #3d5166; margin-bottom: 0.4rem; }
+.rm-textarea { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #dbe3f0; border-radius: 0.9rem; font-size: 0.95rem; font-family: inherit; color: #1e2d44; background: #f8fbff; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+.rm-textarea:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
+.rm-actions { display: flex; gap: 0.8rem; justify-content: flex-end; }
+.rm-btn-skip { padding: 0.65rem 1.4rem; border: 1.5px solid #dbe3f0; border-radius: 0.9rem; background: #fff; color: #627289; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.rm-btn-skip:hover { background: #f0f4f8; border-color: #b0bec9; }
+.rm-btn-submit { padding: 0.65rem 1.6rem; border: none; border-radius: 0.9rem; background: linear-gradient(135deg, #10b981, #0ea5e9); color: #fff; font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: all 0.22s; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3); }
+.rm-btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(16, 185, 129, 0.38); }
+.rm-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.rating-modal-enter-active, .rating-modal-leave-active { transition: opacity 0.3s ease; }
+.rating-modal-enter-from, .rating-modal-leave-to { opacity: 0; }
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.3s ease; }
+.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>
+
