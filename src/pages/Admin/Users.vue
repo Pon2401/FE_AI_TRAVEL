@@ -416,7 +416,7 @@ export default {
     },
     layDataUser() {
       this.isLoading = true;
-      axios
+      api
         .get('/admin/nguoi-dungs/get-data')
         .then((res) => {
           if (res.data && res.data.data) {

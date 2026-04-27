@@ -5,7 +5,7 @@ import './style.css'
 import api from './services/api.js';
 
 // Global Axios Interceptor for Laravel 422 Errors
-axios.interceptors.response.use(
+api.interceptors.response.use(
     (response) => {
         return response;
     },
