@@ -331,7 +331,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../services/api.js';
 import { Modal } from 'bootstrap';
 
 export default {
@@ -417,7 +417,7 @@ export default {
     layDataUser() {
       this.isLoading = true;
       axios
-        .get('http://127.0.0.1:8000/api/admin/nguoi-dungs/get-data')
+        .get('/admin/nguoi-dungs/get-data')
         .then((res) => {
           if (res.data && res.data.data) {
             this.list_users = res.data.data;
@@ -447,7 +447,7 @@ export default {
         return path;
       }
       const cleanPath = path.startsWith('/') ? path : `/${path}`;
-      return `http://127.0.0.1:8000${cleanPath}`;
+      return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/+$/, '')}${cleanPath}`;
     },
     moModalSua(item) {
       this.resetEditForm();
@@ -489,7 +489,7 @@ export default {
       };
 
       this.isSubmitting = true;
-      axios.post('http://127.0.0.1:8000/api/admin/nguoi-dungs/create', payload)
+      api.post('/admin/nguoi-dungs/create', payload)
         .then((res) => {
           this.$toast?.success(res.data?.message || 'Thêm tài khoản người dùng thành công');
           this.layDataUser();
@@ -537,7 +537,7 @@ export default {
       }
 
       this.isUpdating = true;
-      axios.post(`http://127.0.0.1:8000/api/admin/nguoi-dungs/${this.edit_nguoi_dung.id}`, payload)
+      api.post(`/admin/nguoi-dungs/${this.edit_nguoi_dung.id}`, payload)
         .then((res) => {
           this.$toast?.success(res.data?.message || 'Cập nhật người dùng thành công');
           this.layDataUser();
@@ -570,7 +570,7 @@ export default {
       if (!this.delete_nguoi_dung.id) return;
 
       this.isDeleting = true;
-      axios.delete(`http://127.0.0.1:8000/api/admin/nguoi-dungs/${this.delete_nguoi_dung.id}`)
+      api.delete(`/admin/nguoi-dungs/${this.delete_nguoi_dung.id}`)
         .then((res) => {
           this.$toast?.success(res.data?.message || 'Xóa người dùng thành công');
           this.layDataUser();

@@ -1,9 +1,7 @@
 import axios from 'axios';
 import { getClientAccessToken } from '../utils/clientAuth';
 
-const DEFAULT_BACKEND_URL = 'http://localhost:8000';
-
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, '');
 
 export async function sendNhomChatMessage(payload) {
   const token = getClientAccessToken();

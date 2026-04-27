@@ -420,7 +420,7 @@
 </template>
 
 <script>
-const BASE = 'http://localhost:8000/api';
+import clientApi from '../../services/clientApi';
 
 export default {
   name: 'ChiTietLichTrinh',
@@ -589,20 +589,16 @@ export default {
       this.loading = true;
       try {
         // Lấy chi tiết chuyến đi
-        const res = await fetch(`${BASE}/chuyen-dis/${this.tripId}`, {
-          headers: { Authorization: `Bearer ${this.token}` }
-        });
-        const json = await res.json();
+        const res = await clientApi.get(`/chuyen-dis/${this.tripId}`);
+        const json = res.data;
         
         if (json.status === 'success' && json.data) {
           this.trip = json.data;
           if(!this.trip.so_ngay) this.trip.so_ngay = 1;
 
           // Lấy danh sách địa điểm theo chuyến đi
-          const res2 = await fetch(`${BASE}/chuyen-di/${this.tripId}/dia-diems`, {
-            headers: { Authorization: `Bearer ${this.token}` }
-          });
-          const json2 = await res2.json();
+          const res2 = await clientApi.get(`/chuyen-di/${this.tripId}/dia-diems`);
+          const json2 = res2.data;
           this.rawPlaces = json2.data || [];
 
           // Parse vào lịch trình theo ngày
@@ -647,10 +643,8 @@ export default {
     async fetchExpenses() {
       this.loadingExpenses = true;
       try {
-        const res = await fetch(`${BASE}/chuyen-dis/${this.tripId}/chi-phis`, {
-          headers: { 'Authorization': `Bearer ${this.token}` }
-        });
-        const json = await res.json();
+        const res = await clientApi.get(`/chuyen-dis/${this.tripId}/chi-phis`);
+        const json = res.data;
         if (json.status === 'success') {
           this.incurredExpenses = json.data || [];
         }
@@ -681,8 +675,6 @@ export default {
       
       this.submittingExpense = true;
       const isEdit = !!this.expenseForm.id;
-      const url = isEdit ? `${BASE}/chi-phi-phat-sinhs/${this.expenseForm.id}` : `${BASE}/chi-phi-phat-sinhs`;
-      const method = isEdit ? 'PUT' : 'POST';
 
       // Chuyển đổi kiểu dữ liệu đúng để tránh lỗi validation
       const clientId = parseInt(localStorage.getItem('client_id')) || null;
@@ -696,15 +688,10 @@ export default {
       };
 
       try {
-        const res = await fetch(url, {
-          method: method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          },
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json();
+        const res = isEdit
+          ? await clientApi.put(`/chi-phi-phat-sinhs/${this.expenseForm.id}`, payload)
+          : await clientApi.post('/chi-phi-phat-sinhs', payload);
+        const json = res.data;
         if (json.status === 'success') {
           this.$toast.success(isEdit ? "Cập nhật chi phí thành công!" : "Thêm chi phí thành công!");
           this.showExpenseModal = false;
@@ -716,6 +703,13 @@ export default {
           console.error('Validation errors:', json);
         }
       } catch (e) {
+        const json = e.response?.data;
+        if (json) {
+          const errMsg = json.errors ? Object.values(json.errors).flat().join(', ') : (json.message || "Lỗi lưu chi phí");
+          this.$toast.error(errMsg);
+          console.error('Validation errors:', json);
+          return;
+        }
         this.$toast.error("Lỗi kết nối đến máy chủ.");
         console.error(e);
       } finally {
@@ -726,11 +720,8 @@ export default {
     async deleteExpense(id) {
       if (!confirm("Bạn có chắc muốn xóa chi phí này?")) return;
       try {
-        const res = await fetch(`${BASE}/chi-phi-phat-sinhs/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${this.token}` }
-        });
-        const json = await res.json();
+        const res = await clientApi.delete(`/chi-phi-phat-sinhs/${id}`);
+        const json = res.data;
         if (json.status === 'success') {
           this.$toast.success("Xóa thành công");
           await this.fetchExpenses();
@@ -757,7 +748,7 @@ export default {
     getFullAvatar(avatar) {
       if (!avatar) return '';
       if (avatar.startsWith('http')) return avatar;
-      return `http://localhost:8000/storage/${avatar}`;
+      return `${(import.meta.env.VITE_BACKEND_URL || '').replace(/\/+$/, '')}/storage/${avatar}`;
     },
 
     buildSchedule() {
@@ -849,11 +840,8 @@ export default {
     // ─── Modal & Chia sẻ ────────────────────────────────
     async finalizeTrip() {
         try {
-            const res = await fetch(`${BASE}/client/chuyen-di/${this.tripId}/chot-lich-trinh`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
-            const data = await res.json();
+            const res = await clientApi.post(`/client/chuyen-di/${this.tripId}/chot-lich-trinh`);
+            const data = res.data;
             if (data.status) {
                 this.$toast.success('Đã chốt lịch trình thành công!');
                 this.trip.trang_thai = 2; // update local state
@@ -870,11 +858,8 @@ export default {
 
     async unfinalizeTrip() {
         try {
-            const res = await fetch(`${BASE}/client/chuyen-di/${this.tripId}/mo-lich-trinh`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
-            const data = await res.json();
+            const res = await clientApi.post(`/client/chuyen-di/${this.tripId}/mo-lich-trinh`);
+            const data = res.data;
             if (data.status) {
                 this.$toast.success('Đã mở lại lịch trình. Các thành viên có thể tiếp tục chỉnh sửa.');
                 this.trip.trang_thai = 1; // update local state
@@ -896,14 +881,8 @@ export default {
       this.$toast.info('AI đang phân tích và tối ưu lại lịch trình của bạn...');
 
       try {
-        const res = await fetch(`${BASE}/client/ai/reorder-itinerary/${this.tripId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          }
-        });
-        const json = await res.json();
+        const res = await clientApi.post(`/client/ai/reorder-itinerary/${this.tripId}`);
+        const json = res.data;
         if (json.status === 'success') {
           this.$toast.success('AI đã tối ưu lại lịch trình thành công!');
           await this.fetchTripData(); // Reload UI
@@ -928,14 +907,8 @@ export default {
             const originalHTML = btn ? btn.innerHTML : '';
             if(btn && btn.tagName === 'BUTTON') btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
             
-            const res = await fetch(`${BASE}/lich-trinh-dia-diems/${item.id}/swap`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-            const json = await res.json();
+            const res = await clientApi.post(`/lich-trinh-dia-diems/${item.id}/swap`);
+            const json = res.data;
             if (json.status) {
                 this.$toast.success('Đã thay đổi địa điểm mới!');
                 await this.fetchTripData(); // Tải lại chuyến đi
@@ -951,11 +924,11 @@ export default {
     async fetchMyGroups() {
       try {
         const [joinedRes, ownedRes] = await Promise.all([
-          fetch(`${BASE}/client/nhom-du-lich/get-joined`, { headers: { Authorization: `Bearer ${this.token}` } }),
-          fetch(`${BASE}/client/nhom-du-lich/get-my-groups`, { headers: { Authorization: `Bearer ${this.token}` } })
+          clientApi.get('/client/nhom-du-lich/get-joined'),
+          clientApi.get('/client/nhom-du-lich/get-my-groups')
         ]);
-        const jData = await joinedRes.json();
-        const oData = await ownedRes.json();
+        const jData = joinedRes.data;
+        const oData = ownedRes.data;
         
         const groups = [];
         if (jData.status && jData.data) groups.push(...jData.data);
@@ -977,15 +950,7 @@ export default {
             message: JSON.stringify({ type: 'itinerary', id: this.tripId, title: this.trip.ten_chuyen_di })
         };
 
-        const r = await fetch(`${BASE}/nhom-chats`, {
-          method: 'POST', 
-          headers: { 
-            'Content-Type': 'application/json', 
-            Authorization: `Bearer ${this.token}` 
-          },
-          body: JSON.stringify(payload)
-        });
-        const res = await r.json();
+        const { data: res } = await clientApi.post('/nhom-chats', payload);
         
         if (res.status) {
           this.$toast.success('Gửi lịch trình thành công!');
@@ -1055,16 +1020,9 @@ export default {
       if (!this.selectedRating) return;
       this.submittingRating = true;
       try {
-        await fetch(`${BASE}/client/danh-gia-he-thong`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-          },
-          body: JSON.stringify({
-            muc_do_hai_long: this.selectedRating,
-            dong_gop: this.ratingFeedback
-          })
+        await clientApi.post('/client/danh-gia-he-thong', {
+          muc_do_hai_long: this.selectedRating,
+          dong_gop: this.ratingFeedback
         });
         this.$toast.success('Cảm ơn bạn đã để lại đánh giá!');
       } catch (err) {
@@ -1254,14 +1212,7 @@ export default {
 
           try {
               this.$toast.info('Đang cập nhật thứ tự...');
-              await fetch(`${BASE}/lich-trinh-dia-diems/reorder`, {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${this.token}`
-                  },
-                  body: JSON.stringify({ items: apiPayload })
-              });
+              await clientApi.post('/lich-trinh-dia-diems/reorder', { items: apiPayload });
               
               // AI tối ưu lại sau khi di chuyển
               this.$toast.info('AI đang tối ưu lại lịch trình chuyên sâu...');
