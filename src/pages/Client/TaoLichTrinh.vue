@@ -506,7 +506,6 @@
 
 <script>
 import api from '../../services/api.js';
-import clientApi from '../../services/clientApi';
 
 export default {
   name: 'TaoLichTrinh',
@@ -690,8 +689,8 @@ export default {
       if (!token) return;
       try {
         const [joinedRes, ownedRes] = await Promise.all([
-          clientApi.get('/client/nhom-du-lich/get-joined'),
-          clientApi.get('/client/nhom-du-lich/get-my-groups')
+          api.get('/client/nhom-du-lich/get-joined'),
+          api.get('/client/nhom-du-lich/get-my-groups')
         ]);
         const jData = joinedRes.data;
         const oData = ownedRes.data;
@@ -807,7 +806,7 @@ export default {
     async fetchDiaDiem() {
       this.loadingDiaDiem = true;
       try {
-        const res = await clientApi.get('/dia-diems/');
+        const res = await api.get('/dia-diems/');
         const json = res.data;
 
         this.allDiaDiem = (json.data || []).map(d => ({
@@ -1041,7 +1040,7 @@ export default {
           weather_data: weatherData,  // ← Gửi kèm thời tiết cho AI
         };
 
-        const res = await clientApi.post('/client/ai/generate-itinerary', payload, {
+        const res = await api.post('/client/ai/generate-itinerary', payload, {
           headers: { Accept: 'application/json' },
           validateStatus: () => true,
         });
@@ -1188,7 +1187,7 @@ export default {
       try {
         // 1. Tạo chuyến đi
         const payload = { ...this.form, id_nhom_du_lich: this.form.id_nhom_du_lich?.id || null };
-        const r1 = await clientApi.post('/client/chuyen-di/create', payload);
+        const r1 = await api.post('/client/chuyen-di/create', payload);
         const j1 = r1.data;
         if (!j1.status) throw new Error(j1.message || 'Lỗi tạo chuyến đi');
 
@@ -1207,7 +1206,7 @@ export default {
           }))
         );
 
-        const r3 = await clientApi.post('/client/chi-tiet-chuyen-di/bulk-create', {
+        const r3 = await api.post('/client/chi-tiet-chuyen-di/bulk-create', {
           id_chuyen_di: newTripId,
           items
         });
@@ -1255,7 +1254,7 @@ export default {
                id_chi_tiet_nhom: group.id_chi_tiet_nhom,
                message: JSON.stringify({ type: 'itinerary', id: tripId, title: this.form.ten_chuyen_di })
            };
-           await clientApi.post('/nhom-chats', payload);
+           await api.post('/nhom-chats', payload);
        } catch (e) {
            console.error('Lỗi khi chia sẻ.', e);
        }
@@ -1363,7 +1362,7 @@ export default {
 
       try {
         // Attempt to save rating to backend (non-blocking – ignore errors gracefully)
-        await clientApi.post('/client/danh-gia-he-thong', {
+        await api.post('/client/danh-gia-he-thong', {
           muc_do_hai_long: this.selectedRating,
           noi_dung: this.ratingFeedback,
         }).catch(() => { }); // Silently ignore if endpoint doesn't exist yet

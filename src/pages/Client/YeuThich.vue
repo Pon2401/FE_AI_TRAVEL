@@ -157,7 +157,7 @@
 </template>
 
 <script>
-import clientApi from '../../services/clientApi';
+import api from '../../services/api';
 
 export default {
   name: 'YeuThich',
@@ -203,7 +203,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const res = await clientApi.get('/client/yeu-thich');
+        const res = await api.get('/client/yeu-thich');
         const json = res.data;
         if (json.status === 'success') {
           this.places = json.data;
@@ -219,7 +219,7 @@ export default {
 
     async toggleFavorite(place) {
       try {
-        const res = await clientApi.post('/client/yeu-thich/toggle', {
+        const res = await api.post('/client/yeu-thich/toggle', {
           id_dia_diem: place.id
         });
         const json = res.data;

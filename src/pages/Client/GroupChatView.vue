@@ -247,7 +247,7 @@
 import { ref, onMounted, computed, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useNhomChatSocket } from '../../composables/useNhomChatSocket';
-import clientApi from '../../services/clientApi';
+import api from '../../services/api';
 import { getClientAccessToken } from '../../utils/clientAuth';
 import { useToast } from 'vue-toast-notification';
 
@@ -275,7 +275,7 @@ const confirmingSet = ref(false);
 // Fetch group info
 const fetchGroupInfo = async () => {
   try {
-    const response = await clientApi.get(`/client/nhom-du-lich/${groupId}`);
+    const response = await api.get(`/client/nhom-du-lich/${groupId}`);
     const data = response.data;
     if (data.status) {
       group.value = data.data;
@@ -290,7 +290,7 @@ const fetchGroupInfo = async () => {
 // Fetch members
 const fetchMembers = async () => {
   try {
-    const response = await clientApi.get(`/client/nhom-du-lich/members/${groupId}`);
+    const response = await api.get(`/client/nhom-du-lich/members/${groupId}`);
     const data = response.data;
     if (data.status) {
       members.value = data.data || [];
@@ -303,7 +303,7 @@ const fetchMembers = async () => {
 // Load initial messages
 const loadInitialMessages = async () => {
   try {
-    const response = await clientApi.get('/nhom-chats', {
+    const response = await api.get('/nhom-chats', {
       params: { id_nhom_du_lich: groupId }
     });
     const data = response.data;
@@ -360,7 +360,7 @@ const tripStatuses = ref({});
 const finalizeTrip = async (tripId) => {
     if (!tripId) return;
     try {
-        const res = await clientApi.post(`/client/chuyen-di/${tripId}/chot-lich-trinh`);
+        const res = await api.post(`/client/chuyen-di/${tripId}/chot-lich-trinh`);
         const data = res.data;
         if (data.status) {
             tripStatuses.value[tripId] = 2; // mark as finalized
@@ -406,7 +406,7 @@ const submitRating = async () => {
   if (!selectedRating.value) return;
   submittingRating.value = true;
   try {
-    await clientApi.post('/client/danh-gia-he-thong', {
+    await api.post('/client/danh-gia-he-thong', {
       muc_do_hai_long: selectedRating.value,
       noi_dung: ratingFeedback.value,
     }).catch(() => { });
@@ -430,7 +430,7 @@ const setGroupItinerary = (tripId) => {
 const confirmSetItinerary = async () => {
     confirmingSet.value = true;
     try {
-        const res = await clientApi.post(`/client/nhom-du-lich/${groupId}/set-lich-trinh`, {
+        const res = await api.post(`/client/nhom-du-lich/${groupId}/set-lich-trinh`, {
           id_chuyen_di: confirmModalTripId.value
         });
         const data = res.data;
@@ -464,7 +464,7 @@ watch(processedMessages, (newMsgs) => {
             const data = extractItineraryData(msg.message);
             if (data.id && tripStatuses.value[data.id] === undefined) {
                 tripStatuses.value[data.id] = 1; // Default
-                clientApi.get(`/client/chuyen-di/${data.id}`).then((response) => {
+                api.get(`/client/chuyen-di/${data.id}`).then((response) => {
                     const d = response.data;
                     if (d.status && d.data) {
                         tripStatuses.value[data.id] = d.data.trang_thai;

@@ -312,7 +312,7 @@
 </template>
 
 <script>
-import clientApi from '../../../services/clientApi';
+import api from '../../../services/api';
 
 export default {
   name: 'GiaiTri',
@@ -394,8 +394,8 @@ export default {
     async fetchMyGroups() {
       try {
         const [joinedRes, ownedRes] = await Promise.all([
-          clientApi.get('/client/nhom-du-lich/get-joined'),
-          clientApi.get('/client/nhom-du-lich/get-my-groups')
+          api.get('/client/nhom-du-lich/get-joined'),
+          api.get('/client/nhom-du-lich/get-my-groups')
         ]);
         const jData = joinedRes.data;
         const oData = ownedRes.data;
@@ -419,7 +419,7 @@ export default {
             message: JSON.stringify({ type: 'place', id: this.selectedPlace.id, title: this.selectedPlace.ten_dia_diem, image: this.selectedPlace.image })
         };
 
-        const { data: res } = await clientApi.post('/nhom-chats', payload);
+        const { data: res } = await api.post('/nhom-chats', payload);
         
         if (res.status) {
           this.$toast.success('Gửi địa điểm thành công!');
@@ -441,7 +441,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const res = await clientApi.get('/dia-diems/giai-tri');
+        const res = await api.get('/dia-diems/giai-tri');
         const json = res.data;
         const fallbacks = {
           'Ngoài trời': 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop',
@@ -524,7 +524,7 @@ export default {
     async fetchReviews(contentId) {
       this.loadingReviews = true;
       try {
-        const res = await clientApi.get(`/dia-diems/danh-gia/place/${contentId}`);
+        const res = await api.get(`/dia-diems/danh-gia/place/${contentId}`);
         const json = res.data;
         if (json.status === 'success') this.detailReviews = json.data;
       } catch (e) {
@@ -540,7 +540,7 @@ export default {
       }
       this.submittingReview = true;
       try {
-        const res = await clientApi.post(
+        const res = await api.post(
           '/danh-gias',
           {
             id_dia_diem: this.selectedPlace.id,
@@ -592,7 +592,7 @@ export default {
         return;
       }
       try {
-        const res = await clientApi.post('/client/yeu-thich/toggle', {
+        const res = await api.post('/client/yeu-thich/toggle', {
           id_dia_diem: place.id
         });
         const json = res.data;

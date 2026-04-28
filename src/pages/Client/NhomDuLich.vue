@@ -334,7 +334,7 @@ import { useToast } from 'vue-toast-notification';
 import GroupInviteModal from '../../components/group/GroupInviteModal.vue';
 import GroupInvitesModal from '../../components/group/GroupInvitesModal.vue';
 import { useGroupInvites } from '../../composables/useGroupInvites';
-import clientApi from '../../services/clientApi';
+import api from '../../services/api';
 import { getClientAccessToken } from '../../utils/clientAuth';
 
 export default {
@@ -464,7 +464,7 @@ export default {
       if (!currentUserId || !group.id) return null;
 
       try {
-        const response = await clientApi.get(`/client/nhom-du-lich/members/${group.id}`);
+        const response = await api.get(`/client/nhom-du-lich/members/${group.id}`);
         const json = response.data;
         const members = Array.isArray(json?.data) ? json.data : [];
         const me = members.find((item) => Number(item?.id_nguoi_dung) === currentUserId);
@@ -498,21 +498,21 @@ export default {
 
     async fetchJoined() {
       try {
-        const r = await clientApi.get('/client/nhom-du-lich/get-joined');
+        const r = await api.get('/client/nhom-du-lich/get-joined');
         this.joinedGroups = r.data.data || [];
       } catch { this.joinedGroups = []; }
     },
 
     async fetchMine() {
       try {
-        const r = await clientApi.get('/client/nhom-du-lich/get-my-groups');
+        const r = await api.get('/client/nhom-du-lich/get-my-groups');
         this.myGroups = r.data.data || [];
       } catch { this.myGroups = []; }
     },
 
     async fetchMyTrips() {
       try {
-        const r = await clientApi.get('/client/chuyen-di/get-data');
+        const r = await api.get('/client/chuyen-di/get-data');
         this.myTrips = r.data.data || [];
       } catch { this.myTrips = []; }
     },
@@ -520,7 +520,7 @@ export default {
     async fetchMembers(id) {
       this.loadingMembers = true;
       try {
-        const r = await clientApi.get(`/client/nhom-du-lich/members/${id}`);
+        const r = await api.get(`/client/nhom-du-lich/members/${id}`);
         this.members = r.data.data || [];
       } catch { this.members = []; }
       this.loadingMembers = false;
@@ -551,7 +551,7 @@ export default {
       }
       this.creating = true;
       try {
-        const r = await clientApi.post('/client/nhom-du-lich/create', this.createForm, {
+        const r = await api.post('/client/nhom-du-lich/create', this.createForm, {
           validateStatus: () => true,
         });
         if (r.status === 401) {
@@ -626,7 +626,7 @@ export default {
 
     async doKick() {
       this.kicking = true;
-      const r = await clientApi.post('/client/nhom-du-lich/remove-member', {
+      const r = await api.post('/client/nhom-du-lich/remove-member', {
         id_nhom: this.panelGroup.id,
         id_nguoi_dung: this.kickTarget.id_nguoi_dung
       });
@@ -664,7 +664,7 @@ export default {
 
     async doLeave() {
       this.leaving = true;
-      const r = await clientApi.post('/client/nhom-du-lich/leave', {
+      const r = await api.post('/client/nhom-du-lich/leave', {
         id_nhom: this.leaveTarget.id
       });
       const j = r.data;
@@ -680,7 +680,7 @@ export default {
 
     async doDissolve() {
       this.dissolving = true;
-      const r = await clientApi.post('/client/nhom-du-lich/delete', {
+      const r = await api.post('/client/nhom-du-lich/delete', {
         id: this.dissolveTarget.id
       });
       const j = r.data;

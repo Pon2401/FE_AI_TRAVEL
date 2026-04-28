@@ -144,7 +144,7 @@
 <script>
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import clientApi from '../../services/clientApi';
+import api from '../../services/api';
 
 export default {
   name: 'LichTrinhCuaToi',
@@ -178,7 +178,7 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        const res = await clientApi.get('/client/chuyen-di/get-data', {
+        const res = await api.get('/client/chuyen-di/get-data', {
           validateStatus: () => true,
         });
         if (res.status === 401) {
@@ -201,8 +201,8 @@ export default {
       if(!this.token) return;
       try {
         const [joinedRes, ownedRes] = await Promise.all([
-          clientApi.get('/client/nhom-du-lich/get-joined'),
-          clientApi.get('/client/nhom-du-lich/get-my-groups')
+          api.get('/client/nhom-du-lich/get-joined'),
+          api.get('/client/nhom-du-lich/get-my-groups')
         ]);
         const jData = joinedRes.data;
         const oData = ownedRes.data;
@@ -241,7 +241,7 @@ export default {
             message: JSON.stringify({ type: 'itinerary', id: this.tripToShare.id, title: this.tripToShare.ten_chuyen_di })
         };
 
-        const { data: res } = await clientApi.post('/nhom-chats', payload);
+        const { data: res } = await api.post('/nhom-chats', payload);
         
         if (res.status) {
           this.$toast.success('Gửi lịch trình thành công!');
@@ -295,7 +295,7 @@ export default {
       if (!this.deleteTarget) return;
       this.deleting = true;
       try {
-        const res = await clientApi.post('/client/chuyen-di/delete', {
+        const res = await api.post('/client/chuyen-di/delete', {
           id: this.deleteTarget.id
         });
         const json = res.data;

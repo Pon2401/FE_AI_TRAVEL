@@ -420,7 +420,7 @@
 </template>
 
 <script>
-import clientApi from '../../services/clientApi';
+import api from '../../services/api';
 
 export default {
   name: 'ChiTietLichTrinh',
@@ -589,7 +589,7 @@ export default {
       this.loading = true;
       try {
         // Lấy chi tiết chuyến đi
-        const res = await clientApi.get(`/chuyen-dis/${this.tripId}`);
+        const res = await api.get(`/chuyen-dis/${this.tripId}`);
         const json = res.data;
         
         if (json.status === 'success' && json.data) {
@@ -597,7 +597,7 @@ export default {
           if(!this.trip.so_ngay) this.trip.so_ngay = 1;
 
           // Lấy danh sách địa điểm theo chuyến đi
-          const res2 = await clientApi.get(`/chuyen-di/${this.tripId}/dia-diems`);
+          const res2 = await api.get(`/chuyen-di/${this.tripId}/dia-diems`);
           const json2 = res2.data;
           this.rawPlaces = json2.data || [];
 
@@ -643,7 +643,7 @@ export default {
     async fetchExpenses() {
       this.loadingExpenses = true;
       try {
-        const res = await clientApi.get(`/chuyen-dis/${this.tripId}/chi-phis`);
+        const res = await api.get(`/chuyen-dis/${this.tripId}/chi-phis`);
         const json = res.data;
         if (json.status === 'success') {
           this.incurredExpenses = json.data || [];
@@ -689,8 +689,8 @@ export default {
 
       try {
         const res = isEdit
-          ? await clientApi.put(`/chi-phi-phat-sinhs/${this.expenseForm.id}`, payload)
-          : await clientApi.post('/chi-phi-phat-sinhs', payload);
+          ? await api.put(`/chi-phi-phat-sinhs/${this.expenseForm.id}`, payload)
+          : await api.post('/chi-phi-phat-sinhs', payload);
         const json = res.data;
         if (json.status === 'success') {
           this.$toast.success(isEdit ? "Cập nhật chi phí thành công!" : "Thêm chi phí thành công!");
@@ -720,7 +720,7 @@ export default {
     async deleteExpense(id) {
       if (!confirm("Bạn có chắc muốn xóa chi phí này?")) return;
       try {
-        const res = await clientApi.delete(`/chi-phi-phat-sinhs/${id}`);
+        const res = await api.delete(`/chi-phi-phat-sinhs/${id}`);
         const json = res.data;
         if (json.status === 'success') {
           this.$toast.success("Xóa thành công");
@@ -840,7 +840,7 @@ export default {
     // ─── Modal & Chia sẻ ────────────────────────────────
     async finalizeTrip() {
         try {
-            const res = await clientApi.post(`/client/chuyen-di/${this.tripId}/chot-lich-trinh`);
+            const res = await api.post(`/client/chuyen-di/${this.tripId}/chot-lich-trinh`);
             const data = res.data;
             if (data.status) {
                 this.$toast.success('Đã chốt lịch trình thành công!');
@@ -858,7 +858,7 @@ export default {
 
     async unfinalizeTrip() {
         try {
-            const res = await clientApi.post(`/client/chuyen-di/${this.tripId}/mo-lich-trinh`);
+            const res = await api.post(`/client/chuyen-di/${this.tripId}/mo-lich-trinh`);
             const data = res.data;
             if (data.status) {
                 this.$toast.success('Đã mở lại lịch trình. Các thành viên có thể tiếp tục chỉnh sửa.');
@@ -881,7 +881,7 @@ export default {
       this.$toast.info('AI đang phân tích và tối ưu lại lịch trình của bạn...');
 
       try {
-        const res = await clientApi.post(`/client/ai/reorder-itinerary/${this.tripId}`);
+        const res = await api.post(`/client/ai/reorder-itinerary/${this.tripId}`);
         const json = res.data;
         if (json.status === 'success') {
           this.$toast.success('AI đã tối ưu lại lịch trình thành công!');
@@ -907,7 +907,7 @@ export default {
             const originalHTML = btn ? btn.innerHTML : '';
             if(btn && btn.tagName === 'BUTTON') btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
             
-            const res = await clientApi.post(`/lich-trinh-dia-diems/${item.id}/swap`);
+            const res = await api.post(`/lich-trinh-dia-diems/${item.id}/swap`);
             const json = res.data;
             if (json.status) {
                 this.$toast.success('Đã thay đổi địa điểm mới!');
@@ -924,8 +924,8 @@ export default {
     async fetchMyGroups() {
       try {
         const [joinedRes, ownedRes] = await Promise.all([
-          clientApi.get('/client/nhom-du-lich/get-joined'),
-          clientApi.get('/client/nhom-du-lich/get-my-groups')
+          api.get('/client/nhom-du-lich/get-joined'),
+          api.get('/client/nhom-du-lich/get-my-groups')
         ]);
         const jData = joinedRes.data;
         const oData = ownedRes.data;
@@ -950,7 +950,7 @@ export default {
             message: JSON.stringify({ type: 'itinerary', id: this.tripId, title: this.trip.ten_chuyen_di })
         };
 
-        const { data: res } = await clientApi.post('/nhom-chats', payload);
+        const { data: res } = await api.post('/nhom-chats', payload);
         
         if (res.status) {
           this.$toast.success('Gửi lịch trình thành công!');
@@ -1020,7 +1020,7 @@ export default {
       if (!this.selectedRating) return;
       this.submittingRating = true;
       try {
-        await clientApi.post('/client/danh-gia-he-thong', {
+        await api.post('/client/danh-gia-he-thong', {
           muc_do_hai_long: this.selectedRating,
           dong_gop: this.ratingFeedback
         });
@@ -1212,7 +1212,7 @@ export default {
 
           try {
               this.$toast.info('Đang cập nhật thứ tự...');
-              await clientApi.post('/lich-trinh-dia-diems/reorder', { items: apiPayload });
+              await api.post('/lich-trinh-dia-diems/reorder', { items: apiPayload });
               
               // AI tối ưu lại sau khi di chuyển
               this.$toast.info('AI đang tối ưu lại lịch trình chuyên sâu...');
