@@ -1,8 +1,12 @@
 import axios from "axios";
 import { clearClientSession } from '../utils/clientAuth';
 
-// Chỉ lấy BACKEND_URL từ env, KHÔNG append /api
-const BASE_URL = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+// Đảm bảo BASE_URL có hậu tố /api
+let envUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+if (!envUrl.endsWith('/api')) {
+  envUrl += '/api';
+}
+const BASE_URL = envUrl;
 
 const api = axios.create({
   baseURL: BASE_URL,
