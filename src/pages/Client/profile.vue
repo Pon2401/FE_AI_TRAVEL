@@ -405,7 +405,6 @@ export default {
         const res = await api.post(`${API}/cap-nhat-anh-dai-dien`, formData, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('client_token')}`,
-            'Content-Type': 'multipart/form-data',
           },
         })
 
