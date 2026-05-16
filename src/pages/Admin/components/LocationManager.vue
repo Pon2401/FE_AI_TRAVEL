@@ -32,6 +32,28 @@
         </div>
       </div>
 
+      <!-- Filter category chips -->
+      <div v-if="activeCategories.length" class="filter-bar px-4 py-3 border-bottom">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="filter-label"><i class="bi bi-funnel me-1"></i>Loại:</span>
+          <button
+            class="filter-chip"
+            :class="{ 'active': filterCategory === 'Tất cả' }"
+            @click="filterCategory = 'Tất cả'"
+          >Tất cả <span class="chip-count">{{ places.length }}</span></button>
+          <button
+            v-for="cat in activeCategories"
+            :key="cat.id"
+            class="filter-chip"
+            :class="{ 'active': filterCategory === cat.ten_danh_muc }"
+            @click="filterCategory = cat.ten_danh_muc"
+          >
+            {{ cat.ten_danh_muc }}
+            <span class="chip-count">{{ places.filter(p => p.loai_dia_diem === cat.ten_danh_muc).length }}</span>
+          </button>
+        </div>
+      </div>
+
       <div class="card-body p-0">
         <div v-if="loading" class="state-box">
           <div class="spinner-border text-primary mb-3" role="status"></div>
@@ -296,10 +318,10 @@
 </template>
 
 <script>
-import axios from 'axios'
+import api from '../../../services/api.js';
 import * as bootstrap from 'bootstrap'
 
-const API_URL = 'http://127.0.0.1:8000/api/dia-diems';
+const API_URL = '/dia-diems';
 
 export default {
   name: 'LocationManager',
@@ -346,8 +368,18 @@ export default {
     }
   },
   computed: {
+    activeCategories() {
+      // Chỉ hiển thị chip danh mục nào có ít nhất 1 địa điểm trong trang hiện tại
+      const usedTypes = new Set(this.places.map(p => p.loai_dia_diem).filter(Boolean));
+      return this.categories.filter(cat => usedTypes.has(cat.ten_danh_muc));
+    },
     filteredPlaces() {
       let filtered = this.places;
+
+      // Filter by category chip
+      if (this.filterCategory && this.filterCategory !== 'Tất cả') {
+        filtered = filtered.filter(p => p.loai_dia_diem === this.filterCategory);
+      }
 
       // Filter by keyword
       const keyword = this.keyword.toLowerCase()
@@ -373,7 +405,7 @@ export default {
     },
     async fetchCategories() {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/danh-mucs', this.authHeader());
+        const res = await api.get('/danh-mucs', this.authHeader());
         this.categories = res.data.data || [];
       } catch (error) {
         console.error("Lỗi khi tải danh mục:", error);
@@ -384,7 +416,7 @@ export default {
       this.errorMessage = ''
 
       try {
-        const res = await axios.get(this.fetchUrl, this.authHeader())
+        const res = await api.get(this.fetchUrl, this.authHeader())
         this.places = Array.isArray(res.data.data) ? res.data.data : []
       } catch (error) {
         this.places = []
@@ -434,7 +466,7 @@ export default {
       if (!this.selectedPlaceForImages) return;
       this.loadingImages = true;
       try {
-        const res = await axios.get(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/dia-diem/${this.selectedPlaceForImages.id}`, this.authHeader());
+        const res = await api.get(`/hinh-anh-dia-diems/dia-diem/${this.selectedPlaceForImages.id}`, this.authHeader());
         this.placeImages = res.data.data;
       } catch (e) {
         this.$toast.error('Không thể tải hình ảnh.');
@@ -446,7 +478,7 @@ export default {
       if (!this.newImageUrl) return;
       this.addingImage = true;
       try {
-        await axios.post('http://127.0.0.1:8000/api/hinh-anh-dia-diems', {
+        await api.post('/hinh-anh-dia-diems', {
           id_dia_diem: this.selectedPlaceForImages.id,
           duong_dan_anh: this.newImageUrl,
           is_main: this.placeImages.length === 0, // Nếu chưa có ảnh nào thì tự động thành ảnh chính
@@ -464,7 +496,7 @@ export default {
     },
     async setMainImage(img) {
       try {
-        await axios.post(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/${img.id}/set-main`, {}, this.authHeader());
+        await api.post(`/hinh-anh-dia-diems/${img.id}/set-main`, {}, this.authHeader());
         this.$toast.success('Đã thay đổi ảnh chính thành công!');
         await this.fetchImages();
         // Cập nhật thủ công ảnh thumbnail ngoài danh sách
@@ -477,7 +509,7 @@ export default {
     async deleteImage(img) {
       if (!confirm('Bạn có chắc chắn muốn xóa ảnh này không?')) return;
       try {
-        await axios.delete(`http://127.0.0.1:8000/api/hinh-anh-dia-diems/${img.id}`, this.authHeader());
+        await api.delete(`/hinh-anh-dia-diems/${img.id}`, this.authHeader());
         this.$toast.success('Đã xóa ảnh.');
         await this.fetchImages();
         // Nếu vừa xóa ảnh chính và còn ảnh khác, thì load lại danh sách ngoài kia
@@ -503,9 +535,9 @@ export default {
 
       try {
         if (this.isEditing) {
-          await axios.put(`${API_URL}/${this.form.id}`, payload, this.authHeader());
+          await api.put(`${API_URL}/${this.form.id}`, payload, this.authHeader());
         } else {
-          await axios.post(API_URL, payload, this.authHeader());
+          await api.post(API_URL, payload, this.authHeader());
         }
         await this.fetchPlaces();
         this.modalInstance.hide();
@@ -572,7 +604,7 @@ export default {
     async confirmDelete() {
       if (!this.selectedPlace) return;
       try {
-        await axios.delete(`${API_URL}/${this.selectedPlace.id}`, this.authHeader());
+        await api.delete(`${API_URL}/${this.selectedPlace.id}`, this.authHeader());
         await this.fetchPlaces();
         this.deleteModalInstance.hide();
         this.$toast.success(`Đã xóa địa điểm "${this.selectedPlace.ten_dia_diem}" thành công!`);
@@ -730,6 +762,65 @@ export default {
 .staff-name {
   font-weight: 700;
   color: #0f172a;
+}
+
+/* ===== Filter Chips ===== */
+.filter-bar {
+  background: #fafbff;
+}
+
+.filter-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: #818cf8;
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.filter-chip.active {
+  background: linear-gradient(90deg, #4f46e5, #6366f1);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.1);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.filter-chip.active .chip-count {
+  background: rgba(255,255,255,0.25);
 }
 
 .role-badge {

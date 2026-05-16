@@ -26,6 +26,7 @@
               Làm mới
             </button>
             <button
+              v-if="hasPermission('admin_create')"
               class="btn btn-primary action-btn"
               type="button"
               data-bs-toggle="modal"
@@ -103,6 +104,7 @@
                 </td>
                 <td class="text-center">
                   <button
+                    v-if="hasPermission('admin_update')"
                     class="btn btn-sm btn-outline-primary me-2"
                     type="button"
                     title="Sửa"
@@ -111,6 +113,7 @@
                     <i class="bi bi-pencil-square"></i>
                   </button>
                   <button
+                    v-if="hasPermission('admin_delete')"
                     class="btn btn-sm btn-outline-danger"
                     type="button"
                     title="Xóa"
@@ -375,11 +378,11 @@
 </template>
 
 <script>
-import axios from 'axios'
+import api from '../../services/api.js';
 import { Modal } from 'bootstrap'
 
-const API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien'
-const CREATE_API_URL = 'http://127.0.0.1:8000/api/admin/danh-sach-nhan-vien/them-nhan-vien'
+const API_URL = '/admin/danh-sach-nhan-vien'
+const CREATE_API_URL = '/admin/danh-sach-nhan-vien/them-nhan-vien'
 
 const defaultCreateAdmin = () => ({
   ten: '',
@@ -453,6 +456,19 @@ export default {
     this.fetchAdmins()
   },
   methods: {
+    hasPermission(code) {
+      try {
+        const raw = localStorage.getItem('admin_data');
+        if (!raw) return false;
+        const adminData = JSON.parse(raw);
+        const isSuperAdmin = Number(adminData?.id_chuc_vu || adminData?.chuc_vu) === 1;
+        if (isSuperAdmin) return true;
+        const chucNangs = adminData?.chuc_vu?.chuc_nangs || adminData?.chucVu?.chucNangs || [];
+        return chucNangs.some(p => p.ma_chuc_nang === code);
+      } catch (e) {
+        return false;
+      }
+    },
     resetCreateForm() {
       this.formErrors = {}
       this.create_admin = defaultCreateAdmin()
@@ -488,7 +504,7 @@ export default {
           trang_thai: this.create_admin.trang_thai_hoat_dong,
         }
 
-        const res = await axios.post(CREATE_API_URL, payload, this.authHeader())
+        const res = await api.post(CREATE_API_URL, payload, this.authHeader())
         this.$toast?.success(res.data?.message || 'Thêm nhân viên thành công')
         this.resetCreateForm()
         await this.fetchAdmins()
@@ -551,7 +567,7 @@ export default {
           payload.mat_khau = this.edit_admin.mat_khau
         }
 
-        const res = await axios.post(`${API_URL}/${this.edit_admin.id}`, payload, this.authHeader())
+        const res = await api.post(`${API_URL}/${this.edit_admin.id}`, payload, this.authHeader())
         this.$toast?.success(res.data?.message || 'Cập nhật nhân viên thành công')
         this.resetEditForm()
         await this.fetchAdmins()
@@ -597,7 +613,7 @@ export default {
       this.isDeleting = true
 
       try {
-        const res = await axios.delete(`${API_URL}/${this.delete_admin.id}`, this.authHeader())
+        const res = await api.delete(`${API_URL}/${this.delete_admin.id}`, this.authHeader())
         this.$toast?.success(res.data?.message || 'Xóa nhân viên thành công')
         this.resetDeleteForm()
         await this.fetchAdmins()
@@ -616,7 +632,7 @@ export default {
       this.errorMessage = ''
 
       try {
-        const res = await axios.get(API_URL, this.authHeader())
+        const res = await api.get(API_URL, this.authHeader())
         this.admins = Array.isArray(res.data.data) ? res.data.data : []
       } catch (error) {
         this.admins = []

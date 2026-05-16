@@ -143,13 +143,6 @@
                 <label class="form-label fw-medium text-muted small">Mô tả</label>
                 <textarea class="form-control bg-light" rows="3" v-model="formData.description" placeholder="Mô tả ngắn gọn về danh mục này..."></textarea>
               </div>
-              <div class="mb-4">
-                <label class="form-label fw-medium text-muted small">Trạng thái</label>
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" role="switch" id="statusSwitch" v-model="formData.isActive">
-                  <label class="form-check-label" for="statusSwitch">{{ formData.isActive ? 'Đang hoạt động' : 'Tạm ẩn' }}</label>
-                </div>
-              </div>
               <div class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Hủy</button>
                 <button type="submit" class="btn btn-primary rounded-pill px-4 fw-medium shadow-sm" :disabled="isSaving">
@@ -163,11 +156,43 @@
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+          <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+            <h5 class="modal-title fw-bold text-danger">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa danh mục
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" :disabled="isDeleting" @click="hideDeleteModal"></button>
+          </div>
+          <div class="modal-body p-4">
+            <p class="mb-2">
+              Bạn có chắc chắn muốn xóa danh mục:
+              <strong>{{ deleteTarget?.name }}</strong>?
+            </p>
+            <p class="text-muted mb-0">
+              Mọi địa điểm sẽ bị gỡ khỏi danh mục này.
+            </p>
+          </div>
+          <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" :disabled="isDeleting" @click="hideDeleteModal">
+              Hủy
+            </button>
+            <button type="button" class="btn btn-danger rounded-pill px-4 fw-medium shadow-sm" :disabled="isDeleting" @click="deleteCategory">
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="bi bi-trash3 me-1"></i>
+              {{ isDeleting ? 'Đang xóa...' : 'Xóa danh mục' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
+import api from '../../services/api.js';
 import { Modal } from 'bootstrap';
 
 export default {
@@ -183,12 +208,13 @@ export default {
         id: null,
         name: '',
         slug: '',
-        description: '',
-        isActive: true
+        description: ''
       },
       categories: [],
       isLoading: false,
-      isSaving: false
+      isSaving: false,
+      isDeleting: false,
+      deleteTarget: null
     }
   },
   computed: {
@@ -220,7 +246,7 @@ export default {
     async fetchCategories() {
       try {
         this.isLoading = true;
-        const res = await axios.get('http://127.0.0.1:8000/api/danh-mucs', this.authConfig());
+        const res = await api.get('/danh-mucs', this.authConfig());
         if (res.data && res.data.data) {
           this.categories = res.data.data.map(item => ({
             id: item.id,
@@ -240,7 +266,7 @@ export default {
     },
     openAddModal() {
       this.isEditing = false;
-      this.formData = { id: null, name: '', slug: '', description: '', isActive: true };
+      this.formData = { id: null, name: '', slug: '', description: '' };
       this.showModal();
     },
     openEditModal(category) {
@@ -249,8 +275,7 @@ export default {
         id: category.id,
         name: category.name,
         slug: category.slug,
-        description: category.description,
-        isActive: category.status === 'active'
+        description: category.description
       };
       this.showModal();
     },
@@ -281,9 +306,9 @@ export default {
         };
         
         if (this.isEditing) {
-          await axios.put(`http://127.0.0.1:8000/api/danh-mucs/${this.formData.id}`, payload, this.authConfig());
+          await api.put(`/danh-mucs/${this.formData.id}`, payload, this.authConfig());
         } else {
-          await axios.post('http://127.0.0.1:8000/api/danh-mucs', payload, this.authConfig());
+          await api.post('/danh-mucs', payload, this.authConfig());
         }
         
         await this.fetchCategories();
@@ -296,16 +321,31 @@ export default {
         this.isSaving = false;
       }
     },
-    async confirmDelete(category) {
-      if(confirm('Bạn có chắc chắn muốn xóa danh mục: ' + category.name + '? Mọi địa điểm sẽ bị gỡ khỏi danh mục này!')) {
-        try {
-          await axios.delete(`http://127.0.0.1:8000/api/danh-mucs/${category.id}`, this.authConfig());
-          await this.fetchCategories();
-          this.$toast ? this.$toast.success('Xóa danh mục thành công!') : alert('Xóa danh mục thành công!');
-        } catch (error) {
-          console.error("Lỗi khi xóa:", error);
-          this.$toast ? this.$toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa danh mục.') : alert(error.response?.data?.message || 'Có lỗi xảy ra khi xóa danh mục.');
-        }
+    confirmDelete(category) {
+      this.deleteTarget = category;
+      const modal = new Modal(document.getElementById('deleteCategoryModal'));
+      modal.show();
+    },
+    hideDeleteModal() {
+      const modalEl = document.getElementById('deleteCategoryModal');
+      const modal = Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      this.deleteTarget = null;
+    },
+    async deleteCategory() {
+      if (!this.deleteTarget) return;
+
+      try {
+        this.isDeleting = true;
+        await api.delete(`/danh-mucs/${this.deleteTarget.id}`, this.authConfig());
+        await this.fetchCategories();
+        this.$toast ? this.$toast.success('Xóa danh mục thành công!') : alert('Xóa danh mục thành công!');
+        this.hideDeleteModal();
+      } catch (error) {
+        console.error("Lỗi khi xóa:", error);
+        this.$toast ? this.$toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa danh mục.') : alert(error.response?.data?.message || 'Có lỗi xảy ra khi xóa danh mục.');
+      } finally {
+        this.isDeleting = false;
       }
     }
   },
