@@ -965,9 +965,14 @@ export default {
           if (!this.trip.so_ngay) this.trip.so_ngay = 1;
 
           // Map is_leader → is_owner & is_member để các v-if trong template hoạt động đúng
-          // kể cả khi truy cập qua link share trực tiếp
+          // Lấy is_member và is_owner từ backend
           this.trip.is_owner  = !!this.trip.is_leader;
-          this.trip.is_member = !!this.trip.is_leader;
+          if (json.data.hasOwnProperty('is_member')) {
+              this.trip.is_member = !!json.data.is_member;
+          } else {
+              // Fallback nếu backend cũ chưa trả về is_member
+              this.trip.is_member = !!this.trip.is_leader;
+          }
 
           // Lấy danh sách địa điểm theo chuyến đi
           const res2 = await api.get(`/chuyen-di/${this.tripId}/dia-diems`);
